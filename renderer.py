@@ -1,17 +1,17 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-  <title>Church Fridge Magnet — Divine Printing</title>
-  <meta name="description" content="Custom fridge magnets with service info, prayer guides, and church contact details.">
-  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
-  <link rel="stylesheet" href="../styles.css"/>
-  <link rel="stylesheet" href="../product.css"/>
-</head>
-<body>
-<div class="topbar"><span>✝ Free shipping on orders over $150</span><span>|</span><span>📞 <a href="tel:+18005551234">1-800-DIVINE-1</a></span><span>|</span><span>⚡ Same-day production available</span></div>
-<header>
+"""HTML renderer for Divine Printing product pages. Import after data files."""
+import os, sys
+sys.path.insert(0, '/home/ubuntu/.openclaw/workspace/divineprinting')
+
+from render_products import P as PRODUCTS_HEAD
+from products_tail import PRODUCTS_TAIL
+
+ALL = PRODUCTS_HEAD + PRODUCTS_TAIL
+OUT = "/home/ubuntu/.openclaw/workspace/divineprinting/products"
+os.makedirs(OUT, exist_ok=True)
+
+TOPBAR = '<div class="topbar"><span>✝ Free shipping on orders over $150</span><span>|</span><span>📞 <a href="tel:+18005551234">1-800-DIVINE-1</a></span><span>|</span><span>⚡ Same-day production available</span></div>'
+
+NAV = '''<header>
   <div class="nav-inner">
     <a href="../index.html" class="logo">
       <div class="logo-icon">✝</div>
@@ -27,32 +27,81 @@
       <a href="#quote" class="nav-cta">Get a Quote →</a>
     </nav>
   </div>
-</header>
+</header>'''
+
+FOOTER = '''<footer>
+  <div class="footer-inner">
+    <div class="footer-brand">
+      <div class="brand">✝ Divine Printing</div>
+      <p>Faith-inspired printing for churches, ministries &amp; congregations nationwide.</p>
+      <div class="scripture">"Whatever you do, work at it with all your heart, as working for the Lord." — Colossians 3:23</div>
+    </div>
+    <div class="footer-col"><h4>Products</h4>
+      <a href="../index.html#banners">Church Banners</a>
+      <a href="../index.html#events">Event Displays</a>
+      <a href="../index.html#signage">Signs &amp; Signage</a>
+      <a href="../index.html#promo">Stickers &amp; Magnets</a>
+      <a href="../index.html#print">Flyers &amp; Bulletins</a>
+    </div>
+    <div class="footer-col"><h4>Company</h4>
+      <a href="#">About Us</a><a href="#">Ministry Discounts</a><a href="#">Testimonials</a>
+    </div>
+    <div class="footer-col"><h4>Support</h4>
+      <a href="#quote">Get a Quote</a><a href="#">Shipping Info</a><a href="#">FAQ</a>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <span>© 2025 Divine Printing · divineprinting.com</span>
+    <span><a href="#">Privacy Policy</a> · <a href="#">Terms</a></span>
+  </div>
+</footer>'''
+
+def page(p):
+    specs  = ''.join(f'<div class="spec-row"><span class="spec-label">{k}</span><span class="spec-value">{v}</span></div>' for k,v in p['specs'])
+    feats  = ''.join(f'<li>{f}</li>' for f in p['feats'])
+    desc   = ''.join(f'<p>{d}</p>' for d in p['desc'])
+    uc     = ''.join(f'<div class="use-case-item"><span class="uc-icon">{ic}</span>{tx}</div>' for ic,tx in p['uc'])
+    sizes  = ''.join(f'<option value="{s}">{s}</option>' for s in p['sizes'])
+
+    return f'''<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>{p["name"]} — Divine Printing</title>
+  <meta name="description" content="{p["tag"]}">
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="../styles.css"/>
+  <link rel="stylesheet" href="../product.css"/>
+</head>
+<body>
+{TOPBAR}
+{NAV}
 
 <div class="breadcrumb">
   <div style="max-width:1280px;margin:0 auto;padding:0 24px;">
     <a href="../index.html">Home</a> <span>›</span>
-    <a href="../index.html#products">Stickers & Magnets</a> <span>›</span> Church Fridge Magnet
+    <a href="../index.html#products">{p["cat"]}</a> <span>›</span> {p["name"]}
   </div>
 </div>
 
 <div class="product-hero">
   <div class="product-gallery">
     <div class="product-main-img">
-      <img src="../images/magnet.jpg" alt="Church Fridge Magnet"/>
-      <span class="img-badge">Giveaway</span>
+      <img src="../images/{p["img"]}" alt="{p["name"]}"/>
+      <span class="img-badge">{p["badge"]}</span>
     </div>
     <div class="product-scripture">
-      "I can do all this through Him who gives me strength."
-      <cite>— Philippians 4:13</cite>
+      "{p["verse"]}"
+      <cite>— {p["ref"]}</cite>
     </div>
   </div>
   <div class="product-info">
-    <div class="pi-category">✝ Stickers & Magnets</div>
-    <h1>Church Fridge Magnet</h1>
-    <p class="pi-tagline">Custom fridge magnets with service info, prayer guides, and church contact details.</p>
-    <div class="pi-specs"><h4>Product Specifications</h4><div class="spec-row"><span class="spec-label">Thickness</span><span class="spec-value">0.3mm / 0.5mm / 0.7mm / 0.9mm</span></div><div class="spec-row"><span class="spec-label">Shape</span><span class="spec-value">Any shape</span></div><div class="spec-row"><span class="spec-label">Print</span><span class="spec-value">Full-color</span></div><div class="spec-row"><span class="spec-label">Feature</span><span class="spec-value">Removable & writable surface</span></div><div class="spec-row"><span class="spec-label">Size</span><span class="spec-value">Custom</span></div><div class="spec-row"><span class="spec-label">Min. Order</span><span class="spec-value">50 units</span></div></div>
-    <div class="pi-features"><h4>Key Features</h4><ul><li>Full-color printing of your church branding and info</li><li>Service times, address, and phone on one piece</li><li>Writable surface — members can add personal notes</li><li>Four thickness options from 0.3mm to 0.9mm</li><li>Custom cut to any shape — cross, shield, or house</li></ul></div>
+    <div class="pi-category">✝ {p["cat"]}</div>
+    <h1>{p["name"]}</h1>
+    <p class="pi-tagline">{p["tag"]}</p>
+    <div class="pi-specs"><h4>Product Specifications</h4>{specs}</div>
+    <div class="pi-features"><h4>Key Features</h4><ul>{feats}</ul></div>
     <div class="pi-actions">
       <a href="#quote" class="btn-quote">✝ Request a Free Quote</a>
       <a href="../index.html#products" class="btn-quote-outline">← Back to All Products</a>
@@ -67,8 +116,8 @@
 </div>
 
 <div class="product-desc">
-  <div><h2>About This Product</h2><p>Church refrigerator magnets are a classic and practical giveaway. Every time a congregation member opens their fridge, they see your church name, service times, phone number, and whatever message you choose to include.</p><p>Popular designs include weekly scripture verses, prayer request phone lines, service schedule cards, and holiday greetings. The writable surface allows members to jot notes directly on the magnet — making them interactive beyond just branding.</p><p>Available in four thickness options. Custom cut shapes — a cross, a church building silhouette, or a simple rectangle — add a distinctive touch that sets your magnets apart from the generic.</p></div>
-  <div class="use-cases"><h4>✝ Perfect For</h4><div class="use-case-item"><span class="uc-icon">🎁</span>New member welcome kits</div><div class="use-case-item"><span class="uc-icon">📅</span>Service schedule reminders</div><div class="use-case-item"><span class="uc-icon">🙏</span>Prayer guide giveaways</div><div class="use-case-item"><span class="uc-icon">🎄</span>Christmas & holiday gifts</div><div class="use-case-item"><span class="uc-icon">📞</span>Church contact info cards</div><div class="use-case-item"><span class="uc-icon">🏘️</span>Community outreach packages</div></div>
+  <div><h2>About This Product</h2>{desc}</div>
+  <div class="use-cases"><h4>✝ Perfect For</h4>{uc}</div>
 </div>
 
 <section class="quote-section" id="quote">
@@ -80,7 +129,7 @@
     </div>
     <div class="quote-form" id="qWrap">
       <form id="qForm" onsubmit="submitQ(event)">
-        <input type="hidden" name="product" value="Church Fridge Magnet"/>
+        <input type="hidden" name="product" value="{p["name"]}"/>
         <div class="form-row">
           <div class="form-group"><label>Full Name *</label><input type="text" name="name" placeholder="Pastor John Smith" required/></div>
           <div class="form-group"><label>Email Address *</label><input type="email" name="email" placeholder="pastor@yourchurch.com" required/></div>
@@ -91,7 +140,7 @@
         </div>
         <div class="form-row">
           <div class="form-group"><label>Size / Dimensions</label>
-            <select name="size"><option value="">Select a size...</option><option value="Business card size">Business card size</option><option value="4×6 in">4×6 in</option><option value="Custom">Custom</option><option value="Custom / Other">Custom / Other</option></select>
+            <select name="size"><option value="">Select a size...</option>{sizes}<option value="Custom / Other">Custom / Other</option></select>
           </div>
           <div class="form-group"><label>Quantity Needed</label>
             <select name="quantity"><option value="">Select quantity...</option><option>1</option><option>2–5</option><option>6–10</option><option>11–25</option><option>26–50</option><option>51–100</option><option>100+</option></select>
@@ -124,56 +173,40 @@
   </div>
 </section>
 
-<footer>
-  <div class="footer-inner">
-    <div class="footer-brand">
-      <div class="brand">✝ Divine Printing</div>
-      <p>Faith-inspired printing for churches, ministries &amp; congregations nationwide.</p>
-      <div class="scripture">"Whatever you do, work at it with all your heart, as working for the Lord." — Colossians 3:23</div>
-    </div>
-    <div class="footer-col"><h4>Products</h4>
-      <a href="../index.html#banners">Church Banners</a>
-      <a href="../index.html#events">Event Displays</a>
-      <a href="../index.html#signage">Signs &amp; Signage</a>
-      <a href="../index.html#promo">Stickers &amp; Magnets</a>
-      <a href="../index.html#print">Flyers &amp; Bulletins</a>
-    </div>
-    <div class="footer-col"><h4>Company</h4>
-      <a href="#">About Us</a><a href="#">Ministry Discounts</a><a href="#">Testimonials</a>
-    </div>
-    <div class="footer-col"><h4>Support</h4>
-      <a href="#quote">Get a Quote</a><a href="#">Shipping Info</a><a href="#">FAQ</a>
-    </div>
-  </div>
-  <div class="footer-bottom">
-    <span>© 2025 Divine Printing · divineprinting.com</span>
-    <span><a href="#">Privacy Policy</a> · <a href="#">Terms</a></span>
-  </div>
-</footer>
+{FOOTER}
 
 <script>
-async function submitQ(e) {
+async function submitQ(e) {{
   e.preventDefault();
   const btn = document.getElementById('subBtn');
   btn.textContent = 'Sending...';
   btn.disabled = true;
   const data = new FormData(document.getElementById('qForm'));
-  try {
-    const res = await fetch('../send-quote.php', {method:'POST', body:data});
+  try {{
+    const res = await fetch('../send-quote.php', {{method:'POST', body:data}});
     const json = await res.json();
-    if (json.success) {
+    if (json.success) {{
       document.getElementById('qForm').style.display = 'none';
       document.getElementById('fSuccess').style.display = 'block';
-    } else {
+    }} else {{
       alert(json.message || 'Something went wrong. Please try again.');
       btn.textContent = '✝ Send My Quote Request';
       btn.disabled = false;
-    }
-  } catch(err) {
+    }}
+  }} catch(err) {{
     document.getElementById('qForm').style.display = 'none';
     document.getElementById('fSuccess').style.display = 'block';
-  }
-}
+  }}
+}}
 </script>
 </body>
-</html>
+</html>'''
+
+# Generate all pages
+for p in ALL:
+    path = f"{OUT}/{p['s']}.html"
+    with open(path, 'w') as f:
+        f.write(page(p))
+    print(f"✓  {p['s']}.html")
+
+print(f"\n✅ Generated {len(ALL)} pages")
