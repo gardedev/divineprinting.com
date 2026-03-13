@@ -109,13 +109,7 @@ nav a.active { color: var(--gold-lt); }
   overflow: hidden;
 }
 .hero::before {
-  content: '✝';
-  position: absolute;
-  font-size: 28rem;
-  color: rgba(255,255,255,.025);
-  top: -60px; left: 50%;
-  transform: translateX(-50%);
-  pointer-events: none;
+  display: none;
 }
 .hero-badge {
   display: inline-block;
