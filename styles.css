@@ -101,7 +101,7 @@ nav a.active { color: var(--gold-lt); }
 
 /* HERO */
 .hero {
-  background: linear-gradient(135deg, var(--dark) 0%, var(--purple) 55%, var(--purple-mid) 100%);
+  background: linear-gradient(135deg, rgba(26,13,48,.85) 0%, rgba(61,26,110,.80) 55%, rgba(61,26,110,.75) 100%), url('images/hero-bg.jpg') center center / cover no-repeat;
   color: var(--white);
   padding: 88px 24px 68px;
   text-align: center;
