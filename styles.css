@@ -53,11 +53,16 @@ header {
 }
 .logo-icon {
   width: 46px; height: 46px;
-  background: var(--gold);
-  border-radius: 50%;
+  border-radius: 10px;
   display: flex; align-items: center; justify-content: center;
-  font-size: 1.4rem;
   flex-shrink: 0;
+  overflow: hidden;
+}
+.logo-icon img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
 }
 .logo-text .brand {
   font-family: 'Cinzel', serif;

@@ -1,43 +1,409 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
   <title>Contact Us — Divine Printing</title>
+  <link rel="icon" type="image/x-icon" href="favicon.ico" />
+  <link rel="apple-touch-icon" href="images/logo-192.png" />
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
   <link rel="stylesheet" href="styles.css"/>
   <style>
-    .static-page { max-width:860px; margin:60px auto; padding:0 24px 80px; color:#f0e8ff; }
-    .static-page h1 { font-family:'Cinzel',serif; color:#c9a227; font-size:2rem; margin-bottom:8px; }
-    .static-page h2 { font-family:'Cinzel',serif; color:#c9a227; font-size:1.2rem; margin:32px 0 10px; }
-    .static-page p, .static-page li { line-height:1.8; color:rgba(240,232,255,.85); }
-    .static-page ul { padding-left:20px; }
-    .static-page a { color:#c9a227; }
-    .divider { width:60px; height:3px; background:#c9a227; margin:12px 0 28px; border-radius:2px; }
-    body { background:#1a0d30; }
+    body { background: #1a0d30; }
+
+    .contact-hero {
+      background: linear-gradient(135deg, #2a1550 0%, #1a0d30 100%);
+      border-bottom: 1px solid rgba(201,162,39,0.2);
+      padding: 64px 24px 48px;
+      text-align: center;
+    }
+    .contact-hero .badge {
+      display: inline-block;
+      background: rgba(201,162,39,0.12);
+      border: 1px solid rgba(201,162,39,0.3);
+      color: #c9a227;
+      font-size: .75rem;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      padding: 6px 18px;
+      border-radius: 20px;
+      margin-bottom: 20px;
+    }
+    .contact-hero h1 {
+      font-family: 'Cinzel', serif;
+      font-size: clamp(1.8rem, 4vw, 2.8rem);
+      color: #fff;
+      margin-bottom: 12px;
+    }
+    .contact-hero h1 span { color: #c9a227; }
+    .contact-hero p {
+      color: rgba(240,232,255,.75);
+      font-size: 1.05rem;
+      max-width: 520px;
+      margin: 0 auto;
+      line-height: 1.7;
+    }
+
+    .contact-wrap {
+      max-width: 1060px;
+      margin: 0 auto;
+      padding: 60px 24px 80px;
+      display: grid;
+      grid-template-columns: 1fr 1.6fr;
+      gap: 48px;
+      align-items: start;
+    }
+    @media (max-width: 720px) {
+      .contact-wrap { grid-template-columns: 1fr; gap: 32px; }
+    }
+
+    /* Info panel */
+    .contact-info h2 {
+      font-family: 'Cinzel', serif;
+      color: #c9a227;
+      font-size: 1.25rem;
+      margin-bottom: 6px;
+    }
+    .divider { width: 48px; height: 3px; background: #c9a227; border-radius: 2px; margin: 10px 0 24px; }
+    .contact-info p {
+      color: rgba(240,232,255,.8);
+      line-height: 1.75;
+      margin-bottom: 28px;
+      font-size: .95rem;
+    }
+    .info-items { display: flex; flex-direction: column; gap: 18px; }
+    .info-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 14px;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(201,162,39,0.15);
+      border-radius: 10px;
+      padding: 14px 16px;
+    }
+    .info-item .ii-icon {
+      font-size: 1.4rem;
+      margin-top: 2px;
+      flex-shrink: 0;
+    }
+    .info-item .ii-label {
+      font-size: .72rem;
+      text-transform: uppercase;
+      letter-spacing: .1em;
+      color: #c9a227;
+      margin-bottom: 3px;
+    }
+    .info-item .ii-value {
+      color: rgba(240,232,255,.9);
+      font-size: .93rem;
+      line-height: 1.5;
+    }
+    .info-item a { color: #c9a227; text-decoration: none; }
+    .info-item a:hover { text-decoration: underline; }
+
+    /* Form panel */
+    .contact-form-wrap {
+      background: #2a1550;
+      border: 1px solid rgba(201,162,39,0.2);
+      border-radius: 16px;
+      padding: 36px 32px;
+    }
+    @media (max-width: 480px) {
+      .contact-form-wrap { padding: 24px 18px; }
+    }
+    .contact-form-wrap h2 {
+      font-family: 'Cinzel', serif;
+      color: #c9a227;
+      font-size: 1.25rem;
+      margin-bottom: 6px;
+    }
+    .contact-form-wrap .sub {
+      color: rgba(240,232,255,.65);
+      font-size: .88rem;
+      margin-bottom: 28px;
+      line-height: 1.5;
+    }
+
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+    @media (max-width: 540px) { .form-row { grid-template-columns: 1fr; } }
+    .form-group { margin-bottom: 16px; }
+    .form-group label {
+      display: block;
+      font-size: .8rem;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      color: rgba(240,232,255,.6);
+      margin-bottom: 6px;
+    }
+    .form-group label span { color: #c9a227; }
+    .form-group input,
+    .form-group select,
+    .form-group textarea {
+      width: 100%;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(201,162,39,0.25);
+      border-radius: 8px;
+      color: #f0e8ff;
+      font-family: 'Inter', sans-serif;
+      font-size: .92rem;
+      padding: 11px 14px;
+      transition: border-color .2s, box-shadow .2s;
+      outline: none;
+      box-sizing: border-box;
+    }
+    .form-group input::placeholder,
+    .form-group textarea::placeholder { color: rgba(240,232,255,.3); }
+    .form-group input:focus,
+    .form-group select:focus,
+    .form-group textarea:focus {
+      border-color: #c9a227;
+      box-shadow: 0 0 0 3px rgba(201,162,39,0.12);
+    }
+    .form-group select { appearance: none; cursor: pointer; }
+    .form-group select option { background: #2a1550; color: #f0e8ff; }
+    .form-group textarea { resize: vertical; min-height: 110px; }
+
+    .submit-btn {
+      width: 100%;
+      background: linear-gradient(135deg, #c9a227, #e8c547);
+      color: #1a0d30;
+      font-family: 'Cinzel', serif;
+      font-weight: 700;
+      font-size: .95rem;
+      letter-spacing: .06em;
+      border: none;
+      border-radius: 8px;
+      padding: 14px 24px;
+      cursor: pointer;
+      transition: opacity .2s, transform .1s;
+      margin-top: 8px;
+    }
+    .submit-btn:hover { opacity: .88; }
+    .submit-btn:active { transform: scale(.99); }
+    .submit-btn:disabled { opacity: .6; cursor: not-allowed; }
+
+    .form-success {
+      display: none;
+      text-align: center;
+      padding: 32px 16px;
+    }
+    .form-success .success-icon { font-size: 3rem; margin-bottom: 12px; }
+    .form-success h3 { font-family: 'Cinzel', serif; color: #c9a227; margin-bottom: 8px; font-size: 1.4rem; }
+    .form-success p { color: rgba(240,232,255,.75); line-height: 1.7; }
+
+    .privacy-note {
+      text-align: center;
+      color: rgba(240,232,255,.4);
+      font-size: .77rem;
+      margin-top: 14px;
+    }
   </style>
 </head>
 <body>
-<div class="topbar"><span>✝ Queens, NY Based — Serving Ministries Nationwide</span> &nbsp;|&nbsp; <span>⚡ Same-day production available</span></div>
-<header><div class="nav-inner">
-  <a href="index.html" class="logo"><div class="logo-icon">✝</div><div class="logo-text"><div class="brand">Divine Printing</div><div class="tagline">Crafted for the Kingdom</div></div></a>
-  <nav><a href="index.html">Home</a><a href="index.html#banners">Banners</a><a href="index.html#events">Events</a><a href="index.html#signage">Signs</a><a href="index.html#promo">Stickers</a><a href="index.html#print">Print</a><a href="contact.html" class="nav-cta">Get a Quote →</a></nav>
-</div></header>
-<div class="static-page">
-<h1>Contact Divine Printing</h1><div class="divider"></div>
-<p>We're based in <strong>Queens, NY</strong> and ready to help your ministry with any printing need. Reach out and we'll get back to you within 1 business day.</p>
-<h2>Get in Touch</h2>
-<ul>
-  <li>📧 <strong>Email:</strong> <a href="mailto:info@divineprinting.com">info@divineprinting.com</a></li>
-  <li>📍 <strong>Location:</strong> Queens, New York</li>
-  <li>🕐 <strong>Hours:</strong> Monday–Friday, 9AM–6PM EST</li>
-</ul>
-<h2>Request a Quote</h2>
-<p>Looking for pricing on a specific product? Visit any product page and fill out the free quote form — we'll respond with pricing and options tailored to your ministry's needs.</p>
-<p><a href="index.html#products" style="background:#c9a227;color:#1a0d30;padding:12px 28px;border-radius:4px;font-weight:700;text-decoration:none;display:inline-block;margin-top:12px;">Browse Products →</a></p></div>
-<footer><div class="footer-inner">
-  <div class="footer-brand"><div class="brand">✝ Divine Printing</div><p>Faith-inspired printing for churches and ministries. Proudly based in Queens, NY.</p></div>
-  <div class="footer-col"><h4>Company</h4><a href="about.html">About Us</a><a href="ministry-discounts.html">Ministry Discounts</a><a href="testimonials.html">Testimonials</a></div>
-  <div class="footer-col"><h4>Support</h4><a href="faq.html">FAQ</a><a href="shipping.html">Shipping Info</a><a href="returns.html">Returns</a><a href="contact.html">Contact Us</a></div>
-  <div class="footer-col"><h4>Legal</h4><a href="privacy.html">Privacy Policy</a><a href="terms.html">Terms of Service</a></div>
-</div><div class="footer-bottom"><span>© 2025 Divine Printing · divineprinting.com · Queens, NY</span></div></footer>
-</body></html>
+
+<div class="topbar">
+  <span>✝ Queens, NY Based — Serving Ministries Nationwide</span>
+  &nbsp;|&nbsp;
+  <span>⚡ Same-day production available</span>
+</div>
+
+<header>
+  <div class="nav-inner">
+    <a href="index.html" class="logo">
+      <div class="logo-icon"><img src="images/logo-icon.svg" alt="Divine Printing Logo" /></div>
+      <div class="logo-text">
+        <div class="brand">Divine Printing</div>
+        <div class="tagline">Crafted for the Kingdom</div>
+      </div>
+    </a>
+    <nav>
+      <a href="index.html">Home</a>
+      <a href="index.html#banners">Banners</a>
+      <a href="index.html#events">Events</a>
+      <a href="index.html#signage">Signs</a>
+      <a href="index.html#promo">Stickers</a>
+      <a href="index.html#print">Print</a>
+      <a href="contact.html" class="nav-cta active">Get a Quote →</a>
+    </nav>
+  </div>
+</header>
+
+<!-- HERO -->
+<div class="contact-hero">
+  <div class="badge">✦ Get in Touch ✦</div>
+  <h1>Contact <span>Divine Printing</span></h1>
+  <p>Have a question, need a custom quote, or want to discuss your ministry's printing needs? We're here to help.</p>
+</div>
+
+<!-- CONTENT -->
+<div class="contact-wrap">
+
+  <!-- Info sidebar -->
+  <div class="contact-info">
+    <h2>We'd Love to Hear From You</h2>
+    <div class="divider"></div>
+    <p>Whether you're planning a revival, a Sunday series, or just need a great banner — reach out and we'll respond within 1 business day.</p>
+
+    <div class="info-items">
+      <div class="info-item">
+        <div class="ii-icon">📧</div>
+        <div>
+          <div class="ii-label">Email</div>
+          <div class="ii-value"><a href="mailto:chris@gardedev.com">chris@gardedev.com</a></div>
+        </div>
+      </div>
+      <div class="info-item">
+        <div class="ii-icon">📍</div>
+        <div>
+          <div class="ii-label">Location</div>
+          <div class="ii-value">Queens, New York<br/>Serving ministries nationwide</div>
+        </div>
+      </div>
+      <div class="info-item">
+        <div class="ii-icon">🕐</div>
+        <div>
+          <div class="ii-label">Business Hours</div>
+          <div class="ii-value">Monday – Friday<br/>9:00 AM – 6:00 PM EST</div>
+        </div>
+      </div>
+      <div class="info-item">
+        <div class="ii-icon">⚡</div>
+        <div>
+          <div class="ii-label">Turnaround</div>
+          <div class="ii-value">Same-day production available on select items. Rush orders welcome.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Form -->
+  <div class="contact-form-wrap">
+    <h2>Send Us a Message</h2>
+    <p class="sub">Fill out the form below and we'll get back to you within 1 business day.</p>
+
+    <div id="formSuccess" class="form-success">
+      <div class="success-icon">🙏</div>
+      <h3>Message Received!</h3>
+      <p>Thank you for reaching out. We'll be in touch within 1 business day.<br/>God bless your ministry.</p>
+    </div>
+
+    <form id="contactForm" action="https://formspree.io/f/xqeydkya" method="POST" onsubmit="submitContact(event)">
+      <input type="hidden" name="_subject" value="Contact Form — Divine Printing" />
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>First Name <span>*</span></label>
+          <input type="text" name="first_name" placeholder="Pastor John" required />
+        </div>
+        <div class="form-group">
+          <label>Last Name <span>*</span></label>
+          <input type="text" name="last_name" placeholder="Smith" required />
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>Email <span>*</span></label>
+          <input type="email" name="email" placeholder="you@yourchurch.org" required />
+        </div>
+        <div class="form-group">
+          <label>Phone</label>
+          <input type="tel" name="phone" placeholder="(555) 123-4567" />
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Church / Organization Name</label>
+        <input type="text" name="church" placeholder="Grace Community Church" />
+      </div>
+
+      <div class="form-group">
+        <label>What can we help you with? <span>*</span></label>
+        <select name="inquiry_type" required>
+          <option value="" disabled selected>Select a topic…</option>
+          <option value="General Question">General Question</option>
+          <option value="Quote Request">Quote Request</option>
+          <option value="Order Status">Order Status</option>
+          <option value="Ministry Discount">Ministry Discount</option>
+          <option value="Rush / Same-Day Order">Rush / Same-Day Order</option>
+          <option value="Design Help">Design Help</option>
+          <option value="Other">Other</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label>Message <span>*</span></label>
+        <textarea name="message" placeholder="Tell us about your project, event, or question…" required></textarea>
+      </div>
+
+      <button type="submit" class="submit-btn" id="submitBtn">✝ Send Message</button>
+      <p class="privacy-note">🔒 Your information is kept private and never shared.</p>
+    </form>
+  </div>
+
+</div>
+
+<footer>
+  <div class="footer-inner">
+    <div class="footer-brand">
+      <div class="brand">✝ Divine Printing</div>
+      <p>Faith-inspired printing for churches, ministries &amp; congregations nationwide. Proudly based in Queens, NY.</p>
+      <div class="scripture">"Whatever you do, work at it with all your heart, as working for the Lord." — Colossians 3:23</div>
+    </div>
+    <div class="footer-col">
+      <h4>Products</h4>
+      <a href="index.html#banners">Church Banners</a>
+      <a href="index.html#events">Event Displays</a>
+      <a href="index.html#signage">Signs</a>
+      <a href="index.html#promo">Stickers &amp; Magnets</a>
+      <a href="index.html#print">Flyers &amp; Bulletins</a>
+    </div>
+    <div class="footer-col">
+      <h4>Company</h4>
+      <a href="about.html">About Us</a>
+      <a href="ministry-discounts.html">Ministry Discounts</a>
+      <a href="testimonials.html">Testimonials</a>
+      <a href="faq.html">FAQ</a>
+    </div>
+    <div class="footer-col">
+      <h4>Support</h4>
+      <a href="contact.html">Contact Us</a>
+      <a href="shipping.html">Shipping Info</a>
+      <a href="returns.html">Returns</a>
+      <a href="privacy.html">Privacy Policy</a>
+      <a href="terms.html">Terms of Service</a>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <span>© 2025 Divine Printing · divineprinting.com · All rights reserved.</span>
+  </div>
+</footer>
+
+<script>
+async function submitContact(e) {
+  e.preventDefault();
+  const btn = document.getElementById('submitBtn');
+  btn.textContent = 'Sending…'; btn.disabled = true;
+  try {
+    const res = await fetch('https://formspree.io/f/xqeydkya', {
+      method: 'POST',
+      body: new FormData(document.getElementById('contactForm')),
+      headers: { 'Accept': 'application/json' }
+    });
+    const json = await res.json();
+    if (res.ok) {
+      document.getElementById('contactForm').style.display = 'none';
+      document.getElementById('formSuccess').style.display = 'block';
+    } else {
+      btn.textContent = '✝ Send Message'; btn.disabled = false;
+      alert((json.errors && json.errors.map(e => e.message).join(', ')) || 'Something went wrong. Please try again.');
+    }
+  } catch (err) {
+    btn.textContent = '✝ Send Message'; btn.disabled = false;
+    alert('Network error. Please try again.');
+  }
+}
+</script>
+
+</body>
+</html>
