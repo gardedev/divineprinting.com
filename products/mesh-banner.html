@@ -56,7 +56,7 @@
       <div class="divider"></div>
     </div>
     <div class="quote-form" id="quoteFormWrap">
-      <form id="quoteForm" action="https://formspree.io/f/xpwzgvkd" method="POST" onsubmit="submitQuote(event)">
+      <form id="quoteForm" action="https://formspree.io/f/xqeydkya" method="POST" onsubmit="submitQuote(event)">
         <input type="hidden" name="product" value="Wind-Resistant Mesh Banner"/>
         <div class="form-row">
           <div class="form-group"><label>Full Name *</label><input type="text" name="name" placeholder="Pastor John Smith" required/></div>
@@ -112,7 +112,7 @@ async function submitQuote(e) {
   const btn = document.getElementById('submitBtn');
   btn.textContent = 'Sending...'; btn.disabled = true;
   try {
-    const res = await fetch('https://formspree.io/f/xpwzgvkd', {
+    const res = await fetch('https://formspree.io/f/xqeydkya', {
       method: 'POST',
       body: new FormData(document.getElementById('quoteForm')),
       headers: { 'Accept': 'application/json' }

@@ -183,7 +183,7 @@ async function submitQ(e) {{
   btn.disabled = true;
   const data = new FormData(document.getElementById('qForm'));
   try {{
-    const res = await fetch('../send-quote.php', {{method:'POST', body:data}});
+    const res = await fetch('https://formspree.io/f/xqeydkya', {{method:'POST', body:data}});
     const json = await res.json();
     if (json.success) {{
       document.getElementById('qForm').style.display = 'none';

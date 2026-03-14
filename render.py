@@ -133,7 +133,7 @@ async function submitQuote(e) {{
   const btn = document.getElementById('submitBtn');
   btn.textContent = 'Sending...'; btn.disabled = true;
   try {{
-    const res = await fetch('../send-quote.php', {{method:'POST', body:new FormData(document.getElementById('quoteForm'))}});
+    const res = await fetch('https://formspree.io/f/xqeydkya', {{method:'POST', body:new FormData(document.getElementById('quoteForm'))}});
     const json = await res.json();
     if (json.success) {{
       document.getElementById('quoteForm').style.display='none';
