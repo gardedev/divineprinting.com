@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <defs>
+    <linearGradient id="bgB" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#3d1a6e"/>
+      <stop offset="100%" stop-color="#1a0d30"/>
+    </linearGradient>
+    <linearGradient id="goldB_v" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#f5d95a"/>
+      <stop offset="50%" stop-color="#c9a227"/>
+      <stop offset="100%" stop-color="#a07810"/>
+    </linearGradient>
+    <linearGradient id="goldB_h" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#a07810"/>
+      <stop offset="50%" stop-color="#c9a227"/>
+      <stop offset="100%" stop-color="#a07810"/>
+    </linearGradient>
+    <radialGradient id="sunB" cx="50%" cy="42%" r="40%">
+      <stop offset="0%" stop-color="#f5d95a" stop-opacity="0.3"/>
+      <stop offset="100%" stop-color="#f5d95a" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <!-- Background shield shape -->
+  <path d="M32 2 L58 10 L58 38 Q58 56 32 63 Q6 56 6 38 L6 10 Z" fill="url(#bgB)"/>
+  <path d="M32 2 L58 10 L58 38 Q58 56 32 63 Q6 56 6 38 L6 10 Z" fill="none" stroke="url(#goldB_v)" stroke-width="1" opacity="0.5"/>
+
+  <!-- Glow -->
+  <ellipse cx="32" cy="30" rx="20" ry="22" fill="url(#sunB)"/>
+
+  <!-- Cross with serifs (flared ends) -->
+  <!-- Vertical bar -->
+  <path d="M29 13 L29 52 Q29 54 32 54 Q35 54 35 52 L35 13 Q35 11 32 11 Q29 11 29 13 Z" fill="url(#goldB_v)"/>
+  <!-- Horizontal bar -->
+  <path d="M13 24 L51 24 Q53 24 53 27 Q53 30 51 30 L13 30 Q11 30 11 27 Q11 24 13 24 Z" fill="url(#goldB_h)"/>
+  <!-- Serif flares on cross ends (top) -->
+  <path d="M29 13 Q30 11 32 10 Q34 11 35 13 L35 13 L29 13 Z" fill="#f5d95a" opacity="0.8"/>
+  <!-- Bottom -->
+  <path d="M29 52 Q30 54.5 32 55 Q34 54.5 35 52 L29 52 Z" fill="#a07810" opacity="0.7"/>
+  <!-- Left -->
+  <path d="M13 24 Q10.5 25.5 10 27 Q10.5 28.5 13 30 L13 24 Z" fill="#a07810" opacity="0.7"/>
+  <!-- Right -->
+  <path d="M51 24 Q53.5 25.5 54 27 Q53.5 28.5 51 30 L51 24 Z" fill="#f5d95a" opacity="0.7"/>
+
+  <!-- Center jewel -->
+  <circle cx="32" cy="27" r="3.5" fill="#1a0d30" stroke="#f5d95a" stroke-width="0.8"/>
+  <circle cx="32" cy="27" r="1.8" fill="#f5d95a" opacity="0.9"/>
+</svg>

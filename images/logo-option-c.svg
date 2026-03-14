@@ -1,0 +1,67 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <defs>
+    <linearGradient id="bgC" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#2a1060"/>
+      <stop offset="100%" stop-color="#0e0620"/>
+    </linearGradient>
+    <linearGradient id="goldC" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffe066"/>
+      <stop offset="50%" stop-color="#c9a227"/>
+      <stop offset="100%" stop-color="#8a6800"/>
+    </linearGradient>
+    <linearGradient id="purpleBeam" x1="50%" y1="0%" x2="50%" y2="100%">
+      <stop offset="0%" stop-color="#c9a227" stop-opacity="0.35"/>
+      <stop offset="100%" stop-color="#c9a227" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background circle (badge style) -->
+  <circle cx="32" cy="32" r="31" fill="url(#bgC)"/>
+  <circle cx="32" cy="32" r="31" fill="none" stroke="#c9a227" stroke-width="0.8" opacity="0.4"/>
+  <circle cx="32" cy="32" r="28" fill="none" stroke="#c9a227" stroke-width="0.4" opacity="0.2"/>
+
+  <!-- Sunburst rays (thin, elegant) -->
+  <g stroke="#c9a227" stroke-width="0.6" opacity="0.4" stroke-linecap="round">
+    <line x1="32" y1="4"  x2="32" y2="12"/>
+    <line x1="32" y1="52" x2="32" y2="60"/>
+    <line x1="4"  y1="32" x2="12" y2="32"/>
+    <line x1="52" y1="32" x2="60" y2="32"/>
+    <line x1="10.7" y1="10.7" x2="16.4" y2="16.4"/>
+    <line x1="53.3" y1="10.7" x2="47.6" y2="16.4"/>
+    <line x1="10.7" y1="53.3" x2="16.4" y2="47.6"/>
+    <line x1="53.3" y1="53.3" x2="47.6" y2="47.6"/>
+    <!-- half-way rays -->
+    <line x1="21"  y1="5.4" x2="23.5" y2="12.7"/>
+    <line x1="43"  y1="5.4" x2="40.5" y2="12.7"/>
+    <line x1="21"  y1="58.6" x2="23.5" y2="51.3"/>
+    <line x1="43"  y1="58.6" x2="40.5" y2="51.3"/>
+    <line x1="5.4" y1="21" x2="12.7" y2="23.5"/>
+    <line x1="5.4" y1="43" x2="12.7" y2="40.5"/>
+    <line x1="58.6" y1="21" x2="51.3" y2="23.5"/>
+    <line x1="58.6" y1="43" x2="51.3" y2="40.5"/>
+  </g>
+
+  <!-- Light beam down from cross -->
+  <path d="M30 21 L28 62 L36 62 L34 21 Z" fill="url(#purpleBeam)" opacity="0.5"/>
+
+  <!-- Cross — rounded, glowing -->
+  <!-- glow underlayer -->
+  <rect x="28" y="10" width="8" height="44" rx="4" fill="#c9a227" opacity="0.15"/>
+  <rect x="10" y="22" width="44" height="8" rx="4" fill="#c9a227" opacity="0.15"/>
+
+  <!-- main cross -->
+  <rect x="29.5" y="11" width="5" height="42" rx="2.5" fill="url(#goldC)"/>
+  <rect x="11" y="23.5" width="42" height="5" rx="2.5" fill="url(#goldC)"/>
+
+  <!-- shine -->
+  <rect x="31" y="11" width="1.5" height="42" rx="0.75" fill="white" opacity="0.15"/>
+  <rect x="11" y="25" width="42" height="1.5" rx="0.75" fill="white" opacity="0.15"/>
+
+  <!-- Dove (simple, elegant — outline style) -->
+  <g transform="translate(32,17)" fill="none" stroke="#ffe066" stroke-width="0.7" opacity="0.75">
+    <path d="M0 0 Q-5 -4 -7 -2 Q-5 0 0 0 Z"/>
+    <path d="M0 0 Q3 -5 6 -3 Q4 0 0 0 Z"/>
+    <path d="M0 0 Q1 2 0 3" stroke-linecap="round"/>
+    <circle cx="0" cy="-1.5" r="1.2" fill="#ffe066" opacity="0.5" stroke="none"/>
+  </g>
+</svg>
