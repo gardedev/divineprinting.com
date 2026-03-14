@@ -1,4 +1,5 @@
 User-agent: *
 Allow: /
+Disallow: /thank-you.html
 
 Sitemap: https://www.divineprinting.com/sitemap.xml
