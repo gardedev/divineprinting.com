@@ -119,8 +119,7 @@ async function submitQuote(e) {
     });
     const json = await res.json();
     if (res.ok) {
-      document.getElementById('quoteForm').style.display='none';
-      document.getElementById('formSuccess').style.display='block';
+      window.location.href = '/thank-you.html';
     } else {
       btn.textContent='✝ Send My Quote Request'; btn.disabled=false;
       alert((json.errors && json.errors.map(e=>e.message).join(', ')) || 'Something went wrong. Please try again.');
