@@ -129,10 +129,8 @@
           <input type="checkbox" id="fconsent" required/>
           <label for="fconsent">I agree to be contacted by Divine Printing regarding this quote request. We respect your privacy and will never share your information.</label>
         </div>
-                        <input type="hidden" name="h-captcha-response" id="hcaptchaToken"/>
-        <div class="h-captcha"
+                                <div class="h-captcha"
              data-sitekey="a5f28750-0a52-40f2-a1b0-eee4c19022ae"
-             data-callback="onHCaptchaSuccess"
              style="margin-bottom:16px;"></div>
         <button type="submit" class="btn-submit" id="submitBtn">✝ Send My Quote Request</button>
       </form>
@@ -155,12 +153,10 @@
   <div class="footer-col"><h4>Support</h4><a href="#quote">Get a Quote</a><a href="../shipping.html">Shipping Info</a><a href="../returns.html">Returns</a><a href="../faq.html">FAQ</a></div>
 </div><div class="footer-bottom"><span>© 2026 Divine Printing · divineprinting.com</span><span><a href="../privacy.html">Privacy Policy</a> · <a href="../terms.html">Terms of Service</a></span></div></footer>
 <script>
-function onHCaptchaSuccess(token) {
-  document.getElementById('hcaptchaToken').value = token;
-}
 async function submitQuote(e) {
   e.preventDefault();
-  const token = document.getElementById('hcaptchaToken').value;
+  // Get token directly at submit time - most reliable approach
+  const token = hcaptcha.getResponse();
   if (!token) {
     alert('Please complete the CAPTCHA to continue.');
     return;
@@ -168,9 +164,13 @@ async function submitQuote(e) {
   const btn = document.getElementById('submitBtn');
   btn.textContent = 'Sending...'; btn.disabled = true;
   try {
+    const formData = new FormData(document.getElementById('quoteForm'));
+    // Remove any stale h-captcha-response field and set fresh token
+    formData.delete('h-captcha-response');
+    formData.append('h-captcha-response', token);
     const res = await fetch('https://formspree.io/f/xqeydkya', {
       method: 'POST',
-      body: new FormData(document.getElementById('quoteForm')),
+      body: formData,
       headers: { 'Accept': 'application/json' }
     });
     const json = await res.json();
@@ -179,13 +179,11 @@ async function submitQuote(e) {
     } else {
       btn.textContent = '✝ Send My Quote Request'; btn.disabled = false;
       hcaptcha.reset();
-      document.getElementById('hcaptchaToken').value = '';
       alert((json.errors && json.errors.map(e => e.message).join(', ')) || 'Something went wrong. Please try again.');
     }
   } catch(err) {
     btn.textContent = '✝ Send My Quote Request'; btn.disabled = false;
     hcaptcha.reset();
-    document.getElementById('hcaptchaToken').value = '';
     alert('Network error. Please try again.');
   }
 }
