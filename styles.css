@@ -393,7 +393,7 @@ section { padding: 64px 24px; }
 .testimonials .divider { background: var(--gold); }
 .test-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  grid-template-columns: repeat(4, 1fr);
   gap: 24px;
 }
 .test-card {
@@ -521,9 +521,11 @@ footer {
 @media (max-width: 900px) {
   .footer-inner { grid-template-columns: 1fr 1fr; }
   .features-grid { grid-template-columns: repeat(3, 1fr); }
+  .test-grid { grid-template-columns: repeat(2, 1fr); }
 }
 @media (max-width: 600px) {
   .features-grid { grid-template-columns: repeat(2, 1fr); }
+  .test-grid { grid-template-columns: 1fr; }
 }
 @media (max-width: 768px) {
   nav { display: none; }
