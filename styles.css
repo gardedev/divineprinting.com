@@ -356,7 +356,7 @@ section { padding: 64px 24px; }
 /* FEATURES */
 .features-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  grid-template-columns: repeat(5, 1fr);
   gap: 28px;
 }
 .feature-card {
@@ -520,6 +520,10 @@ footer {
 /* RESPONSIVE */
 @media (max-width: 900px) {
   .footer-inner { grid-template-columns: 1fr 1fr; }
+  .features-grid { grid-template-columns: repeat(3, 1fr); }
+}
+@media (max-width: 600px) {
+  .features-grid { grid-template-columns: repeat(2, 1fr); }
 }
 @media (max-width: 768px) {
   nav { display: none; }
