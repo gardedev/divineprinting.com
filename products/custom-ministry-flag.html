@@ -45,6 +45,7 @@
   </script>
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
   <link rel="stylesheet" href="../styles.css"/><link rel="stylesheet" href="../product.css"/>
+  <script src="https://js.hcaptcha.com/1/api.js" async defer></script>
 </head>
 <body>
 <div class="topbar"><span>✝ Queens, NY Based — Serving Ministries Nationwide</span> &nbsp;|&nbsp; <span>⚡ Same-day production available</span></div><header><div class="nav-inner">
@@ -128,6 +129,7 @@
           <input type="checkbox" id="fconsent" required/>
           <label for="fconsent">I agree to be contacted by Divine Printing regarding this quote request. We respect your privacy and will never share your information.</label>
         </div>
+                <div class="h-captcha" data-sitekey="a5f28750-0a52-40f2-a1b0-eee4c19022ae" style="margin-bottom:16px;"></div>
         <button type="submit" class="btn-submit" id="submitBtn">✝ Send My Quote Request</button>
       </form>
       <div class="form-success" id="formSuccess" style="display:none;">
@@ -152,22 +154,31 @@
 async function submitQuote(e) {
   e.preventDefault();
   const btn = document.getElementById('submitBtn');
+  const captchaResponse = hcaptcha.getResponse();
+  if (!captchaResponse) {
+    alert('Please complete the CAPTCHA to continue.');
+    return;
+  }
   btn.textContent = 'Sending...'; btn.disabled = true;
   try {
+    const formData = new FormData(document.getElementById('quoteForm'));
+    formData.append('h-captcha-response', captchaResponse);
     const res = await fetch('https://formspree.io/f/xqeydkya', {
       method: 'POST',
-      body: new FormData(document.getElementById('quoteForm')),
+      body: formData,
       headers: { 'Accept': 'application/json' }
     });
     const json = await res.json();
     if (res.ok) {
-      window.location.href = '/thank-you.html';
+      window.location.href = '../thank-you.html';
     } else {
       btn.textContent='✝ Send My Quote Request'; btn.disabled=false;
+      hcaptcha.reset();
       alert((json.errors && json.errors.map(e=>e.message).join(', ')) || 'Something went wrong. Please try again.');
     }
   } catch(err) {
     btn.textContent='✝ Send My Quote Request'; btn.disabled=false;
+    hcaptcha.reset();
     alert('Network error. Please try again.');
   }
 }
