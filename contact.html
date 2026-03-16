@@ -22,6 +22,7 @@
   <link rel="apple-touch-icon" href="images/logo-192.png" />
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
   <link rel="stylesheet" href="styles.css"/>
+  <script src="https://js.hcaptcha.com/1/api.js" async defer></script>
   <style>
     body { background: #1a0d30; }
 
@@ -263,7 +264,7 @@
         <div class="ii-icon">📧</div>
         <div>
           <div class="ii-label">Email</div>
-          <div class="ii-value"><a href="mailto:chris@gardedev.com">chris@gardedev.com</a></div>
+          <div class="ii-value"><a href="mailto:support@divineprinting.com">support@divineprinting.com</a></div>
         </div>
       </div>
       <div class="info-item">
@@ -296,7 +297,6 @@
     <p class="sub">Fill out the form below and we'll get back to you within 1 business day.</p>
 
     <div id="formSuccess" class="form-success">
-      <div class="success-icon">🙏</div>
       <h3>Message Received!</h3>
       <p>Thank you for reaching out. We'll be in touch within 1 business day.<br/>God bless your ministry.</p>
     </div>
@@ -350,6 +350,7 @@
         <textarea name="message" placeholder="Tell us about your project, event, or question…" required></textarea>
       </div>
 
+      <div class="h-captcha" data-sitekey="a5f28750-0a52-40f2-a1b0-eee4c19022ae" style="margin-bottom:16px;"></div>
       <button type="submit" class="submit-btn" id="submitBtn">✝ Send Message</button>
       <p class="privacy-note">🔒 Your information is kept private and never shared.</p>
     </form>
@@ -399,12 +400,20 @@
 <script>
 async function submitContact(e) {
   e.preventDefault();
+  const token = hcaptcha.getResponse();
+  if (!token) {
+    alert('Please complete the CAPTCHA to continue.');
+    return;
+  }
   const btn = document.getElementById('submitBtn');
   btn.textContent = 'Sending…'; btn.disabled = true;
   try {
+    const formData = new FormData(document.getElementById('contactForm'));
+    formData.delete('h-captcha-response');
+    formData.append('h-captcha-response', token);
     const res = await fetch('https://formspree.io/f/xqeydkya', {
       method: 'POST',
-      body: new FormData(document.getElementById('contactForm')),
+      body: formData,
       headers: { 'Accept': 'application/json' }
     });
     const json = await res.json();
@@ -413,10 +422,12 @@ async function submitContact(e) {
       document.getElementById('formSuccess').style.display = 'block';
     } else {
       btn.textContent = '✝ Send Message'; btn.disabled = false;
+      hcaptcha.reset();
       alert((json.errors && json.errors.map(e => e.message).join(', ')) || 'Something went wrong. Please try again.');
     }
   } catch (err) {
     btn.textContent = '✝ Send Message'; btn.disabled = false;
+    hcaptcha.reset();
     alert('Network error. Please try again.');
   }
 }
