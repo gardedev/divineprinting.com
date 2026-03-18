@@ -1,0 +1,5 @@
+# AWS Amplify Redirects
+# Format: source destination status_code
+
+# Redirect all 404s to homepage
+/* /index.html 404
