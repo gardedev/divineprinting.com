@@ -1,5 +1,3 @@
 # AWS Amplify Redirects
-# Format: source destination status_code
-
-# Redirect all 404s to homepage
-/* /index.html 404
+# Redirect all 404s to homepage with 200 status (SPA behavior)
+/* /index.html 200
