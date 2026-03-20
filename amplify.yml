@@ -9,6 +9,15 @@ frontend:
       - '**/*'
   cache:
     paths: []
+  customHeaders:
+    - pattern: '**/*.html'
+      headers:
+        - key: 'Content-Type'
+          value: 'text/html; charset=utf-8'
+    - pattern: '**/*.css'
+      headers:
+        - key: 'Content-Type'
+          value: 'text/css; charset=utf-8'
   redirects:
     - source: '/**<>'
       target: '/index.html'
