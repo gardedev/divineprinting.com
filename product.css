@@ -1,4 +1,4 @@
-/* ── Product Page Styles ─────────────────────────────────────────────── */
+/* -- Product Page Styles ----------------------------------------------- */
 
 .breadcrumb {
   background: var(--off-white);
@@ -11,7 +11,7 @@
 .breadcrumb a:hover { text-decoration: underline; }
 .breadcrumb span { margin: 0 6px; color: var(--gray); }
 
-/* ── Product Hero ── */
+/* -- Product Hero -- */
 .product-hero {
   max-width: 1280px;
   margin: 48px auto;
@@ -70,7 +70,7 @@
   color: var(--gold);
 }
 
-/* ── Product Info Panel ── */
+/* -- Product Info Panel -- */
 .product-info {}
 .product-info .pi-category {
   font-size: .78rem;
@@ -145,7 +145,7 @@
   line-height: 1.5;
 }
 .pi-features li::before {
-  content: '✝';
+  content: '\271d';
   color: var(--gold);
   font-size: .85rem;
   flex-shrink: 0;
@@ -204,7 +204,7 @@
   flex-shrink: 0;
 }
 
-/* ── Description Section ── */
+/* -- Description Section -- */
 .product-desc {
   max-width: 1280px;
   margin: 0 auto 64px;
@@ -249,7 +249,7 @@
 .use-case-item:last-child { border-bottom: none; }
 .use-case-item .uc-icon { font-size: 1.2rem; }
 
-/* ── Quote / Contact Form ── */
+/* -- Quote / Contact Form -- */
 .quote-section {
   background: var(--purple);
   padding: 72px 24px;
@@ -370,7 +370,7 @@
 }
 .form-success p { color: rgba(255,255,255,.8); font-size: .95rem; }
 
-/* ── Related Products ── */
+/* -- Related Products -- */
 .related {
   max-width: 1280px;
   margin: 0 auto;
@@ -383,7 +383,7 @@
   margin-bottom: 32px;
 }
 
-/* ── Responsive ── */
+/* -- Responsive -- */
 @media (max-width: 900px) {
   .product-hero { grid-template-columns: 1fr; gap: 32px; }
   .product-gallery { position: static; }
