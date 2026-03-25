@@ -1,0 +1,225 @@
+{
+  "campaign_name": "Divine Printing - Church Lead Gen NYC",
+  "business": "Divine Printing",
+  "objective": "LEAD_GENERATION",
+  "conversion_event": "Lead",
+  "budget": {
+    "type": "daily",
+    "amount": 25,
+    "currency": "USD"
+  },
+  "bid_strategy": "LOWEST_COST",
+  "schedule": {
+    "start_date": "ASAP",
+    "end_date": "ONGOING"
+  },
+  "placement": "AUTOMATIC_PLACEMENTS",
+  "ad_sets": [
+    {
+      "name": "NYC Churches - Core Interest",
+      "budget": 12,
+      "audience": {
+        "locations": [
+          {
+            "type": "city",
+            "name": "New York, NY",
+            "radius": "25 miles"
+          }
+        ],
+        "age_min": 30,
+        "age_max": 65,
+        "interests": [
+          "Christianity",
+          "Church",
+          "Pastor",
+          "Ministry",
+          "Worship",
+          "Bible"
+        ],
+        "behaviors": [],
+        "language": "English",
+        "estimated_reach": "50K-150K"
+      },
+      "ads": [
+        {
+          "name": "Ad 1 - Free Consultation (Image)",
+          "headline": "Free Printing Consultation",
+          "primary_text": "Is your church's printing costing too much or looking unprofessional? Divine Printing specializes in church materials—bulletins, banners, flyers, and more. Get a free consultation with a church printing specialist. We serve churches throughout NYC.",
+          "description": "Serving NYC churches with quality printing",
+          "cta": "Get Quote",
+          "format": "Single Image",
+          "image_specs": {
+            "size": "1200x628",
+            "content": "Professional church banner or bulletin mockup with Divine Printing branding"
+          }
+        },
+        {
+          "name": "Ad 2 - Problem/Solution (Image)",
+          "headline": "Church Printing Made Easy",
+          "primary_text": "Tired of printing that doesn't reflect the quality of your ministry? We help NYC churches create professional bulletins, banners, and materials that make a great first impression. Free consultation—let's discuss your needs.",
+          "description": "Professional printing for NYC churches",
+          "cta": "Learn More",
+          "format": "Single Image",
+          "image_specs": {
+            "size": "1200x628",
+            "content": "Before/after comparison or church event with professional materials"
+          }
+        }
+      ]
+    },
+    {
+      "name": "NYC Churches - Lookalike (Future)",
+      "budget": 0,
+      "status": "PAUSED",
+      "notes": "Activate after collecting 100+ leads from Core Interest ad set. Create lookalike from customer list or lead form submitters.",
+      "audience": {
+        "locations": [
+          {
+            "type": "city",
+            "name": "New York, NY",
+            "radius": "40 miles"
+          }
+        ],
+        "age_min": 28,
+        "age_max": 68,
+        "lookalike_source": "Lead Form Submitters (100+)",
+        "lookalike_percentage": 1,
+        "estimated_reach": "100K-300K"
+      },
+      "ads": [
+        {
+          "name": "Ad 1 - Lookalike Creative",
+          "headline": "See Why Churches Choose Us",
+          "primary_text": "Churches throughout NYC trust Divine Printing for their bulletins, banners, and event materials. Join them and see why we're the preferred printing partner for ministries in the area. Free consultation available.",
+          "cta": "Get Quote",
+          "format": "Single Image"
+        }
+      ]
+    },
+    {
+      "name": "Retargeting - Website Visitors",
+      "budget": 8,
+      "audience": {
+        "locations": [
+          {
+            "type": "city",
+            "name": "New York, NY",
+            "radius": "40 miles"
+          }
+        ],
+        "custom_audience": "Website Visitors (30 days)",
+        "exclusions": ["Lead Form Submitters (all time)"],
+        "estimated_reach": "1K-5K"
+      },
+      "ads": [
+        {
+          "name": "Retargeting - Reminder",
+          "headline": "Still Need Printing Help?",
+          "primary_text": "You visited Divine Printing recently. Ready to get a quote for your church materials? We offer free consultations and fast turnaround for NYC churches. Let's talk about your next project.",
+          "description": "Free consultation for church printing",
+          "cta": "Get Quote",
+          "format": "Single Image",
+          "image_specs": {
+            "size": "1200x628",
+            "content": "Friendly reminder style with church printing imagery"
+          }
+        },
+        {
+          "name": "Retargeting - Social Proof",
+          "headline": "Join NYC Churches Who Trust Us",
+          "primary_text": "Don't let unprofessional printing hold your church back. We've helped dozens of NYC churches create materials that match the excellence of their ministry. Get your free consultation today.",
+          "cta": "Learn More",
+          "format": "Single Image"
+        }
+      ]
+    },
+    {
+      "name": "Video Views - Engagement",
+      "budget": 5,
+      "audience": {
+        "locations": [
+          {
+            "type": "city",
+            "name": "New York, NY",
+            "radius": "25 miles"
+          }
+        ],
+        "age_min": 30,
+        "age_max": 65,
+        "interests": [
+          "Christianity",
+          "Church",
+          "Pastor"
+        ],
+        "estimated_reach": "75K-200K"
+      },
+      "ads": [
+        {
+          "name": "Video - Church Printing Tips",
+          "headline": "3 Printing Mistakes Churches Make",
+          "primary_text": "Is your church making these common printing mistakes? Watch this 60-second video to find out—and learn how to fix them. Divine Printing helps NYC churches look their best.",
+          "cta": "Watch Video",
+          "format": "Video",
+          "video_specs": {
+            "duration": "15-60 seconds",
+            "aspect_ratio": "9:16 (vertical) or 1:1 (square)",
+            "content": "Quick tips video showing common church printing mistakes and solutions"
+          }
+        }
+      ]
+    }
+  ],
+  "lead_form": {
+    "name": "Divine Printing - Free Consultation",
+    "fields": [
+      "Full Name",
+      "Email",
+      "Phone Number",
+      "Church/Organization Name",
+      "What do you need printed? (Bulletins, Banners, Flyers, etc.)"
+    ],
+    "privacy_policy": "https://divineprinting.com/privacy",
+    "thank_you_message": "Thank you! We'll contact you within 24 hours to schedule your free consultation.",
+    "destination": "sales@divineprinting.com"
+  },
+  "tracking": {
+    "pixel_id": "CONFIGURED",
+    "conversion_event": "Lead",
+    "utm_parameters": {
+      "utm_source": "facebook",
+      "utm_medium": "paid",
+      "utm_campaign": "church_lead_gen_nyc"
+    }
+  },
+  "creative_assets_needed": [
+    {
+      "type": "Image",
+      "name": "Church Banner Mockup",
+      "size": "1200x628",
+      "description": "Professional church banner with Divine Printing branding"
+    },
+    {
+      "type": "Image", 
+      "name": "Bulletin Before/After",
+      "size": "1200x628",
+      "description": "Split image showing amateur vs professional church bulletin"
+    },
+    {
+      "type": "Video",
+      "name": "Printing Tips Video",
+      "duration": "15-30 seconds",
+      "description": "Quick tips on church printing mistakes"
+    }
+  ],
+  "testing_plan": {
+    "phase_1": "Week 1-2: Test Ad Set 1 with 2 image variants",
+    "phase_2": "Week 3-4: Add retargeting if website traffic sufficient",
+    "phase_3": "Week 5+: Add lookalike when 100+ leads collected",
+    "evaluation": "Pause any ad with CTR <1% or cost per lead >$30"
+  },
+  "success_metrics": {
+    "target_cost_per_lead": "$10-25",
+    "target_ctr": ">1.5%",
+    "target_lead_quality": "Schedule consultation with 50%+ of leads"
+  }
+}
