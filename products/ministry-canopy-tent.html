@@ -87,13 +87,17 @@ src="https://www.facebook.com/tr?id=2413483535782004&ev=PageView&noscript=1"
       <img loading="lazy" src="../images/canopy-tent.jpg" alt="Ministry Canopy Tent"/>
       <span class="img-badge">Popular</span>
     </div>
+    <div class="product-thumbs">
+      <img loading="lazy" src="../images/canopy-tent.jpg" alt="Ministry Canopy Tent Main View" class="thumb active" onclick="document.querySelector('.product-main-img img').src=this.src"/>
+      <img loading="lazy" src="../images/canopy-tent-config.jpg" alt="Canopy Tent Size and Configuration Options" class="thumb" onclick="document.querySelector('.product-main-img img').src=this.src"/>
+    </div>
     <div class="product-scripture">"The glory of the Lord filled the tabernacle"<cite>&mdash; Exodus 40:34</cite></div>
   </div>
   <div class="product-info">
     <div class="pi-category">&#10013; Event Displays</div>
     <h1>Ministry Canopy Tent</h1>
     <p class="pi-tagline">Custom branded canopy tents for outdoor outreach, fairs, and community events.</p>
-    <div class="pi-specs"><h4>Product Specifications</h4><div class="spec-row"><span class="spec-label">Sizes</span><span class="spec-value">10x10, 10x15, 10x20 ft</span></div><div class="spec-row"><span class="spec-label">Frame</span><span class="spec-value">Heavy-duty aluminum alloy</span></div><div class="spec-row"><span class="spec-label">Canopy</span><span class="spec-value">Polyester, full-color print</span></div><div class="spec-row"><span class="spec-label">Setup</span><span class="spec-value">Tool-free pop-up</span></div><div class="spec-row"><span class="spec-label">Includes</span><span class="spec-value">Carry bag + stakes</span></div></div>
+    <div class="pi-specs"><h4>Product Specifications</h4><div class="spec-row"><span class="spec-label">Sizes</span><span class="spec-value">10x10, 10x15, 10x20 ft</span></div><div class="spec-row"><span class="spec-label">Configurations</span><span class="spec-value">Type A (Open), B (1 Wall), C (3 Walls), D (Fully Enclosed)</span></div><div class="spec-row"><span class="spec-label">Frame</span><span class="spec-value">Heavy-duty aluminum alloy</span></div><div class="spec-row"><span class="spec-label">Canopy</span><span class="spec-value">Polyester, full-color print</span></div><div class="spec-row"><span class="spec-label">Setup</span><span class="spec-value">Tool-free pop-up</span></div><div class="spec-row"><span class="spec-label">Includes</span><span class="spec-value">Carry bag + stakes</span></div></div>
     <div class="pi-features"><h4>Key Features</h4><ul><li>Print your church name & branding on all panels</li><li>Sturdy aluminum frame for outdoor conditions</li><li>Three size options for any event scale</li><li>Full-color printing on roof, valances, and sidewalls</li><li>Removable sidewalls for versatile configurations</li></ul></div>
     <div class="pi-actions">
       <a href="#quote" class="btn-quote">&#10013; Request a Free Quote</a>
@@ -133,18 +137,27 @@ src="https://www.facebook.com/tr?id=2413483535782004&ev=PageView&noscript=1"
         </div>
         <div class="form-row">
           <div class="form-group"><label>Size / Dimensions</label>
-            <select name="size"><option value="">Select a size...</option><option value="10x10 ft">10x10 ft</option><option value="10x15 ft">10x15 ft</option><option value="10x20 ft">10x20 ft</option><option value="Custom / Other">Custom / Other</option></select>
+            <select name="size"><option value="">Select a size...</option><option value="10x10 ft">10x10 ft (3x3m)</option><option value="10x15 ft">10x15 ft (3x4.5m)</option><option value="10x20 ft">10x20 ft (3x6m)</option><option value="Custom / Other">Custom / Other</option></select>
           </div>
-          <div class="form-group"><label>Quantity Needed</label>
-            <select name="quantity"><option value="">Select quantity...</option><option>1</option><option>2&ndash;5</option><option>6&ndash;10</option><option>11&ndash;25</option><option>26&ndash;50</option><option>51&ndash;100</option><option>100+</option></select>
+          <div class="form-group"><label>Sidewall Configuration</label>
+            <select name="configuration"><option value="">Select configuration...</option><option value="Type A - Canopy Only">Type A - Canopy Only (No Walls)</option><option value="Type B - Back Wall">Type B - Back Wall Only</option><option value="Type C - Three Walls">Type C - Three Walls (Back + 2 Sides)</option><option value="Type D - Fully Enclosed">Type D - Fully Enclosed (4 Walls + Door)</option></select>
           </div>
         </div>
         <div class="form-row">
+          <div class="form-group"><label>Quantity Needed</label>
+            <select name="quantity"><option value="">Select quantity...</option><option>1</option><option>2&ndash;5</option><option>6&ndash;10</option><option>11&ndash;25</option><option>26&ndash;50</option><option>51&ndash;100</option><option>100+</option></select>
+          </div>
           <div class="form-group"><label>When do you need it?</label>
             <select name="timeline"><option value="">Select timeline...</option><option>Same day (rush)</option><option>1&ndash;3 business days</option><option>1 week</option><option>2 weeks</option><option>1 month or more</option><option>Flexible</option></select>
           </div>
+        </div>
+        <div class="form-row">
           <div class="form-group"><label>Do you have a design ready?</label>
             <select name="design"><option value="">Select...</option><option>Yes &mdash; I have print-ready artwork</option><option>Partially &mdash; I have a logo / assets</option><option>No &mdash; I need design help</option><option>I would like to use a template</option></select>
+          </div>
+          <div class="form-group"><label>Logo/Graphics Upload</label>
+            <input type="file" name="file_upload" accept=".jpg,.jpeg,.png,.pdf,.ai,.eps" style="padding:8px 0;"/>
+            <small style="color:rgba(255,255,255,0.6);font-size:0.8rem;">Accepted: JPG, PNG, PDF, AI, EPS (Max 10MB)</small>
           </div>
         </div>
         <div class="form-group"><label>Additional Details / Notes</label>
