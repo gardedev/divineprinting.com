@@ -15,7 +15,31 @@ const crossSVGs = {
 
 const crossNames = { classic: 'Classic', celtic: 'Celtic', ornate: 'Ornate', flame: 'Flame', royal: 'Royal', emerald: 'Emerald', silver: 'Silver', heart: 'Heart', dove: 'Dove', ichthys: 'Ichthys' };
 
-let state = { text: '', cross: 'classic', shirtColor: '#FFFFFF', printColor: '#1a1a1a', position: 'center', font: 'Cinzel', uploadedImage: null, textX: null, textY: null };
+let state = { text: '', cross: 'classic', shirtColor: '#FFFFFF', printColor: '#1a1a1a', position: 'center', font: 'Cinzel', uploadedImage: null, textX: null, textY: null, selectedElement: null };
+
+// Arrow key movement
+const MOVE_STEP = 2;
+document.addEventListener('keydown', (e) => {
+  if (!state.selectedElement) return;
+  
+  if (!state.textX) {
+    // Initialize to default position if not set
+    let cx, cy, scale;
+    if (state.position === 'center') { cx = 200; cy = 110; scale = 70; }
+    else if (state.position === 'left') { cx = 140; cy = 100; scale = 50; }
+    else { cx = 200; cy = 180; scale = 100; }
+    state.textX = cx;
+    state.textY = cy + scale/2 + (state.position === 'back' ? 40 : 25);
+  }
+  
+  switch(e.key) {
+    case 'ArrowUp': state.textY -= MOVE_STEP; e.preventDefault(); break;
+    case 'ArrowDown': state.textY += MOVE_STEP; e.preventDefault(); break;
+    case 'ArrowLeft': state.textX -= MOVE_STEP; e.preventDefault(); break;
+    case 'ArrowRight': state.textX += MOVE_STEP; e.preventDefault(); break;
+  }
+  drawPreview();
+});
 
 function init() {
   const crossSelector = document.getElementById('crossSelector');
@@ -47,9 +71,29 @@ function init() {
 
   document.getElementById('tshirtCanvas').addEventListener('click', (e) => {
     const canvas = e.target, rect = canvas.getBoundingClientRect();
-    state.textX = (e.clientX - rect.left) * (canvas.width / rect.width);
-    state.textY = (e.clientY - rect.top) * (canvas.height / rect.height);
-    document.getElementById('positionHint').textContent = 'Text positioned';
+    const clickX = (e.clientX - rect.left) * (canvas.width / rect.width);
+    const clickY = (e.clientY - rect.top) * (canvas.height / rect.height);
+    
+    // Check if clicking near existing text
+    let cx, cy, scale;
+    if (state.position === 'center') { cx = 200; cy = 110; scale = 70; }
+    else if (state.position === 'left') { cx = 140; cy = 100; scale = 50; }
+    else { cx = 200; cy = 180; scale = 100; }
+    
+    const textX = state.textX || cx;
+    const textY = state.textY || (cy + scale/2 + (state.position === 'back' ? 40 : 25));
+    
+    // If clicking near text, select it; otherwise move it
+    const dist = Math.sqrt(Math.pow(clickX - textX, 2) + Math.pow(clickY - textY, 2));
+    if (dist < 50) {
+      state.selectedElement = 'text';
+      document.getElementById('positionHint').textContent = 'Text selected - use arrow keys to move';
+    } else {
+      state.textX = clickX;
+      state.textY = clickY;
+      state.selectedElement = 'text';
+      document.getElementById('positionHint').textContent = 'Text positioned - use arrow keys to fine-tune';
+    }
     drawPreview();
   });
 
@@ -57,7 +101,7 @@ function init() {
 }
 
 function resetTextPosition() {
-  state.textX = null; state.textY = null;
+  state.textX = null; state.textY = null; state.selectedElement = null;
   document.getElementById('positionHint').textContent = 'Click on the shirt preview to place your text';
   drawPreview();
 }
@@ -177,11 +221,30 @@ function drawPreview() {
   }
   
   if (state.text) {
+    const x = state.textX || cx;
+    const y = state.textY || (cy + scale/2 + (state.position === 'back' ? 40 : 25));
+    
+    // Draw dashed border if text is selected
+    if (state.selectedElement === 'text') {
+      ctx.save();
+      ctx.strokeStyle = '#3d1a6e';
+      ctx.lineWidth = 2;
+      ctx.setLineDash([5, 5]);
+      ctx.font = (state.position === 'left' ? 12 : (state.position === 'back' ? 22 : 16)) + 'px ' + state.font;
+      const metrics = ctx.measureText(state.text);
+      const padding = 8;
+      ctx.strokeRect(
+        x - metrics.width/2 - padding,
+        y - (state.position === 'back' ? 11 : 8) - padding,
+        metrics.width + padding*2,
+        (state.position === 'back' ? 22 : 16) + padding*2
+      );
+      ctx.restore();
+    }
+    
     ctx.fillStyle = state.printColor; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     let fontSize = state.position === 'left' ? 12 : (state.position === 'back' ? 22 : 16);
     ctx.font = fontSize + 'px ' + state.font;
-    const x = state.textX || cx;
-    const y = state.textY || (cy + scale/2 + (state.position === 'back' ? 40 : 25));
     ctx.fillText(state.text, x, y);
   }
 }
