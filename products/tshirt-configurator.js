@@ -437,7 +437,9 @@ function drawPreview() {
   ctx.imageSmoothingEnabled = true;
   ctx.imageSmoothingQuality = 'high';
   
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  // Clear with white background for better quality
+  ctx.fillStyle = '#f8f6fb';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
   
   drawTShirt(ctx, 50, 20, 300, 360, state.shirtColor);
   
