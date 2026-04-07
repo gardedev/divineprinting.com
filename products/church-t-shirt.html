@@ -86,7 +86,7 @@
   
   <div class="configurator-wrap">
     <div class="preview-panel">
-      <canvas id="tshirtCanvas" width="400" height="400"></canvas>
+      <canvas id="tshirtCanvas" width="800" height="800" style="width:400px;height:400px;"></canvas>
       <p class="preview-note">Digital preview - actual colors may vary slightly</p>
       <p class="preview-hint">Tap/click to select → Drag to move → Arrow keys to fine-tune → + Add Text for more</p>
     </div>
@@ -114,7 +114,13 @@
         .church-text-input { width: 100%; padding: 10px 12px; border: 2px solid #e8e2f5; border-radius: 8px; font-size: 0.95rem; margin-bottom: 8px; }
         .church-text-input.active { border-color: var(--purple); }
         .church-text-input:focus { outline: none; border-color: var(--gold); }
-        .font-select-small { width: 100%; padding: 8px 12px; border: 2px solid #e8e2f5; border-radius: 8px; font-size: 0.9rem; }
+        .text-controls-row { display: flex; gap: 8px; margin-bottom: 8px; }
+        .font-select-small { flex: 1; padding: 8px 12px; border: 2px solid #e8e2f5; border-radius: 8px; font-size: 0.9rem; }
+        .color-picker-small { width: 40px; height: 36px; border: 2px solid #e8e2f5; border-radius: 8px; cursor: pointer; padding: 2px; }
+        .size-control { display: flex; flex-direction: column; gap: 4px; }
+        .size-control label { font-size: 0.8rem; color: var(--gray); }
+        .size-slider { width: 100%; cursor: pointer; }
+        #tshirtCanvas { image-rendering: -webkit-optimize-contrast; image-rendering: crisp-edges; }
       </style>
       
       <div class="text-position-hint" id="positionHint">

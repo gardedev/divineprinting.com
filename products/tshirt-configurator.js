@@ -15,7 +15,7 @@ const crossSVGs = {
 
 const crossNames = { classic: 'Classic', celtic: 'Celtic', ornate: 'Ornate', flame: 'Flame', royal: 'Royal', emerald: 'Emerald', silver: 'Silver', heart: 'Heart', dove: 'Dove', ichthys: 'Ichthys' };
 
-// State with multiple text support
+// State with multiple text support - each text has its own color and size
 let state = {
   cross: 'classic',
   shirtColor: '#FFFFFF',
@@ -26,7 +26,7 @@ let state = {
   crossY: null,
   selectedElement: null, // 'cross' or text index
   texts: [
-    { id: 0, text: '', x: null, y: null, font: 'Cinzel', size: 16 }
+    { id: 0, text: '', x: null, y: null, font: 'Cinzel', size: 16, color: '#1a1a1a' }
   ]
 };
 
@@ -165,7 +165,8 @@ function addTextInstance() {
     x: cx + (Math.random() - 0.5) * 40,
     y: (cy + scale/2 + 40) + state.texts.length * 25,
     font: 'Cinzel',
-    size: 16
+    size: 16,
+    color: state.printColor
   });
   renderTextControls();
 }
@@ -183,30 +184,37 @@ function removeTextInstance(id) {
 function renderTextControls() {
   const container = document.getElementById('textControlsContainer');
   if (!container) return;
-  
+
   container.innerHTML = state.texts.map((textObj, index) => `
     <div class="text-instance ${state.selectedElement === textObj.id ? 'selected' : ''}" data-id="${textObj.id}">
       <div class="text-instance-header">
         <label>Text ${index + 1}</label>
         ${state.texts.length > 1 ? `<button onclick="removeTextInstance(${textObj.id})" class="remove-text-btn">&times;</button>` : ''}
       </div>
-      <input type="text" 
+      <input type="text"
         class="church-text-input ${state.selectedElement === textObj.id ? 'active' : ''}"
-        placeholder="Enter text..." 
+        placeholder="Enter text..."
         value="${textObj.text}"
         oninput="updateText(${textObj.id}, this.value)"
         onfocus="selectText(${textObj.id})"
       />
-      <select onchange="updateTextFont(${textObj.id}, this.value)" class="font-select-small">
-        <option value="Cinzel" ${textObj.font === 'Cinzel' ? 'selected' : ''}>Cinzel</option>
-        <option value="Inter" ${textObj.font === 'Inter' ? 'selected' : ''}>Inter</option>
-        <option value="Georgia" ${textObj.font === 'Georgia' ? 'selected' : ''}>Georgia</option>
-        <option value="Brush Script MT" ${textObj.font === 'Brush Script MT' ? 'selected' : ''}>Script</option>
-        <option value="Impact" ${textObj.font === 'Impact' ? 'selected' : ''}>Impact</option>
-        <option value="Playfair Display" ${textObj.font === 'Playfair Display' ? 'selected' : ''}>Playfair</option>
-        <option value="Oswald" ${textObj.font === 'Oswald' ? 'selected' : ''}>Oswald</option>
-        <option value="Lobster" ${textObj.font === 'Lobster' ? 'selected' : ''}>Lobster</option>
-      </select>
+      <div class="text-controls-row">
+        <select onchange="updateTextFont(${textObj.id}, this.value)" class="font-select-small">
+          <option value="Cinzel" ${textObj.font === 'Cinzel' ? 'selected' : ''}>Cinzel</option>
+          <option value="Inter" ${textObj.font === 'Inter' ? 'selected' : ''}>Inter</option>
+          <option value="Georgia" ${textObj.font === 'Georgia' ? 'selected' : ''}>Georgia</option>
+          <option value="Brush Script MT" ${textObj.font === 'Brush Script MT' ? 'selected' : ''}>Script</option>
+          <option value="Impact" ${textObj.font === 'Impact' ? 'selected' : ''}>Impact</option>
+          <option value="Playfair Display" ${textObj.font === 'Playfair Display' ? 'selected' : ''}>Playfair</option>
+          <option value="Oswald" ${textObj.font === 'Oswald' ? 'selected' : ''}>Oswald</option>
+          <option value="Lobster" ${textObj.font === 'Lobster' ? 'selected' : ''}>Lobster</option>
+        </select>
+        <input type="color" value="${textObj.color}" onchange="updateTextColor(${textObj.id}, this.value)" class="color-picker-small" title="Text color">
+      </div>
+      <div class="size-control">
+        <label>Size: <span id="size-label-${textObj.id}">${textObj.size}px</span></label>
+        <input type="range" min="10" max="48" value="${textObj.size}" oninput="updateTextSize(${textObj.id}, this.value)" class="size-slider">
+      </div>
     </div>
   `).join('');
 }
@@ -223,6 +231,24 @@ function updateTextFont(id, font) {
   const textObj = state.texts.find(t => t.id === id);
   if (textObj) {
     textObj.font = font;
+    drawPreview();
+  }
+}
+
+function updateTextColor(id, color) {
+  const textObj = state.texts.find(t => t.id === id);
+  if (textObj) {
+    textObj.color = color;
+    drawPreview();
+  }
+}
+
+function updateTextSize(id, size) {
+  const textObj = state.texts.find(t => t.id === id);
+  if (textObj) {
+    textObj.size = parseInt(size);
+    const label = document.getElementById(`size-label-${id}`);
+    if (label) label.textContent = size + 'px';
     drawPreview();
   }
 }
@@ -406,6 +432,11 @@ function drawCross(ctx, cx, cy, size, color, style) {
 function drawPreview() {
   const canvas = document.getElementById('tshirtCanvas');
   const ctx = canvas.getContext('2d');
+  
+  // Enable high quality rendering
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = 'high';
+  
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   
   drawTShirt(ctx, 50, 20, 300, 360, state.shirtColor);
@@ -458,7 +489,8 @@ function drawPreview() {
       ctx.restore();
     }
     
-    ctx.fillStyle = state.printColor;
+    // Use text's individual color, or fall back to global print color
+    ctx.fillStyle = textObj.color || state.printColor;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.font = textObj.size + 'px ' + textObj.font;
