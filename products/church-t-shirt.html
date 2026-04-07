@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Custom Church T-Shirts | Ministry Apparel - Divine Printing</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="../styles.css"/>
+<link rel="stylesheet" href="../product.css"/>
+<style>
+:root { --purple: #3d1a6e; --gold: #c9a227; --gold-pale: #f5efe0; --dark: #1a0d30; --gray: #6b5b7a; }
+.configurator-section { max-width: 1280px; margin: 48px auto; padding: 0 24px; }
+.configurator-section h2 { font-family: 'Cinzel', serif; color: var(--purple); font-size: 1.8rem; margin-bottom: 8px; text-align: center; }
+.configurator-section .subtitle { text-align: center; color: var(--gray); margin-bottom: 32px; }
+.configurator-wrap { display: grid; grid-template-columns: 1fr 1fr; gap: 48px; background: #fff; border-radius: 20px; padding: 32px; box-shadow: 0 4px 24px rgba(61,26,110,.1); }
+.preview-panel { display: flex; flex-direction: column; align-items: center; }
+#tshirtCanvas { width: 100%; max-width: 400px; height: 400px; border-radius: 16px; background: #f8f6fb; box-shadow: 0 4px 16px rgba(0,0,0,.08); }
+.preview-note { margin-top: 16px; font-size: .85rem; color: var(--gray); text-align: center; }
+.controls-panel { display: flex; flex-direction: column; gap: 20px; }
+.control-group { display: flex; flex-direction: column; gap: 8px; }
+.control-group label { font-weight: 600; color: var(--purple); font-size: .9rem; }
+.control-group input[type="text"], .control-group select { padding: 12px 16px; border: 2px solid #e8e2f5; border-radius: 10px; font-size: 1rem; }
+.control-group input:focus, .control-group select:focus { outline: none; border-color: var(--gold); }
+.cross-selector { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+.cross-option { width: 100%; aspect-ratio: 1; border: 2px solid #e8e2f5; border-radius: 12px; cursor: pointer; display: flex; align-items: center; justify-content: center; background: #fff; }
+.cross-option:hover { border-color: var(--gold); }
+.cross-option.selected { border-color: var(--purple); background: var(--gold-pale); }
+.cross-option svg { width: 40px; height: 40px; }
+.color-options { display: flex; gap: 12px; flex-wrap: wrap; }
+.color-option { width: 40px; height: 40px; border-radius: 50%; cursor: pointer; border: 3px solid transparent; box-shadow: 0 2px 4px rgba(0,0,0,.1); }
+.color-option:hover { transform: scale(1.1); }
+.color-option.selected { border-color: var(--purple); box-shadow: 0 0 0 2px #fff, 0 0 0 4px var(--purple); }
+.upload-area { border: 2px dashed #c9a227; border-radius: 12px; padding: 24px; text-align: center; background: var(--gold-pale); cursor: pointer; }
+.upload-area:hover { background: #f5efe0; }
+.upload-area input[type="file"] { display: none; }
+.snipcart-btn { background: linear-gradient(135deg, #3d1a6e 0%, #5a2d8a 100%); color: #fff; border: none; padding: 16px 32px; border-radius: 12px; font-size: 1.1rem; font-weight: 600; cursor: pointer; margin-top: 16px; width: 100%; }
+.snipcart-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(61,26,110,.3); }
+.price-display { text-align: center; padding: 16px; background: var(--gold-pale); border-radius: 12px; margin-bottom: 16px; }
+.price-display .price { font-size: 2rem; font-weight: 700; color: var(--purple); }
+@media (max-width: 900px) { .configurator-wrap { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<div class="topbar"><span>&#10013; Queens, NY Based - Serving Ministries Nationwide</span></div>
+<header><div class="nav-inner">
+  <a href="../index.html" class="logo"><div class="logo-icon"><img src="../images/logo-icon.png" alt="Divine Printing Logo" /></div><div class="logo-text"><div class="brand">Divine Printing</div><div class="tagline">Crafted for the Kingdom</div></div></a>
+  <nav><a href="../index.html">Home</a><a href="../index.html#banners">Banners</a><a href="../index.html#events">Events</a><a href="../index.html#signage">Signs</a><a href="#designer" class="nav-cta">Design Your Shirt</a></nav>
+</div></header>
+
+<div class="product-hero">
+  <div class="product-gallery">
+    <div class="product-main-img">
+      <canvas id="heroCanvas" width="400" height="300" style="width:100%;height:100%;"></canvas>
+      <span class="img-badge">New</span>
+    </div>
+    <div class="product-scripture">"Clothe yourselves with compassion, kindness, humility"<cite>- Colossians 3:12</cite></div>
+  </div>
+  <div class="product-info">
+    <div class="pi-category">&#10013; Apparel</div>
+    <h1>Custom Church T-Shirts</h1>
+    <p class="pi-tagline">Wear your faith. Custom designs for your ministry, event, or congregation.</p>
+    <div class="pi-specs">
+      <h4>Product Specifications</h4>
+      <div class="spec-row"><span class="spec-label">Material</span><span class="spec-value">100% Cotton or Cotton/Poly Blend</span></div>
+      <div class="spec-row"><span class="spec-label">Sizes</span><span class="spec-value">S - 5XL</span></div>
+      <div class="spec-row"><span class="spec-label">Print</span><span class="spec-value">Screen Print or DTG</span></div>
+      <div class="spec-row"><span class="spec-label">Colors</span><span class="spec-value">7 Colors Available</span></div>
+    </div>
+    <div class="pi-features">
+      <h4>Key Features</h4>
+      <ul><li>8 unique cross designs</li><li>Upload your own logo</li><li>Custom church name</li><li>Bulk discounts</li></ul>
+    </div>
+    <div class="pi-actions">
+      <a href="#designer" class="btn-quote">&#10013; Design Your Shirt</a>
+    </div>
+  </div>
+</div>
+
+<section class="configurator-section" id="designer">
+  <h2>Design Your Custom T-Shirt</h2>
+  <p class="subtitle">Choose a template or upload your own design. Preview in real-time.</p>
+  
+  <div class="configurator-wrap">
+    <div class="preview-panel">
+      <canvas id="tshirtCanvas" width="400" height="400"></canvas>
+      <p class="preview-note">Digital preview - actual colors may vary slightly</p>
+    </div>
+    
+    <div class="controls-panel">
+      <div class="price-display">
+        <div class="price" id="priceDisplay">From $15.00</div>
+        <small>Per shirt for 25+ qty. Pricing adjusts based on quantity.</small>
+      </div>
+      
+      <div class="control-group">
+        <label>Your Church Name / Text</label>
+        <input type="text" id="churchText" placeholder="Grace Community Church" maxlength="30">
+      </div>
+      
+      <div class="control-group">
+        <label>Choose a Cross Design</label>
+        <div class="cross-selector" id="crossSelector"></div>
+      </div>
+      
+      <div class="control-group">
+        <label>T-Shirt Color</label>
+        <div class="color-options" id="shirtColors">
+          <div class="color-option selected" data-color="#FFFFFF" style="background:#fff;border:1px solid #ddd;" title="White"></div>
+          <div class="color-option" data-color="#1a1a1a" style="background:#1a1a1a;" title="Black"></div>
+          <div class="color-option" data-color="#1a237e" style="background:#1a237e;" title="Navy"></div>
+          <div class="color-option" data-color="#c62828" style="background:#c62828;" title="Red"></div>
+          <div class="color-option" data-color="#3d1a6e" style="background:#3d1a6e;" title="Purple"></div>
+          <div class="color-option" data-color="#c9a227" style="background:#c9a227;" title="Gold"></div>
+          <div class="color-option" data-color="#1b5e20" style="background:#1b5e20;" title="Forest Green"></div>
+        </div>
+      </div>
+      
+      <div class="control-group">
+        <label>Print Color</label>
+        <div class="color-options" id="printColors">
+          <div class="color-option" data-color="#FFFFFF" style="background:#fff;border:1px solid #ddd;" title="White"></div>
+          <div class="color-option selected" data-color="#1a1a1a" style="background:#1a1a1a;" title="Black"></div>
+          <div class="color-option" data-color="#c9a227" style="background:#c9a227;" title="Gold"></div>
+          <div class="color-option" data-color="#c62828" style="background:#c62828;" title="Red"></div>
+          <div class="color-option" data-color="#1a237e" style="background:#1a237e;" title="Navy"></div>
+        </div>
+      </div>
+      
+      <div class="control-group">
+        <label>Position</label>
+        <select id="positionSelect">
+          <option value="center">Center Chest</option>
+          <option value="left">Left Chest</option>
+          <option value="back">Full Back</option>
+        </select>
+      </div>
+      
+      <div class="control-group">
+        <label>Font Style</label>
+        <select id="fontSelect">
+          <option value="serif">Classic Serif</option>
+          <option value="sans">Modern Sans</option>
+          <option value="script">Elegant Script</option>
+          <option value="bold">Bold Block</option>
+        </select>
+      </div>
+      
+      <div class="control-group">
+        <label>Upload Your Own Design</label>
+        <div class="upload-area" onclick="document.getElementById('fileUpload').click()">
+          <input type="file" id="fileUpload" accept="image/*" onchange="handleFileUpload(event)">
+          <div>&#128194; Click to upload logo/artwork</div>
+          <small>PNG, JPG, SVG (max 5MB)</small>
+        </div>
+        <div id="uploadedFileName"></div>
+      </div>
+      
+      <button class="snipcart-btn snipcart-add-item" data-item-id="church-t-shirt" data-item-name="Custom Church T-Shirt" data-item-price="15.00" data-item-url="https://www.divineprinting.com/products/church-t-shirt.html" data-item-description="Custom church t-shirt with cross design" data-item-custom1-name="Church Name" data-item-custom2-name="Cross Design" data-item-custom3-name="T-Shirt Color" data-item-custom4-name="Print Color" data-item-custom5-name="Position" data-item-custom6-name="Quantity" data-item-custom6-options="1-5[$25.00]|6-10[$22.00]|11-24[$18.00]|25-49[$15.00]|50-99[$13.00]|100+[$11.00]">
+        &#128722; Add to Cart - $15.00
+      </button>
+    </div>
+  </div>
+</section>
+
+<script>
+// Cross SVG paths
+const crossPaths = {
+  traditional: 'M45,10 L45,45 L10,45 L10,55 L45,55 L45,90 L55,90 L55,55 L90,55 L90,45 L55,45 L55,10 Z',
+  celtic: 'M50,15 L50,85 M15,50 L85,50 M50,50 m-12,0 a12,12 0 1,0 24,0 a12,12 0 1,0 -24,0 M50,50 m-35,0 a35,35 0 1,0 70,0 a35,35 0 1,0 -70,0',
+  orthodox: 'M45,5 L45,45 L15,45 L15,55 L45,55 L45,95 L55,95 L55,55 L85,55 L85,45 L55,45 L55,5 Z M25,35 L17,30 M25,65 L17,70 M75,35 L83,30 M75,65 L83,70',
+  simple: 'M42,5 L42,42 L5,42 L5,58 L42,58 L42,95 L58,95 L58,58 L95,58 L95,42 L58,42 L58,5 Z',
+  flowing: 'M48,5 Q46,20 38,30 Q50,35 48,50 Q50,35 62,30 Q54,20 52,5 Z M5,48 Q20,50 30,58 Q35,46 50,48 Q35,50 30,38 Q20,46 5,48 Z',
+  stained: 'M50,5 L35,35 L5,50 L35,65 L50,95 L65,65 L95,50 L65,35 Z',
+  crown: 'M50,15 L50,85 M15,50 L85,50 M50,50 m-8,0 a8,8 0 1,0 16,0 a8,8 0 1,0 -16,0 M50,50 m-38,0 a38,38 0 1,0 76,0 a38,38 0 1,0 -76,0',
+  resurrection: 'M45,20 L45,80 M55,20 L55,80 M25,40 L50,15 L75,40 M50,15 m-8,0 a8,8 0 1,0 16,0 a8,8 0 1,0 -16,0'
+};
+
+const crossNames = { traditional:'Traditional', celtic:'Celtic', orthodox:'Orthodox', simple:'Simple', flowing:'Flowing', stained:'Stained Glass', crown:'Crown of Thorns', resurrection:'Resurrection' };
+
+let state = { text:'', cross:'traditional', shirtColor:'#FFFFFF', printColor:'#1a1a1a', position:'center', font:'serif', uploadedImage:null };
+
+// Initialize cross selector
+const crossSelector = document.getElementById('crossSelector');
+Object.keys(crossPaths).forEach(key => {
+  const div = document.createElement('div');
+  div.className = 'cross-option' + (key === state.cross ? ' selected' : '');
+  div.innerHTML = `<svg viewBox="0 0 100 100"><path d="${crossPaths[key]}" fill="none" stroke="#3d1a6e" stroke-width="4"/></svg>`;
+  div.onclick = () => { state.cross = key; document.querySelectorAll('.cross-option').forEach(el => el.classList.remove('selected')); div.classList.add('selected'); drawPreview(); };
+  crossSelector.appendChild(div);
+});
+
+// Color pickers
+document.querySelectorAll('#shirtColors .color-option').forEach(el => {
+  el.onclick = () => { state.shirtColor = el.dataset.color; document.querySelectorAll('#shirtColors .color-option').forEach(c => c.classList.remove('selected')); el.classList.add('selected'); drawPreview(); };
+});
+
+document.querySelectorAll('#printColors .color-option').forEach(el => {
+  el.onclick = () => { state.printColor = el.dataset.color; document.querySelectorAll('#printColors .color-option').forEach(c => c.classList.remove('selected')); el.classList.add('selected'); drawPreview(); };
+});
+
+// Text input
+document.getElementById('churchText').addEventListener('input', (e) => { state.text = e.target.value; drawPreview(); });
+
+// Position & Font
+document.getElementById('positionSelect').addEventListener('change', (e) => { state.position = e.target.value; drawPreview(); });
+document.getElementById('fontSelect').addEventListener('change', (e) => { state.font = e.target.value; drawPreview(); });
+
+// File upload
+function handleFileUpload(e) {
+  const file = e.target.files[0];
+  if (file) {
+    document.getElementById('uploadedFileName').textContent = 'Uploaded: ' + file.name;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const img = new Image();
+      img.onload = () => { state.uploadedImage = img; drawPreview(); };
+      img.src = ev.target.result;
+    };
+    reader.readAsDataURL(file);
+  }
+}
+
+// Draw t-shirt preview
+function drawTShirt(ctx, x, y, w, h, color) {
+  ctx.save();
+  ctx.fillStyle = color;
+  ctx.strokeStyle = '#ddd';
+  ctx.lineWidth = 2;
+  
+  // Body
+  ctx.beginPath();
+  ctx.moveTo(x + w*0.25, y + h*0.15);
+  ctx.lineTo(x + w*0.75, y + h*0.15);
+  ctx.lineTo(x + w*0.85, y + h*0.25);
+  ctx.lineTo(x + w*0.75, y + h*0.35);
+  ctx.lineTo(x + w*0.75, y + h*0.9);
+  ctx.quadraticCurveTo(x + w*0.5, y + h*0.95, x + w*0.25, y + h*0.9);
+  ctx.lineTo(x + w*0.25, y + h*0.35);
+  ctx.lineTo(x + w*0.15, y + h*0.25);
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+  
+  // Collar
+  ctx.beginPath();
+  ctx.moveTo(x + w*0.35, y + h*0.15);
+  ctx.quadraticCurveTo(x + w*0.5, y + h*0.22, x + w*0.65, y + h*0.15);
+  ctx.strokeStyle = '#bbb';
+  ctx.stroke();
+  
+  // Sleeves
+  ctx.beginPath();
+  ctx.moveTo(x + w*0.15, y + h*0.25);
+  ctx.lineTo(x + w*0.05, y + h*0.35);
+  ctx.lineTo(x + w*0.15, y + h*0.45);
+  ctx.fillStyle = color;
+  ctx.fill();
+  ctx.strokeStyle = '#ddd';
+  ctx.stroke();
+  
+  ctx.beginPath();
+  ctx.moveTo(x + w*0.85, y + h*0.25);
+  ctx.lineTo(x + w*0.95, y + h*0.35);
+  ctx.lineTo(x + w*0.85, y + h*0.45);
+  ctx.fill();
+  ctx.stroke();
+  
+  ctx.restore();
+}
+
+// Draw cross
+function drawCross(ctx, cx, cy, size, color, style) {
+  ctx.save();
+  ctx.strokeStyle = color;
+  ctx.fillStyle = color;
+  ctx.lineWidth = size * 0.08;
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  
+  const path = new Path2D(crossPaths[style]);
+  ctx.translate(cx - 50 * size/100, cy - 50 * size/100);
+  ctx.scale(size/100, size/100);
+  
+  if (style === 'celtic' || style === 'crown' || style === 'orthodox' || style === 'resurrection') {
+    ctx.stroke(path);
+  } else {
+    ctx.fill(path);
+  }
+  ctx.restore();
+}
+
+// Main draw function
+function drawPreview() {
+  const canvas = document.getElementById('tshirtCanvas');
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  
+  // Draw t-shirt
+  drawTShirt(ctx, 50, 20, 300, 360, state.shirtColor);
+  
+  // Calculate design position
+  let cx, cy, scale;
+  if (state.position === 'center') {
+    cx = 200; cy = 140; scale = 80;
+  } else if (state.position === 'left') {
+    cx = 130; cy = 100; scale = 50;
+  } else {
+    cx = 200; cy = 180; scale = 100;
+  }
+  
+  // Draw uploaded image or cross
+  if (state.uploadedImage) {
+    const aspect = state.uploadedImage.width / state.uploadedImage.height;
+    const dw = scale * (aspect > 1 ? 1 : aspect);
+    const dh = scale / (aspect > 1 ? aspect : 1);
+    ctx.drawImage(state.uploadedImage, cx - dw/2, cy - dh/2, dw, dh);
+  } else {
+    drawCross(ctx, cx, cy, scale, state.printColor, state.cross);
+  }
+  
+  // Draw text
+  if (state.text) {
+    ctx.fillStyle = state.printColor;
+    ctx.textAlign = 'center';
+    let fontSize = state.position === 'left' ? 14 : 18;
+    let fontFamily = state.font === 'serif' ? 'Georgia' : state.font === 'sans' ? 'Arial' : state.font === 'script' ? 'Brush Script MT' : 'Impact';
+    ctx.font = (state.font === 'bold' ? 'bold ' : '') + fontSize + 'px ' + fontFamily;
+    
+    const textY = state.position === 'back' ? cy + scale/2 + 30 : cy + scale/2 + 25;
+    ctx.fillText(state.text, cx, textY);
+  }
+}
+
+// Hero canvas draw
+function drawHero() {
+  const canvas = document.getElementById('heroCanvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  drawTShirt(ctx, 50, 10, 300, 280, '#fff');
+  drawCross(ctx, 200, 110, 70, '#3d1a6e', 'traditional');
+  ctx.fillStyle = '#3d1a6e';
+  ctx.textAlign = 'center';
+  ctx.font = '16px Georgia';
+  ctx.fillText('Your Church Name', 200, 155);
+}
+
+// Initial draw
+drawPreview();
+drawHero();
+</script>
+
+<script async src="https://cdn.snipcart.com/themes/v3.0.31/default/snipcart.js"></script>
+<div hidden id="snipcart" data-api-key="YOUR_SNIPCART_API_KEY"></div>
+</body>
+</html>
