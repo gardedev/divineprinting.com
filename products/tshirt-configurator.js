@@ -345,24 +345,119 @@ function handleFileUpload(e) {
   }
 }
 
-// Draw functions
+// Draw realistic t-shirt with shading and details
 function drawTShirt(ctx, x, y, w, h, color) {
   ctx.save();
-  ctx.fillStyle = color; ctx.strokeStyle = '#ddd'; ctx.lineWidth = 2;
+  
+  // Create fabric texture pattern
+  const patternCanvas = document.createElement('canvas');
+  patternCanvas.width = 4;
+  patternCanvas.height = 4;
+  const pctx = patternCanvas.getContext('2d');
+  pctx.fillStyle = color;
+  pctx.fillRect(0, 0, 4, 4);
+  pctx.fillStyle = 'rgba(0,0,0,0.03)';
+  pctx.fillRect(0, 0, 2, 2);
+  pctx.fillRect(2, 2, 2, 2);
+  const fabricPattern = ctx.createPattern(patternCanvas, 'repeat');
+  
+  // Main body with realistic shape
+  ctx.fillStyle = fabricPattern;
   ctx.beginPath();
-  ctx.moveTo(x + w*0.25, y + h*0.15);
-  ctx.lineTo(x + w*0.75, y + h*0.15);
-  ctx.lineTo(x + w*0.85, y + h*0.25);
-  ctx.lineTo(x + w*0.75, y + h*0.35);
-  ctx.lineTo(x + w*0.75, y + h*0.9);
-  ctx.quadraticCurveTo(x + w*0.5, y + h*0.95, x + w*0.25, y + h*0.9);
-  ctx.lineTo(x + w*0.25, y + h*0.35);
-  ctx.lineTo(x + w*0.15, y + h*0.25);
-  ctx.closePath(); ctx.fill(); ctx.stroke();
-  ctx.beginPath(); ctx.moveTo(x + w*0.35, y + h*0.15); ctx.quadraticCurveTo(x + w*0.5, y + h*0.22, x + w*0.65, y + h*0.15); ctx.strokeStyle = '#bbb'; ctx.stroke();
-  ctx.fillStyle = color; ctx.strokeStyle = '#ddd';
-  ctx.beginPath(); ctx.moveTo(x + w*0.15, y + h*0.25); ctx.lineTo(x + w*0.05, y + h*0.35); ctx.lineTo(x + w*0.15, y + h*0.45); ctx.closePath(); ctx.fill(); ctx.stroke();
-  ctx.beginPath(); ctx.moveTo(x + w*0.85, y + h*0.25); ctx.lineTo(x + w*0.95, y + h*0.35); ctx.lineTo(x + w*0.85, y + h*0.45); ctx.closePath(); ctx.fill(); ctx.stroke();
+  // Left shoulder
+  ctx.moveTo(x + w*0.22, y + h*0.12);
+  // Neck curve
+  ctx.quadraticCurveTo(x + w*0.35, y + h*0.10, x + w*0.50, y + h*0.12);
+  ctx.quadraticCurveTo(x + w*0.65, y + h*0.10, x + w*0.78, y + h*0.12);
+  // Right shoulder and sleeve
+  ctx.lineTo(x + w*0.88, y + h*0.20);
+  ctx.quadraticCurveTo(x + w*0.92, y + h*0.28, x + w*0.85, y + h*0.35);
+  ctx.lineTo(x + w*0.78, y + h*0.32);
+  // Right side of body
+  ctx.lineTo(x + w*0.78, y + h*0.88);
+  ctx.quadraticCurveTo(x + w*0.78, y + h*0.92, x + w*0.50, y + h*0.94);
+  // Left side of body
+  ctx.quadraticCurveTo(x + w*0.22, y + h*0.92, x + w*0.22, y + h*0.88);
+  ctx.lineTo(x + w*0.22, y + h*0.32);
+  // Left sleeve
+  ctx.lineTo(x + w*0.15, y + h*0.35);
+  ctx.quadraticCurveTo(x + w*0.08, y + h*0.28, x + w*0.12, y + h*0.20);
+  ctx.closePath();
+  ctx.fill();
+  
+  // Add subtle shading for depth
+  const gradient = ctx.createLinearGradient(x, y, x + w, y + h);
+  gradient.addColorStop(0, 'rgba(0,0,0,0.08)');
+  gradient.addColorStop(0.3, 'rgba(0,0,0,0)');
+  gradient.addColorStop(0.7, 'rgba(0,0,0,0)');
+  gradient.addColorStop(1, 'rgba(0,0,0,0.06)');
+  ctx.fillStyle = gradient;
+  ctx.fill();
+  
+  // Collar with ribbing effect
+  ctx.fillStyle = color;
+  ctx.beginPath();
+  ctx.moveTo(x + w*0.35, y + h*0.12);
+  ctx.quadraticCurveTo(x + w*0.50, y + h*0.16, x + w*0.65, y + h*0.12);
+  ctx.quadraticCurveTo(x + w*0.65, y + h*0.18, x + w*0.50, y + h*0.22);
+  ctx.quadraticCurveTo(x + w*0.35, y + h*0.18, x + w*0.35, y + h*0.12);
+  ctx.fill();
+  
+  // Collar ribbing lines
+  ctx.strokeStyle = 'rgba(0,0,0,0.15)';
+  ctx.lineWidth = 1;
+  for (let i = 0; i < 5; i++) {
+    ctx.beginPath();
+    const t = i / 4;
+    const cx1 = x + w*(0.35 + t*0.15);
+    const cy1 = y + h*(0.12 + t*0.04);
+    const cx2 = x + w*(0.65 - t*0.15);
+    const cy2 = y + h*(0.12 + t*0.04);
+    ctx.moveTo(cx1, cy1);
+    ctx.quadraticCurveTo(x + w*0.50, y + h*(0.18 + t*0.02), cx2, cy2);
+    ctx.stroke();
+  }
+  
+  // Sleeve hems
+  ctx.strokeStyle = 'rgba(0,0,0,0.1)';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(x + w*0.12, y + h*0.33);
+  ctx.lineTo(x + w*0.18, y + h*0.30);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(x + w*0.88, y + h*0.33);
+  ctx.lineTo(x + w*0.82, y + h*0.30);
+  ctx.stroke();
+  
+  // Bottom hem stitching
+  ctx.beginPath();
+  ctx.moveTo(x + w*0.25, y + h*0.89);
+  ctx.quadraticCurveTo(x + w*0.50, y + h*0.91, x + w*0.75, y + h*0.89);
+  ctx.stroke();
+  
+  // Side seams
+  ctx.strokeStyle = 'rgba(0,0,0,0.08)';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(x + w*0.22, y + h*0.35);
+  ctx.lineTo(x + w*0.22, y + h*0.88);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(x + w*0.78, y + h*0.35);
+  ctx.lineTo(x + w*0.78, y + h*0.88);
+  ctx.stroke();
+  
+  // Subtle fold shadows
+  ctx.fillStyle = 'rgba(0,0,0,0.05)';
+  ctx.beginPath();
+  ctx.moveTo(x + w*0.30, y + h*0.45);
+  ctx.quadraticCurveTo(x + w*0.35, y + h*0.55, x + w*0.30, y + h*0.65);
+  ctx.lineTo(x + w*0.28, y + h*0.65);
+  ctx.quadraticCurveTo(x + w*0.33, y + h*0.55, x + w*0.28, y + h*0.45);
+  ctx.closePath();
+  ctx.fill();
+  
   ctx.restore();
 }
 
