@@ -15,28 +15,37 @@ const crossSVGs = {
 
 const crossNames = { classic: 'Classic', celtic: 'Celtic', ornate: 'Ornate', flame: 'Flame', royal: 'Royal', emerald: 'Emerald', silver: 'Silver', heart: 'Heart', dove: 'Dove', ichthys: 'Ichthys' };
 
-let state = { text: '', cross: 'classic', shirtColor: '#FFFFFF', printColor: '#1a1a1a', position: 'center', font: 'Cinzel', uploadedImage: null, textX: null, textY: null, selectedElement: null };
+let state = { text: '', cross: 'classic', shirtColor: '#FFFFFF', printColor: '#1a1a1a', position: 'center', font: 'Cinzel', uploadedImage: null, textX: null, textY: null, crossX: null, crossY: null, selectedElement: null };
 
 // Arrow key movement
 const MOVE_STEP = 2;
 document.addEventListener('keydown', (e) => {
   if (!state.selectedElement) return;
   
-  if (!state.textX) {
-    // Initialize to default position if not set
-    let cx, cy, scale;
-    if (state.position === 'center') { cx = 200; cy = 110; scale = 70; }
-    else if (state.position === 'left') { cx = 140; cy = 100; scale = 50; }
-    else { cx = 200; cy = 180; scale = 100; }
-    state.textX = cx;
-    state.textY = cy + scale/2 + (state.position === 'back' ? 40 : 25);
-  }
+  const { cx, cy, scale } = getDefaultPositions();
   
-  switch(e.key) {
-    case 'ArrowUp': state.textY -= MOVE_STEP; e.preventDefault(); break;
-    case 'ArrowDown': state.textY += MOVE_STEP; e.preventDefault(); break;
-    case 'ArrowLeft': state.textX -= MOVE_STEP; e.preventDefault(); break;
-    case 'ArrowRight': state.textX += MOVE_STEP; e.preventDefault(); break;
+  if (state.selectedElement === 'text') {
+    if (!state.textX) {
+      state.textX = cx;
+      state.textY = cy + scale/2 + (state.position === 'back' ? 40 : 25);
+    }
+    switch(e.key) {
+      case 'ArrowUp': state.textY -= MOVE_STEP; e.preventDefault(); break;
+      case 'ArrowDown': state.textY += MOVE_STEP; e.preventDefault(); break;
+      case 'ArrowLeft': state.textX -= MOVE_STEP; e.preventDefault(); break;
+      case 'ArrowRight': state.textX += MOVE_STEP; e.preventDefault(); break;
+    }
+  } else if (state.selectedElement === 'cross') {
+    if (!state.crossX) {
+      state.crossX = cx;
+      state.crossY = cy;
+    }
+    switch(e.key) {
+      case 'ArrowUp': state.crossY -= MOVE_STEP; e.preventDefault(); break;
+      case 'ArrowDown': state.crossY += MOVE_STEP; e.preventDefault(); break;
+      case 'ArrowLeft': state.crossX -= MOVE_STEP; e.preventDefault(); break;
+      case 'ArrowRight': state.crossX += MOVE_STEP; e.preventDefault(); break;
+    }
   }
   drawPreview();
 });
@@ -59,28 +68,42 @@ function getCanvasCoordinates(e) {
   };
 }
 
-function handleDragStart(e) {
-  const coords = getCanvasCoordinates(e);
-  
-  // Check if clicking/touching near text
+function getDefaultPositions() {
   let cx, cy, scale;
   if (state.position === 'center') { cx = 200; cy = 110; scale = 70; }
   else if (state.position === 'left') { cx = 140; cy = 100; scale = 50; }
   else { cx = 200; cy = 180; scale = 100; }
+  return { cx, cy, scale };
+}
+
+function handleDragStart(e) {
+  const coords = getCanvasCoordinates(e);
+  const { cx, cy, scale } = getDefaultPositions();
   
+  // Check if clicking/touching near text first
   const textX = state.textX || cx;
   const textY = state.textY || (cy + scale/2 + (state.position === 'back' ? 40 : 25));
+  const textDist = Math.sqrt(Math.pow(coords.x - textX, 2) + Math.pow(coords.y - textY, 2));
   
-  const dist = Math.sqrt(Math.pow(coords.x - textX, 2) + Math.pow(coords.y - textY, 2));
+  // Check if clicking/touching near cross/icon
+  const crossX = state.crossX || cx;
+  const crossY = state.crossY || cy;
+  const crossDist = Math.sqrt(Math.pow(coords.x - crossX, 2) + Math.pow(coords.y - crossY, 2));
   
-  if (dist < 60 && state.text) {
+  if (textDist < 60 && state.text) {
     isDragging = true;
     state.selectedElement = 'text';
-    dragStartX = coords.x;
-    dragStartY = coords.y;
     dragOffsetX = textX - coords.x;
     dragOffsetY = textY - coords.y;
     document.getElementById('positionHint').textContent = 'Dragging text...';
+    e.preventDefault();
+    drawPreview();
+  } else if (crossDist < 50) {
+    isDragging = true;
+    state.selectedElement = 'cross';
+    dragOffsetX = crossX - coords.x;
+    dragOffsetY = crossY - coords.y;
+    document.getElementById('positionHint').textContent = 'Dragging icon...';
     e.preventDefault();
     drawPreview();
   }
@@ -90,8 +113,13 @@ function handleDragMove(e) {
   if (!isDragging) return;
   
   const coords = getCanvasCoordinates(e);
-  state.textX = coords.x + dragOffsetX;
-  state.textY = coords.y + dragOffsetY;
+  if (state.selectedElement === 'text') {
+    state.textX = coords.x + dragOffsetX;
+    state.textY = coords.y + dragOffsetY;
+  } else if (state.selectedElement === 'cross') {
+    state.crossX = coords.x + dragOffsetX;
+    state.crossY = coords.y + dragOffsetY;
+  }
   e.preventDefault();
   drawPreview();
 }
@@ -99,7 +127,8 @@ function handleDragMove(e) {
 function handleDragEnd(e) {
   if (isDragging) {
     isDragging = false;
-    document.getElementById('positionHint').textContent = 'Text positioned - drag to move or use arrow keys';
+    const elementName = state.selectedElement === 'text' ? 'Text' : 'Icon';
+    document.getElementById('positionHint').textContent = elementName + ' positioned - drag to move or use arrow keys';
     drawPreview();
   }
 }
@@ -141,7 +170,7 @@ function init() {
   });
 
   document.getElementById('churchText').addEventListener('input', (e) => { state.text = e.target.value; drawPreview(); });
-  document.getElementById('positionSelect').addEventListener('change', (e) => { state.position = e.target.value; state.textX = null; state.textY = null; drawPreview(); });
+  document.getElementById('positionSelect').addEventListener('change', (e) => { state.position = e.target.value; state.textX = null; state.textY = null; state.crossX = null; state.crossY = null; state.selectedElement = null; drawPreview(); });
   document.getElementById('fontSelect').addEventListener('change', (e) => { state.font = e.target.value; drawPreview(); });
 
   document.getElementById('tshirtCanvas').addEventListener('click', (e) => {
@@ -176,7 +205,7 @@ function init() {
 }
 
 function resetTextPosition() {
-  state.textX = null; state.textY = null; state.selectedElement = null;
+  state.textX = null; state.textY = null; state.crossX = null; state.crossY = null; state.selectedElement = null;
   document.getElementById('positionHint').textContent = 'Click on the shirt preview to place your text';
   drawPreview();
 }
@@ -286,13 +315,26 @@ function drawPreview() {
   else if (state.position === 'left') { cx = 140; cy = 100; scale = 50; }
   else { cx = 200; cy = 180; scale = 100; }
   
+  const crossX = state.crossX || cx;
+  const crossY = state.crossY || cy;
+  
+  // Draw dashed border if cross is selected
+  if (state.selectedElement === 'cross' && !state.uploadedImage) {
+    ctx.save();
+    ctx.strokeStyle = '#c9a227';
+    ctx.lineWidth = 2;
+    ctx.setLineDash([5, 5]);
+    ctx.strokeRect(crossX - scale/2 - 5, crossY - scale/2 - 5, scale + 10, scale + 10);
+    ctx.restore();
+  }
+  
   if (state.uploadedImage) {
     const aspect = state.uploadedImage.width / state.uploadedImage.height;
     const dw = scale * (aspect > 1 ? 1 : aspect);
     const dh = scale / (aspect > 1 ? aspect : 1);
-    ctx.drawImage(state.uploadedImage, cx - dw/2, cy - dh/2, dw, dh);
+    ctx.drawImage(state.uploadedImage, crossX - dw/2, crossY - dh/2, dw, dh);
   } else {
-    drawCross(ctx, cx, cy, scale, state.printColor, state.cross);
+    drawCross(ctx, crossX, crossY, scale, state.printColor, state.cross);
   }
   
   if (state.text) {
