@@ -22,11 +22,11 @@
 .control-group label { font-weight: 600; color: var(--purple); font-size: .9rem; }
 .control-group input[type="text"], .control-group select { padding: 12px 16px; border: 2px solid #e8e2f5; border-radius: 10px; font-size: 1rem; }
 .control-group input:focus, .control-group select:focus { outline: none; border-color: var(--gold); }
-.cross-selector { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
-.cross-option { width: 100%; aspect-ratio: 1; border: 2px solid #e8e2f5; border-radius: 12px; cursor: pointer; display: flex; align-items: center; justify-content: center; background: #fff; overflow: hidden; }
-.cross-option:hover { border-color: var(--gold); }
-.cross-option.selected { border-color: var(--purple); background: var(--gold-pale); }
-.cross-option img { width: 80%; height: 80%; object-fit: contain; }
+.cross-selector { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
+.cross-option { width: 100%; aspect-ratio: 1; border: 2px solid #e8e2f5; border-radius: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; background: #fff; }
+.cross-option:hover { border-color: var(--gold); transform: scale(1.05); }
+.cross-option.selected { border-color: var(--purple); background: var(--gold-pale); box-shadow: 0 0 0 2px var(--purple); }
+.cross-option svg { width: 36px; height: 36px; }
 .color-options { display: flex; gap: 12px; flex-wrap: wrap; }
 .color-option { width: 40px; height: 40px; border-radius: 50%; cursor: pointer; border: 3px solid transparent; box-shadow: 0 2px 4px rgba(0,0,0,.1); }
 .color-option:hover { transform: scale(1.1); }
@@ -41,7 +41,7 @@
 .text-position-hint { background: #e8f5e9; border-left: 4px solid #4caf50; padding: 12px; border-radius: 8px; font-size: .85rem; color: #2e7d32; }
 .reset-text-btn { background: #f5f5f5; border: 1px solid #ddd; padding: 8px 16px; border-radius: 8px; cursor: pointer; font-size: .85rem; margin-top: 8px; }
 .reset-text-btn:hover { background: #eee; }
-@media (max-width: 900px) { .configurator-wrap { grid-template-columns: 1fr; } }
+@media (max-width: 900px) { .configurator-wrap { grid-template-columns: 1fr; } .cross-selector { grid-template-columns: repeat(4, 1fr); } }
 </style>
 </head>
 <body>
@@ -72,7 +72,7 @@
     </div>
     <div class="pi-features">
       <h4>Key Features</h4>
-      <ul><li>12 unique cross designs</li><li>Click to place text anywhere</li><li>Upload your own logo</li><li>Bulk discounts</li></ul>
+      <ul><li>10 unique cross designs</li><li>Click to place text anywhere</li><li>Upload your own logo</li><li>Bulk discounts</li></ul>
     </div>
     <div class="pi-actions">
       <a href="#designer" class="btn-quote">&#10013; Design Your Shirt</a>
@@ -177,19 +177,49 @@
 </section>
 
 <script>
-// Cross icon images - simple + vibrant
-const crossIcons = [
-  { key: 'traditional', name: 'Traditional', img: '../images/cross-icons/cross-traditional.png' },
-  { key: 'celtic', name: 'Celtic', img: '../images/cross-icons/cross-celtic.png' },
-  { key: 'orthodox', name: 'Orthodox', img: '../images/cross-icons/cross-orthodox.png' },
-  { key: 'simple', name: 'Simple', img: '../images/cross-icons/cross-simple.png' },
-  { key: 'flowing', name: 'Flowing', img: '../images/cross-icons/cross-flowing.png' },
-  { key: 'stained', name: 'Stained', img: '../images/cross-icons/cross-stained.png' },
-  { key: 'vibrant1', name: 'Royal', img: '../images/cross-icons/cross-vibrant-1.png' },
-  { key: 'vibrant2', name: 'Flame', img: '../images/cross-icons/cross-vibrant-2.png' },
-  { key: 'vibrant3', name: 'Silver', img: '../images/cross-icons/cross-vibrant-3.png' },
-  { key: 'vibrant4', name: 'Emerald', img: '../images/cross-icons/cross-vibrant-4.png' }
-];
+// SVG Cross definitions - vibrant colors
+const crosses = {
+  traditional: { 
+    svg: `<svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="35" fill="none" stroke="#c9a227" stroke-width="3"/><path d="M50 25v50M25 50h50" stroke="#3d1a6e" stroke-width="6" stroke-linecap="round"/></svg>`,
+    name: 'Classic'
+  },
+  celtic: { 
+    svg: `<svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="35" fill="none" stroke="#1a237e" stroke-width="3"/><circle cx="50" cy="50" r="15" fill="none" stroke="#c9a227" stroke-width="3"/><path d="M50 15v70M15 50h70" stroke="#c62828" stroke-width="5" stroke-linecap="round"/></svg>`,
+    name: 'Celtic'
+  },
+  ornate: { 
+    svg: `<svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="38" fill="#f5efe0" stroke="#c9a227" stroke-width="2"/><path d="M50 20v60M20 50h60" stroke="#3d1a6e" stroke-width="5" stroke-linecap="round"/><circle cx="50" cy="50" r="8" fill="#c9a227"/></svg>`,
+    name: 'Ornate'
+  },
+  flame: { 
+    svg: `<svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="35" fill="none" stroke="#c62828" stroke-width="3"/><path d="M50 20c-5 15-10 25-10 35 0 12 5 20 10 20s10-8 10-20c0-10-5-20-10-35z" fill="#ff6b35" opacity="0.9"/><path d="M50 30v45M30 50h40" stroke="#c62828" stroke-width="4" stroke-linecap="round"/></svg>`,
+    name: 'Flame'
+  },
+  royal: { 
+    svg: `<svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="35" fill="#3d1a6e"/><path d="M50 22v56M22 50h56" stroke="#c9a227" stroke-width="5" stroke-linecap="round"/><circle cx="50" cy="50" r="10" fill="#c9a227"/></svg>`,
+    name: 'Royal'
+  },
+  emerald: { 
+    svg: `<svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="35" fill="none" stroke="#1b5e20" stroke-width="3"/><path d="M50 18c-8 12-12 22-12 32 0 15 5 25 12 25s12-10 12-25c0-10-4-20-12-32z" fill="#4caf50"/><path d="M50 25v50M25 50h50" stroke="#1b5e20" stroke-width="4" stroke-linecap="round"/></svg>`,
+    name: 'Emerald'
+  },
+  silver: { 
+    svg: `<svg viewBox="0 0 100 100"><defs><linearGradient id="silver" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" style="stop-color:#e0e0e0"/><stop offset="50%" style="stop-color:#909090"/><stop offset="100%" style="stop-color:#e0e0e0"/></linearGradient></defs><circle cx="50" cy="50" r="35" fill="url(#silver)" stroke="#606060" stroke-width="2"/><path d="M50 20v60M20 50h60" stroke="#3d1a6e" stroke-width="5" stroke-linecap="round"/></svg>`,
+    name: 'Silver'
+  },
+  heart: { 
+    svg: `<svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="35" fill="none" stroke="#c62828" stroke-width="3"/><path d="M50 35c-10-10-25-5-25 10 0 15 25 30 25 30s25-15 25-30c0-15-15-20-25-10z" fill="#e91e63"/><path d="M50 30v40M30 50h40" stroke="#fff" stroke-width="3" stroke-linecap="round"/></svg>`,
+    name: 'Heart'
+  },
+  dove: { 
+    svg: `<svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="35" fill="#e3f2fd" stroke="#1a237e" stroke-width="2"/><path d="M30 50c10-5 15-10 20-10s15 5 20 10c-5 8-10 15-20 15s-15-7-20-15z" fill="#fff" stroke="#1a237e" stroke-width="2"/><path d="M50 25v50M25 50h50" stroke="#1a237e" stroke-width="3" stroke-linecap="round"/></svg>`,
+    name: 'Dove'
+  },
+  ichthys: { 
+    svg: `<svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="35" fill="none" stroke="#c9a227" stroke-width="3"/><path d="M30 50c15-15 30-10 35 0-5 10-20 15-35 0z" fill="none" stroke="#3d1a6e" stroke-width="3"/><circle cx="58" cy="45" r="3" fill="#3d1a6e"/><path d="M50 25v50M25 50h50" stroke="#3d1a6e" stroke-width="3" stroke-linecap="round" opacity="0.3"/></svg>`,
+    name: 'Ichthys'
+  }
+};
 
 let state = { 
   text: '', 
@@ -200,24 +230,20 @@ let state = {
   font: 'Cinzel', 
   uploadedImage: null,
   textX: null,
-  textY: null,
-  crossX: null,
-  crossY: null
+  textY: null
 };
 
-// Initialize cross selector with images
+// Initialize cross selector
 const crossSelector = document.getElementById('crossSelector');
-crossIcons.forEach(icon => {
+Object.keys(crosses).forEach(key => {
   const div = document.createElement('div');
-  div.className = 'cross-option' + (icon.key === state.cross ? ' selected' : '');
-  div.innerHTML = `<img src="${icon.img}" alt="${icon.name}" title="${icon.name}" onerror="this.src='../images/logo-icon.png'">`;
+  div.className = 'cross-option' + (key === state.cross ? ' selected' : '');
+  div.innerHTML = crosses[key].svg;
+  div.title = crosses[key].name;
   div.onclick = () => { 
-    state.cross = icon.key; 
+    state.cross = key; 
     document.querySelectorAll('.cross-option').forEach(el => el.classList.remove('selected')); 
     div.classList.add('selected'); 
-    // Reset cross position when changing design
-    state.crossX = null;
-    state.crossY = null;
     drawPreview(); 
   };
   crossSelector.appendChild(div);
@@ -225,27 +251,41 @@ crossIcons.forEach(icon => {
 
 // Color pickers
 document.querySelectorAll('#shirtColors .color-option').forEach(el => {
-  el.onclick = () => { state.shirtColor = el.dataset.color; document.querySelectorAll('#shirtColors .color-option').forEach(c => c.classList.remove('selected')); el.classList.add('selected'); drawPreview(); };
+  el.onclick = () => { 
+    state.shirtColor = el.dataset.color; 
+    document.querySelectorAll('#shirtColors .color-option').forEach(c => c.classList.remove('selected')); 
+    el.classList.add('selected'); 
+    drawPreview(); 
+  };
 });
 
 document.querySelectorAll('#printColors .color-option').forEach(el => {
-  el.onclick = () => { state.printColor = el.dataset.color; document.querySelectorAll('#printColors .color-option').forEach(c => c.classList.remove('selected')); el.classList.add('selected'); drawPreview(); };
+  el.onclick = () => { 
+    state.printColor = el.dataset.color; 
+    document.querySelectorAll('#printColors .color-option').forEach(c => c.classList.remove('selected')); 
+    el.classList.add('selected'); 
+    drawPreview(); 
+  };
 });
 
 // Text input
-document.getElementById('churchText').addEventListener('input', (e) => { state.text = e.target.value; drawPreview(); });
+document.getElementById('churchText').addEventListener('input', (e) => { 
+  state.text = e.target.value; 
+  drawPreview(); 
+});
 
 // Position & Font
 document.getElementById('positionSelect').addEventListener('change', (e) => { 
   state.position = e.target.value; 
-  // Reset positions when changing preset
   state.textX = null;
   state.textY = null;
-  state.crossX = null;
-  state.crossY = null;
   drawPreview(); 
 });
-document.getElementById('fontSelect').addEventListener('change', (e) => { state.font = e.target.value; drawPreview(); });
+
+document.getElementById('fontSelect').addEventListener('change', (e) => { 
+  state.font = e.target.value; 
+  drawPreview(); 
+});
 
 // Canvas click to place text
 document.getElementById('tshirtCanvas').addEventListener('click', (e) => {
@@ -253,37 +293,15 @@ document.getElementById('tshirtCanvas').addEventListener('click', (e) => {
   const rect = canvas.getBoundingClientRect();
   const scaleX = canvas.width / rect.width;
   const scaleY = canvas.height / rect.height;
-  const x = (e.clientX - rect.left) * scaleX;
-  const y = (e.clientY - rect.top) * scaleY;
-  
-  // Check if clicking near the cross area (for moving cross) or text area
-  const defaultCrossPos = getDefaultCrossPosition();
-  const distToCross = Math.sqrt(Math.pow(x - defaultCrossPos.cx, 2) + Math.pow(y - defaultCrossPos.cy, 2));
-  
-  if (distToCross < 50 && !state.uploadedImage) {
-    // Move cross
-    state.crossX = x;
-    state.crossY = y;
-  } else {
-    // Place text
-    state.textX = x;
-    state.textY = y;
-    document.getElementById('positionHint').innerHTML = '&#9989; Text positioned at (' + Math.round(x) + ', ' + Math.round(y) + ')';
-  }
+  state.textX = (e.clientX - rect.left) * scaleX;
+  state.textY = (e.clientY - rect.top) * scaleY;
+  document.getElementById('positionHint').innerHTML = '&#9989; Text positioned';
   drawPreview();
 });
-
-function getDefaultCrossPosition() {
-  if (state.position === 'center') return { cx: 200, cy: 110 };
-  if (state.position === 'left') return { cx: 140, cy: 100 };
-  return { cx: 200, cy: 180 };
-}
 
 function resetTextPosition() {
   state.textX = null;
   state.textY = null;
-  state.crossX = null;
-  state.crossY = null;
   document.getElementById('positionHint').innerHTML = '&#128204; Click on the shirt preview to place your text';
   drawPreview();
 }
@@ -296,14 +314,17 @@ function handleFileUpload(e) {
     const reader = new FileReader();
     reader.onload = (ev) => {
       const img = new Image();
-      img.onload = () => { state.uploadedImage = img; drawPreview(); };
+      img.onload = () => { 
+        state.uploadedImage = img; 
+        drawPreview(); 
+      };
       img.src = ev.target.result;
     };
     reader.readAsDataURL(file);
   }
 }
 
-// Draw t-shirt preview
+// Draw t-shirt
 function drawTShirt(ctx, x, y, w, h, color) {
   ctx.save();
   ctx.fillStyle = color;
@@ -332,43 +353,68 @@ function drawTShirt(ctx, x, y, w, h, color) {
   ctx.stroke();
   
   // Sleeves
+  ctx.fillStyle = color;
+  ctx.strokeStyle = '#ddd';
+  
   ctx.beginPath();
   ctx.moveTo(x + w*0.15, y + h*0.25);
   ctx.lineTo(x + w*0.05, y + h*0.35);
   ctx.lineTo(x + w*0.15, y + h*0.45);
-  ctx.fillStyle = color;
+  ctx.closePath();
   ctx.fill();
-  ctx.strokeStyle = '#ddd';
   ctx.stroke();
   
   ctx.beginPath();
   ctx.moveTo(x + w*0.85, y + h*0.25);
   ctx.lineTo(x + w*0.95, y + h*0.35);
   ctx.lineTo(x + w*0.85, y + h*0.45);
+  ctx.closePath();
   ctx.fill();
   ctx.stroke();
   
   ctx.restore();
 }
 
-// Draw cross image
-function drawCrossImage(ctx, cx, cy, size) {
-  const icon = crossIcons.find(c => c.key === state.cross);
-  if (!icon || !window.crossImages || !window.crossImages[state.cross]) return;
+// Draw SVG cross on canvas
+function drawSVGCross(ctx, cx, cy, size, crossKey) {
+  const svgData = crosses[crossKey].svg;
+  const img = new Image();
+  const svgBlob = new Blob([svgData], {type: 'image/svg+xml'});
+  const url = URL.createObjectURL(svgBlob);
   
-  const img = window.crossImages[state.cross];
-  if (img.complete) {
+  img.onload = () => {
     ctx.drawImage(img, cx - size/2, cy - size/2, size, size);
-  }
+    URL.revokeObjectURL(url);
+    
+    // Draw text after cross is drawn
+    drawText(ctx);
+  };
+  img.src = url;
 }
 
-// Preload cross images
-window.crossImages = {};
-crossIcons.forEach(icon => {
-  const img = new Image();
-  img.src = icon.img;
-  window.crossImages[icon.key] = img;
-});
+// Draw text
+function drawText(ctx) {
+  if (!state.text) return;
+  
+  ctx.fillStyle = state.printColor;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  
+  let fontSize = state.position === 'left' ? 12 : (state.position === 'back' ? 22 : 16);
+  ctx.font = fontSize + 'px ' + state.font;
+  
+  // Get default position based on position setting
+  let cx, cy;
+  if (state.position === 'center') { cx = 200; cy = 155; }
+  else if (state.position === 'left') { cx = 140; cy = 130; }
+  else { cx = 200; cy = 240; }
+  
+  // Use clicked position if set
+  const x = state.textX || cx;
+  const y = state.textY || cy;
+  
+  ctx.fillText(state.text, x, y);
+}
 
 // Main draw function
 function drawPreview() {
@@ -379,11 +425,11 @@ function drawPreview() {
   // Draw t-shirt
   drawTShirt(ctx, 50, 20, 300, 360, state.shirtColor);
   
-  // Get default positions
-  const defaultPos = getDefaultCrossPosition();
-  const cx = state.crossX || defaultPos.cx;
-  const cy = state.crossY || defaultPos.cy;
-  const scale = state.position === 'back' ? 90 : (state.position === 'left' ? 45 : 65);
+  // Get cross position
+  let cx, cy, scale;
+  if (state.position === 'center') { cx = 200; cy = 110; scale = 70; }
+  else if (state.position === 'left') { cx = 140; cy = 100; scale = 50; }
+  else { cx = 200; cy = 180; scale = 100; }
   
   // Draw uploaded image or cross
   if (state.uploadedImage) {
@@ -391,31 +437,14 @@ function drawPreview() {
     const dw = scale * (aspect > 1 ? 1 : aspect);
     const dh = scale / (aspect > 1 ? aspect : 1);
     ctx.drawImage(state.uploadedImage, cx - dw/2, cy - dh/2, dw, dh);
+    drawText(ctx);
   } else {
-    drawCrossImage(ctx, cx, cy, scale);
-  }
-  
-  // Draw text at clicked position or default
-  if (state.text) {
-    ctx.fillStyle = state.printColor;
-    ctx.textAlign = 'center';
-    let fontSize = state.position === 'left' ? 11 : (state.position === 'back' ? 20 : 14);
-    ctx.font = fontSize + 'px ' + state.font;
-    
-    const textX = state.textX || cx;
-    const textY = state.textY || (cy + scale/2 + (state.position === 'back' ? 35 : 18));
-    ctx.fillText(state.text, textX, textY);
+    drawSVGCross(ctx, cx, cy, scale, state.cross);
   }
 }
 
-// Initial draw after images load
-Promise.all(crossIcons.map(icon => {
-  return new Promise(resolve => {
-    const img = window.crossImages[icon.key];
-    if (img.complete) resolve();
-    else img.onload = resolve;
-  });
-})).then(() => drawPreview());
+// Initial draw
+drawPreview();
 </script>
 
 <script async src="https://cdn.snipcart.com/themes/v3.0.31/default/snipcart.js"></script>
