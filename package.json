@@ -1,0 +1,25 @@
+{
+  "name": "divineprinting",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "playwright test",
+    "test:ui": "playwright test --ui",
+    "test:debug": "playwright test --debug"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/gardedev/divineprinting.com.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/gardedev/divineprinting.com/issues"
+  },
+  "homepage": "https://github.com/gardedev/divineprinting.com#readme",
+  "devDependencies": {
+    "@playwright/test": "^1.59.1"
+  }
+}
