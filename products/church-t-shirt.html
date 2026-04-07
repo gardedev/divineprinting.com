@@ -50,7 +50,7 @@
 <div class="product-hero">
   <div class="product-gallery">
     <div class="product-main-img">
-      <canvas id="heroCanvas" width="400" height="300" style="width:100%;height:100%;"></canvas>
+      <img src="../images/2026-04-07-18-55-31-group-wearing-shirts.png" alt="Group wearing custom church t-shirts" style="width:100%;height:100%;object-fit:cover;" />
       <span class="img-badge">New</span>
     </div>
     <div class="product-scripture">"Clothe yourselves with compassion, kindness, humility"<cite>- Colossians 3:12</cite></div>
@@ -138,10 +138,14 @@
       <div class="control-group">
         <label>Font Style</label>
         <select id="fontSelect">
-          <option value="serif">Classic Serif</option>
-          <option value="sans">Modern Sans</option>
-          <option value="script">Elegant Script</option>
-          <option value="bold">Bold Block</option>
+          <option value="Cinzel">Cinzel (Elegant)</option>
+          <option value="Inter">Inter (Clean)</option>
+          <option value="Georgia">Georgia (Classic)</option>
+          <option value="Brush Script MT">Brush Script (Script)</option>
+          <option value="Impact">Impact (Bold)</option>
+          <option value="Playfair Display">Playfair (Premium)</option>
+          <option value="Oswald">Oswald (Modern)</option>
+          <option value="Lobster">Lobster (Friendly)</option>
         </select>
       </div>
       
@@ -163,16 +167,16 @@
 </section>
 
 <script>
-// Cross SVG paths
+// Cross SVG paths - circular emblem style like the reference
 const crossPaths = {
-  traditional: 'M45,10 L45,45 L10,45 L10,55 L45,55 L45,90 L55,90 L55,55 L90,55 L90,45 L55,45 L55,10 Z',
-  celtic: 'M50,15 L50,85 M15,50 L85,50 M50,50 m-12,0 a12,12 0 1,0 24,0 a12,12 0 1,0 -24,0 M50,50 m-35,0 a35,35 0 1,0 70,0 a35,35 0 1,0 -70,0',
-  orthodox: 'M45,5 L45,45 L15,45 L15,55 L45,55 L45,95 L55,95 L55,55 L85,55 L85,45 L55,45 L55,5 Z M25,35 L17,30 M25,65 L17,70 M75,35 L83,30 M75,65 L83,70',
-  simple: 'M42,5 L42,42 L5,42 L5,58 L42,58 L42,95 L58,95 L58,58 L95,58 L95,42 L58,42 L58,5 Z',
-  flowing: 'M48,5 Q46,20 38,30 Q50,35 48,50 Q50,35 62,30 Q54,20 52,5 Z M5,48 Q20,50 30,58 Q35,46 50,48 Q35,50 30,38 Q20,46 5,48 Z',
-  stained: 'M50,5 L35,35 L5,50 L35,65 L50,95 L65,65 L95,50 L65,35 Z',
-  crown: 'M50,15 L50,85 M15,50 L85,50 M50,50 m-8,0 a8,8 0 1,0 16,0 a8,8 0 1,0 -16,0 M50,50 m-38,0 a38,38 0 1,0 76,0 a38,38 0 1,0 -76,0',
-  resurrection: 'M45,20 L45,80 M55,20 L55,80 M25,40 L50,15 L75,40 M50,15 m-8,0 a8,8 0 1,0 16,0 a8,8 0 1,0 -16,0'
+  traditional: 'M50,15 A35,35 0 1,0 50,85 A35,35 0 1,0 50,15 M50,28 L50,72 M28,50 L72,50', // Circle with cross
+  celtic: 'M50,15 A35,35 0 1,0 50,85 A35,35 0 1,0 50,15 M50,25 L50,75 M25,50 L75,50 M50,50 m-10,0 a10,10 0 1,0 20,0 a10,10 0 1,0 -20,0', // Circle + cross + center ring
+  orthodox: 'M50,15 A35,35 0 1,0 50,85 A35,35 0 1,0 50,15 M50,25 L50,75 M25,45 L75,45 M35,35 L25,30 M35,65 L25,70 M65,35 L75,30 M65,65 L75,70', // Orthodox in circle
+  simple: 'M50,18 A32,32 0 1,0 50,82 A32,32 0 1,0 50,18 M45,32 L45,45 L32,45 L32,55 L45,55 L45,68 L55,68 L55,55 L68,55 L68,45 L55,45 L55,32 Z', // Simple cross in circle
+  flowing: 'M50,15 A35,35 0 1,0 50,85 A35,35 0 1,0 50,15 M50,28 Q42,40 35,50 Q42,60 50,72 Q58,60 65,50 Q58,40 50,28', // Flowing cross in circle
+  stained: 'M50,15 A35,35 0 1,0 50,85 A35,35 0 1,0 50,15 M50,25 L40,40 L25,50 L40,60 L50,75 L60,60 L75,50 L60,40 Z', // Stained glass style in circle
+  crown: 'M50,15 A35,35 0 1,0 50,85 A35,35 0 1,0 50,15 M50,28 L50,72 M28,50 L72,50 M50,50 m-6,0 a6,6 0 1,0 12,0 a6,6 0 1,0 -12,0', // Crown of thorns style
+  resurrection: 'M50,15 A35,35 0 1,0 50,85 A35,35 0 1,0 50,15 M45,30 L45,70 M55,30 L55,70 M30,45 L45,30 L60,45 M50,22 m-5,0 a5,5 0 1,0 10,0 a5,5 0 1,0 -10,0' // Resurrection cross in circle
 };
 
 const crossNames = { traditional:'Traditional', celtic:'Celtic', orthodox:'Orthodox', simple:'Simple', flowing:'Flowing', stained:'Stained Glass', crown:'Crown of Thorns', resurrection:'Resurrection' };
@@ -298,14 +302,14 @@ function drawPreview() {
   // Draw t-shirt
   drawTShirt(ctx, 50, 20, 300, 360, state.shirtColor);
   
-  // Calculate design position
+  // Calculate design position - upper chest like reference photo
   let cx, cy, scale;
   if (state.position === 'center') {
-    cx = 200; cy = 140; scale = 80;
+    cx = 200; cy = 110; scale = 65; // Upper center chest
   } else if (state.position === 'left') {
-    cx = 130; cy = 100; scale = 50;
+    cx = 140; cy = 100; scale = 45; // Left chest pocket area
   } else {
-    cx = 200; cy = 180; scale = 100;
+    cx = 200; cy = 180; scale = 90; // Full back - larger
   }
   
   // Draw uploaded image or cross
@@ -318,35 +322,20 @@ function drawPreview() {
     drawCross(ctx, cx, cy, scale, state.printColor, state.cross);
   }
   
-  // Draw text
+  // Draw text below the emblem
   if (state.text) {
     ctx.fillStyle = state.printColor;
     ctx.textAlign = 'center';
-    let fontSize = state.position === 'left' ? 14 : 18;
-    let fontFamily = state.font === 'serif' ? 'Georgia' : state.font === 'sans' ? 'Arial' : state.font === 'script' ? 'Brush Script MT' : 'Impact';
-    ctx.font = (state.font === 'bold' ? 'bold ' : '') + fontSize + 'px ' + fontFamily;
+    let fontSize = state.position === 'left' ? 11 : (state.position === 'back' ? 20 : 14);
+    ctx.font = fontSize + 'px ' + state.font;
     
-    const textY = state.position === 'back' ? cy + scale/2 + 30 : cy + scale/2 + 25;
+    const textY = cy + scale/2 + (state.position === 'back' ? 35 : 18);
     ctx.fillText(state.text, cx, textY);
   }
 }
 
-// Hero canvas draw
-function drawHero() {
-  const canvas = document.getElementById('heroCanvas');
-  if (!canvas) return;
-  const ctx = canvas.getContext('2d');
-  drawTShirt(ctx, 50, 10, 300, 280, '#fff');
-  drawCross(ctx, 200, 110, 70, '#3d1a6e', 'traditional');
-  ctx.fillStyle = '#3d1a6e';
-  ctx.textAlign = 'center';
-  ctx.font = '16px Georgia';
-  ctx.fillText('Your Church Name', 200, 155);
-}
-
 // Initial draw
 drawPreview();
-drawHero();
 </script>
 
 <script async src="https://cdn.snipcart.com/themes/v3.0.31/default/snipcart.js"></script>
