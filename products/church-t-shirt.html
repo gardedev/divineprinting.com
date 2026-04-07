@@ -72,7 +72,7 @@
     </div>
     <div class="pi-features">
       <h4>Key Features</h4>
-      <ul><li>10 unique cross designs</li><li>Click to place text anywhere</li><li>Upload your own logo</li><li>Bulk discounts</li></ul>
+      <ul><li>10 unique cross designs</li><li>Multiple text elements</li><li>Drag to position anything</li><li>Upload your own logo</li><li>Bulk discounts</li></ul>
     </div>
     <div class="pi-actions">
       <a href="#designer" class="btn-quote">&#10013; Design Your Shirt</a>
@@ -88,7 +88,7 @@
     <div class="preview-panel">
       <canvas id="tshirtCanvas" width="400" height="400"></canvas>
       <p class="preview-note">Digital preview - actual colors may vary slightly</p>
-      <p class="preview-hint">Tap/click text to select → Drag to move → Arrow keys to fine-tune</p>
+      <p class="preview-hint">Tap/click to select → Drag to move → Arrow keys to fine-tune → + Add Text for more</p>
     </div>
     
     <div class="controls-panel">
@@ -98,14 +98,29 @@
       </div>
       
       <div class="control-group">
-        <label>Your Church Name / Text</label>
-        <input type="text" id="churchText" placeholder="Grace Community Church" maxlength="30">
+        <label>Text Elements <button type="button" id="addTextBtn" style="margin-left:10px;padding:4px 12px;background:var(--gold);border:none;border-radius:6px;cursor:pointer;font-size:0.85rem;">+ Add Text</button></label>
+        <div id="textControlsContainer" style="display:flex;flex-direction:column;gap:12px;">
+          <!-- Text inputs will be generated here -->
+        </div>
       </div>
+      
+      <style>
+        .text-instance { border: 2px solid #e8e2f5; border-radius: 10px; padding: 12px; background: #fff; }
+        .text-instance.selected { border-color: var(--purple); background: var(--gold-pale); }
+        .text-instance-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+        .text-instance-header label { margin: 0; font-size: 0.9rem; }
+        .remove-text-btn { background: #ffebee; color: #c62828; border: none; width: 24px; height: 24px; border-radius: 50%; cursor: pointer; font-size: 1rem; line-height: 1; }
+        .remove-text-btn:hover { background: #ffcdd2; }
+        .church-text-input { width: 100%; padding: 10px 12px; border: 2px solid #e8e2f5; border-radius: 8px; font-size: 0.95rem; margin-bottom: 8px; }
+        .church-text-input.active { border-color: var(--purple); }
+        .church-text-input:focus { outline: none; border-color: var(--gold); }
+        .font-select-small { width: 100%; padding: 8px 12px; border: 2px solid #e8e2f5; border-radius: 8px; font-size: 0.9rem; }
+      </style>
       
       <div class="text-position-hint" id="positionHint">
         Tap/click text to select, drag to move, or use arrow keys
       </div>
-      <button class="reset-text-btn" onclick="resetTextPosition()">Reset Text Position</button>
+      <button class="reset-text-btn" onclick="resetPositions()">Reset All Positions</button>
       
       <div class="control-group">
         <label>Choose a Cross Design</label>
@@ -145,19 +160,7 @@
         </select>
       </div>
       
-      <div class="control-group">
-        <label>Font Style</label>
-        <select id="fontSelect">
-          <option value="Cinzel">Cinzel (Elegant)</option>
-          <option value="Inter">Inter (Clean)</option>
-          <option value="Georgia">Georgia (Classic)</option>
-          <option value="Brush Script MT">Brush Script (Script)</option>
-          <option value="Impact">Impact (Bold)</option>
-          <option value="Playfair Display">Playfair (Premium)</option>
-          <option value="Oswald">Oswald (Modern)</option>
-          <option value="Lobster">Lobster (Friendly)</option>
-        </select>
-      </div>
+      
       
       <div class="control-group">
         <label>Upload Your Own Design</label>
