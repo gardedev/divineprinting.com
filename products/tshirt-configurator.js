@@ -41,6 +41,81 @@ document.addEventListener('keydown', (e) => {
   drawPreview();
 });
 
+// Touch/drag support for mobile
+let isDragging = false;
+let dragStartX = 0;
+let dragStartY = 0;
+let dragOffsetX = 0;
+let dragOffsetY = 0;
+
+function getCanvasCoordinates(e) {
+  const canvas = document.getElementById('tshirtCanvas');
+  const rect = canvas.getBoundingClientRect();
+  const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+  const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+  return {
+    x: (clientX - rect.left) * (canvas.width / rect.width),
+    y: (clientY - rect.top) * (canvas.height / rect.height)
+  };
+}
+
+function handleDragStart(e) {
+  const coords = getCanvasCoordinates(e);
+  
+  // Check if clicking/touching near text
+  let cx, cy, scale;
+  if (state.position === 'center') { cx = 200; cy = 110; scale = 70; }
+  else if (state.position === 'left') { cx = 140; cy = 100; scale = 50; }
+  else { cx = 200; cy = 180; scale = 100; }
+  
+  const textX = state.textX || cx;
+  const textY = state.textY || (cy + scale/2 + (state.position === 'back' ? 40 : 25));
+  
+  const dist = Math.sqrt(Math.pow(coords.x - textX, 2) + Math.pow(coords.y - textY, 2));
+  
+  if (dist < 60 && state.text) {
+    isDragging = true;
+    state.selectedElement = 'text';
+    dragStartX = coords.x;
+    dragStartY = coords.y;
+    dragOffsetX = textX - coords.x;
+    dragOffsetY = textY - coords.y;
+    document.getElementById('positionHint').textContent = 'Dragging text...';
+    e.preventDefault();
+    drawPreview();
+  }
+}
+
+function handleDragMove(e) {
+  if (!isDragging) return;
+  
+  const coords = getCanvasCoordinates(e);
+  state.textX = coords.x + dragOffsetX;
+  state.textY = coords.y + dragOffsetY;
+  e.preventDefault();
+  drawPreview();
+}
+
+function handleDragEnd(e) {
+  if (isDragging) {
+    isDragging = false;
+    document.getElementById('positionHint').textContent = 'Text positioned - drag to move or use arrow keys';
+    drawPreview();
+  }
+}
+
+// Add touch events for mobile
+const canvas = document.getElementById('tshirtCanvas');
+if (canvas) {
+  canvas.addEventListener('touchstart', handleDragStart, { passive: false });
+  canvas.addEventListener('touchmove', handleDragMove, { passive: false });
+  canvas.addEventListener('touchend', handleDragEnd);
+  canvas.addEventListener('mousedown', handleDragStart);
+  canvas.addEventListener('mousemove', handleDragMove);
+  canvas.addEventListener('mouseup', handleDragEnd);
+  canvas.addEventListener('mouseleave', handleDragEnd);
+}
+
 function init() {
   const crossSelector = document.getElementById('crossSelector');
   Object.keys(crossSVGs).forEach(key => {
