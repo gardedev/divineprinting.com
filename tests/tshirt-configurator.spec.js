@@ -150,6 +150,82 @@ test.describe('T-Shirt Configurator', () => {
   });
 });
 
+// Mobile viewport tests
+test.describe('Mobile Responsive', () => {
+  test('mobile viewport - iPhone 12', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto('file://' + __dirname + '/../products/church-t-shirt.html');
+    await page.waitForSelector('#tshirtCanvas');
+    
+    // Check canvas is visible and properly sized
+    const canvas = page.locator('#tshirtCanvas');
+    await expect(canvas).toBeVisible();
+    
+    // Check that controls are accessible
+    const addTextBtn = page.locator('#addTextBtn');
+    await expect(addTextBtn).toBeVisible();
+    
+    // Take screenshot for visual regression
+    await expect(page).toHaveScreenshot('tshirt-mobile-iphone.png', {
+      fullPage: true
+    });
+  });
+
+  test('mobile viewport - Samsung Galaxy S21', async ({ page }) => {
+    await page.setViewportSize({ width: 384, height: 854 });
+    await page.goto('file://' + __dirname + '/../products/church-t-shirt.html');
+    await page.waitForSelector('#tshirtCanvas');
+    
+    // Test touch/drag functionality
+    const canvas = page.locator('#tshirtCanvas');
+    await expect(canvas).toBeVisible();
+    
+    // Add text and try to drag
+    await page.locator('.church-text-input').first().fill('Test');
+    await canvas.tap({ position: { x: 200, y: 200 } });
+    
+    await expect(page).toHaveScreenshot('tshirt-mobile-samsung.png', {
+      fullPage: true
+    });
+  });
+
+  test('tablet viewport - iPad', async ({ page }) => {
+    await page.setViewportSize({ width: 768, height: 1024 });
+    await page.goto('file://' + __dirname + '/../products/church-t-shirt.html');
+    await page.waitForSelector('#tshirtCanvas');
+    
+    const canvas = page.locator('#tshirtCanvas');
+    await expect(canvas).toBeVisible();
+    
+    // Layout should be side-by-side on tablet
+    const configuratorWrap = page.locator('.configurator-wrap');
+    const wrapStyles = await configuratorWrap.evaluate(el => window.getComputedStyle(el).gridTemplateColumns);
+    
+    await expect(page).toHaveScreenshot('tshirt-tablet-ipad.png', {
+      fullPage: true
+    });
+  });
+
+  test('desktop viewport', async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 720 });
+    await page.goto('file://' + __dirname + '/../products/church-t-shirt.html');
+    await page.waitForSelector('#tshirtCanvas');
+    
+    const canvas = page.locator('#tshirtCanvas');
+    await expect(canvas).toBeVisible();
+    
+    // Check canvas size is appropriate
+    const canvasBox = await canvas.boundingBox();
+    expect(canvasBox.width).toBeGreaterThan(350);
+    expect(canvasBox.height).toBeGreaterThan(350);
+    
+    await expect(page).toHaveScreenshot('tshirt-desktop.png', {
+      fullPage: false,
+      clip: { x: 0, y: 0, width: 1280, height: 800 }
+    });
+  });
+});
+
 // Visual regression test
 test.describe('Visual Regression', () => {
   test('default state screenshot', async ({ page }) => {

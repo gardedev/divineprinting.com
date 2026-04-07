@@ -23,5 +23,19 @@ module.exports = {
         viewport: { width: 1280, height: 720 }
       },
     },
+    {
+      name: 'Mobile Chrome',
+      use: {
+        browserName: 'chromium',
+        ...require('@playwright/test').devices['Pixel 5'],
+      },
+    },
+    {
+      name: 'Mobile Safari',
+      use: {
+        browserName: 'webkit',
+        ...require('@playwright/test').devices['iPhone 12'],
+      },
+    },
   ],
 };
