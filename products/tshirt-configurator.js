@@ -349,51 +349,64 @@ function handleFileUpload(e) {
   }
 }
 
-// T-shirt base image
-let tshirtBaseImage = null;
+// T-shirt base images for different colors
+const tshirtImages = {};
+const shirtColorMap = {
+  '#FFFFFF': 'white',
+  '#1a1a1a': 'black',
+  '#1a237e': 'navy',
+  '#c62828': 'red',
+  '#3d1a6e': 'purple',
+  '#c9a227': 'gold',
+  '#1b5e20': 'green'
+};
 
-// Load t-shirt base image
-function loadTshirtBase() {
-  if (tshirtBaseImage) return Promise.resolve();
+// Load t-shirt image for specific color
+function loadTshirtImage(color) {
+  const colorName = shirtColorMap[color] || 'white';
+  if (tshirtImages[colorName] && tshirtImages[colorName].complete) {
+    return Promise.resolve(tshirtImages[colorName]);
+  }
   return new Promise((resolve) => {
-    tshirtBaseImage = new Image();
-    tshirtBaseImage.crossOrigin = 'anonymous';
-    tshirtBaseImage.onload = () => resolve();
-    tshirtBaseImage.onerror = () => resolve(); // Continue even if image fails
-    tshirtBaseImage.src = '../images/tshirt-white.png';
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => {
+      tshirtImages[colorName] = img;
+      resolve(img);
+    };
+    img.onerror = () => resolve(null);
+    img.src = `../images/tshirt-flat-${colorName}.png`;
   });
 }
 
-// Color mapping for t-shirt tinting
-const colorFilters = {
-  '#FFFFFF': 'none',
-  '#1a1a1a': 'brightness(0.15)',
-  '#1a237e': 'sepia(0.5) saturate(3) hue-rotate(180deg) brightness(0.6)',
-  '#c62828': 'sepia(0.5) saturate(3) hue-rotate(320deg) brightness(0.8)',
-  '#3d1a6e': 'sepia(0.5) saturate(3) hue-rotate(240deg) brightness(0.5)',
-  '#c9a227': 'sepia(0.8) saturate(2) hue-rotate(10deg) brightness(0.9)',
-  '#1b5e20': 'sepia(0.5) saturate(3) hue-rotate(90deg) brightness(0.5)'
-};
-
-// Draw t-shirt using base image with color tint
-function drawTShirt(ctx, x, y, w, h, color) {
+// Draw t-shirt using actual color image
+async function drawTShirt(ctx, x, y, w, h, color) {
   ctx.save();
   
-  if (tshirtBaseImage && tshirtBaseImage.complete) {
-    // Draw base image
-    const aspect = tshirtBaseImage.width / tshirtBaseImage.height;
-    const drawW = w * 1.1;
-    const drawH = drawW / aspect;
-    const drawX = x - (drawW - w) / 2;
-    const drawY = y - (drawH - h) / 2 + h * 0.05;
+  const img = await loadTshirtImage(color);
+  
+  if (img) {
+    // Draw actual t-shirt image - scale to fill canvas
+    const aspect = img.width / img.height;
+    const canvasAspect = w / h;
     
-    // Apply color filter
-    const filter = colorFilters[color] || 'none';
-    ctx.filter = filter;
+    let drawW, drawH, drawX, drawY;
     
-    ctx.drawImage(tshirtBaseImage, drawX, drawY, drawW, drawH);
+    if (aspect > canvasAspect) {
+      // Image is wider - fit to height
+      drawH = h * 1.05;
+      drawW = drawH * aspect;
+      drawX = x - (drawW - w) / 2;
+      drawY = y - (drawH - h) / 2;
+    } else {
+      // Image is taller - fit to width
+      drawW = w * 1.05;
+      drawH = drawW / aspect;
+      drawX = x - (drawW - w) / 2;
+      drawY = y - (drawH - h) / 2;
+    }
     
-    ctx.filter = 'none';
+    ctx.drawImage(img, drawX, drawY, drawW, drawH);
   } else {
     // Fallback to simple drawing
     ctx.fillStyle = color;
@@ -476,7 +489,7 @@ function drawCross(ctx, cx, cy, size, color, style) {
   ctx.restore();
 }
 
-function drawPreview() {
+async function drawPreview() {
   const canvas = document.getElementById('tshirtCanvas');
   const ctx = canvas.getContext('2d');
   
@@ -488,7 +501,7 @@ function drawPreview() {
   ctx.fillStyle = '#f8f6fb';
   ctx.fillRect(0, 0, canvas.width, canvas.height);
   
-  drawTShirt(ctx, 50, 20, 300, 360, state.shirtColor);
+  await drawTShirt(ctx, 50, 20, 300, 360, state.shirtColor);
   
   const { cx, cy, scale } = getDefaultPositions();
   const crossX = state.crossX || cx;
