@@ -15,36 +15,55 @@ const crossSVGs = {
 
 const crossNames = { classic: 'Classic', celtic: 'Celtic', ornate: 'Ornate', flame: 'Flame', royal: 'Royal', emerald: 'Emerald', silver: 'Silver', heart: 'Heart', dove: 'Dove', ichthys: 'Ichthys' };
 
-// State with multiple text support - each text has its own color and size
+// Pre-load t-shirt images
+const tshirtImages = {};
+const shirtColors = ['white', 'black', 'navy', 'red'];
+
+function preloadImages() {
+  shirtColors.forEach(color => {
+    const img = new Image();
+    img.src = `../images/tshirt-flat-${color}.png`;
+    tshirtImages[color] = img;
+  });
+}
+
+// State
 let state = {
-  cross: null, // No default cross selected
+  cross: null,
   shirtColor: '#FFFFFF',
   printColor: '#1a1a1a',
   position: 'center',
   uploadedImage: null,
   crossX: null,
   crossY: null,
-  selectedElement: null, // 'cross' or text index
-  texts: [
-    { id: 0, text: '', x: null, y: null, font: 'Cinzel', size: 16, color: '#1a1a1a' }
-  ]
+  selectedElement: null,
+  texts: [{ id: 0, text: '', x: null, y: null, font: 'Cinzel', size: 16, color: '#1a1a1a' }]
 };
 
 let nextTextId = 1;
 
+const shirtColorMap = {
+  '#FFFFFF': 'white',
+  '#1a1a1a': 'black', 
+  '#1a237e': 'navy',
+  '#c62828': 'red',
+  '#3d1a6e': 'white',
+  '#c9a227': 'white',
+  '#1b5e20': 'white'
+};
+
 function getDefaultPositions() {
   let cx, cy, scale;
-  if (state.position === 'center') { cx = 200; cy = 110; scale = 70; }
-  else if (state.position === 'left') { cx = 140; cy = 100; scale = 50; }
-  else { cx = 200; cy = 180; scale = 100; }
+  if (state.position === 'center') { cx = 200; cy = 140; scale = 70; }
+  else if (state.position === 'left') { cx = 140; cy = 130; scale = 50; }
+  else { cx = 200; cy = 200; scale = 90; }
   return { cx, cy, scale };
 }
 
-// Arrow key movement
+// Movement
 const MOVE_STEP = 2;
 document.addEventListener('keydown', (e) => {
   if (!state.selectedElement) return;
-  
   const { cx, cy, scale } = getDefaultPositions();
   
   if (state.selectedElement === 'cross') {
@@ -56,13 +75,9 @@ document.addEventListener('keydown', (e) => {
       case 'ArrowRight': state.crossX += MOVE_STEP; e.preventDefault(); break;
     }
   } else {
-    // Moving a text element
     const textObj = state.texts.find(t => t.id === state.selectedElement);
     if (textObj) {
-      if (!textObj.x) {
-        textObj.x = cx;
-        textObj.y = cy + scale/2 + (state.position === 'back' ? 40 : 25);
-      }
+      if (!textObj.x) { textObj.x = cx; textObj.y = cy + scale/2 + 25; }
       switch(e.key) {
         case 'ArrowUp': textObj.y -= MOVE_STEP; e.preventDefault(); break;
         case 'ArrowDown': textObj.y += MOVE_STEP; e.preventDefault(); break;
@@ -74,12 +89,11 @@ document.addEventListener('keydown', (e) => {
   drawPreview();
 });
 
-// Touch/drag support
+// Drag support
 let isDragging = false;
-let dragOffsetX = 0;
-let dragOffsetY = 0;
+let dragOffsetX = 0, dragOffsetY = 0;
 
-function getCanvasCoordinates(e) {
+function getCanvasCoords(e) {
   const canvas = document.getElementById('tshirtCanvas');
   const rect = canvas.getBoundingClientRect();
   const clientX = e.touches ? e.touches[0].clientX : e.clientX;
@@ -91,17 +105,15 @@ function getCanvasCoordinates(e) {
 }
 
 function handleDragStart(e) {
-  const coords = getCanvasCoordinates(e);
+  const coords = getCanvasCoords(e);
   const { cx, cy, scale } = getDefaultPositions();
   
-  // Check texts first (in reverse order - top text first)
   for (let i = state.texts.length - 1; i >= 0; i--) {
     const textObj = state.texts[i];
     if (!textObj.text) continue;
     const textX = textObj.x || cx;
-    const textY = textObj.y || (cy + scale/2 + (state.position === 'back' ? 40 : 25));
-    const dist = Math.sqrt(Math.pow(coords.x - textX, 2) + Math.pow(coords.y - textY, 2));
-    if (dist < 60) {
+    const textY = textObj.y || (cy + scale/2 + 25);
+    if (Math.sqrt(Math.pow(coords.x - textX, 2) + Math.pow(coords.y - textY, 2)) < 60) {
       isDragging = true;
       state.selectedElement = textObj.id;
       dragOffsetX = textX - coords.x;
@@ -114,11 +126,9 @@ function handleDragStart(e) {
     }
   }
   
-  // Check cross
   const crossX = state.crossX || cx;
   const crossY = state.crossY || cy;
-  const crossDist = Math.sqrt(Math.pow(coords.x - crossX, 2) + Math.pow(coords.y - crossY, 2));
-  if (crossDist < 50) {
+  if (Math.sqrt(Math.pow(coords.x - crossX, 2) + Math.pow(coords.y - crossY, 2)) < 50) {
     isDragging = true;
     state.selectedElement = 'cross';
     dragOffsetX = crossX - coords.x;
@@ -131,39 +141,35 @@ function handleDragStart(e) {
 
 function handleDragMove(e) {
   if (!isDragging) return;
-  const coords = getCanvasCoordinates(e);
-  
+  const coords = getCanvasCoords(e);
   if (state.selectedElement === 'cross') {
     state.crossX = coords.x + dragOffsetX;
     state.crossY = coords.y + dragOffsetY;
   } else {
     const textObj = state.texts.find(t => t.id === state.selectedElement);
-    if (textObj) {
-      textObj.x = coords.x + dragOffsetX;
-      textObj.y = coords.y + dragOffsetY;
-    }
+    if (textObj) { textObj.x = coords.x + dragOffsetX; textObj.y = coords.y + dragOffsetY; }
   }
   e.preventDefault();
   drawPreview();
 }
 
-function handleDragEnd(e) {
+function handleDragEnd() {
   if (isDragging) {
     isDragging = false;
-    const elementName = state.selectedElement === 'cross' ? 'Icon' : 'Text';
-    document.getElementById('positionHint').textContent = elementName + ' positioned - drag to move or use arrow keys';
+    const name = state.selectedElement === 'cross' ? 'Icon' : 'Text';
+    document.getElementById('positionHint').textContent = name + ' positioned - drag to move or use arrow keys';
     drawPreview();
   }
 }
 
-// Add text instance
+// Text management
 function addTextInstance() {
   const { cx, cy, scale } = getDefaultPositions();
   state.texts.push({
     id: nextTextId++,
     text: '',
-    x: cx + (Math.random() - 0.5) * 40,
-    y: (cy + scale/2 + 40) + state.texts.length * 25,
+    x: cx,
+    y: cy + scale/2 + 40 + state.texts.length * 25,
     font: 'Cinzel',
     size: 16,
     color: state.printColor
@@ -171,88 +177,26 @@ function addTextInstance() {
   renderTextControls();
 }
 
-// Remove text instance
 function removeTextInstance(id) {
-  if (state.texts.length <= 1) return; // Keep at least one
+  if (state.texts.length <= 1) return;
   state.texts = state.texts.filter(t => t.id !== id);
   if (state.selectedElement === id) state.selectedElement = null;
   renderTextControls();
   drawPreview();
 }
 
-// Render text controls
-function renderTextControls() {
-  const container = document.getElementById('textControlsContainer');
-  if (!container) return;
-
-  container.innerHTML = state.texts.map((textObj, index) => `
-    <div class="text-instance ${state.selectedElement === textObj.id ? 'selected' : ''}" data-id="${textObj.id}">
-      <div class="text-instance-header">
-        <label>Text ${index + 1}</label>
-        ${state.texts.length > 1 ? `<button onclick="removeTextInstance(${textObj.id})" class="remove-text-btn">&times;</button>` : ''}
-      </div>
-      <input type="text"
-        class="church-text-input ${state.selectedElement === textObj.id ? 'active' : ''}"
-        placeholder="Enter text..."
-        value="${textObj.text}"
-        oninput="updateText(${textObj.id}, this.value)"
-        onfocus="selectText(${textObj.id})"
-      />
-      <div class="text-controls-row">
-        <select onchange="updateTextFont(${textObj.id}, this.value)" class="font-select-small">
-          <option value="Cinzel" ${textObj.font === 'Cinzel' ? 'selected' : ''}>Cinzel</option>
-          <option value="Inter" ${textObj.font === 'Inter' ? 'selected' : ''}>Inter</option>
-          <option value="Georgia" ${textObj.font === 'Georgia' ? 'selected' : ''}>Georgia</option>
-          <option value="Brush Script MT" ${textObj.font === 'Brush Script MT' ? 'selected' : ''}>Script</option>
-          <option value="Impact" ${textObj.font === 'Impact' ? 'selected' : ''}>Impact</option>
-          <option value="Playfair Display" ${textObj.font === 'Playfair Display' ? 'selected' : ''}>Playfair</option>
-          <option value="Oswald" ${textObj.font === 'Oswald' ? 'selected' : ''}>Oswald</option>
-          <option value="Lobster" ${textObj.font === 'Lobster' ? 'selected' : ''}>Lobster</option>
-        </select>
-        <input type="color" value="${textObj.color}" onchange="updateTextColor(${textObj.id}, this.value)" class="color-picker-small" title="Text color">
-      </div>
-      <div class="size-control">
-        <label>Size: <span id="size-label-${textObj.id}">${textObj.size}px</span></label>
-        <input type="range" min="10" max="48" value="${textObj.size}" oninput="updateTextSize(${textObj.id}, this.value)" class="size-slider">
-      </div>
-    </div>
-  `).join('');
-}
-
-function updateText(id, value) {
-  const textObj = state.texts.find(t => t.id === id);
-  if (textObj) {
-    textObj.text = value;
-    drawPreview();
-  }
-}
-
-function updateTextFont(id, font) {
-  const textObj = state.texts.find(t => t.id === id);
-  if (textObj) {
-    textObj.font = font;
-    drawPreview();
-  }
-}
-
-function updateTextColor(id, color) {
-  const textObj = state.texts.find(t => t.id === id);
-  if (textObj) {
-    textObj.color = color;
-    drawPreview();
-  }
-}
-
-function updateTextSize(id, size) {
-  const textObj = state.texts.find(t => t.id === id);
-  if (textObj) {
-    textObj.size = parseInt(size);
+function updateText(id, value) { const t = state.texts.find(x => x.id === id); if (t) { t.text = value; drawPreview(); } }
+function updateTextFont(id, font) { const t = state.texts.find(x => x.id === id); if (t) { t.font = font; drawPreview(); } }
+function updateTextColor(id, color) { const t = state.texts.find(x => x.id === id); if (t) { t.color = color; drawPreview(); } }
+function updateTextSize(id, size) { 
+  const t = state.texts.find(x => x.id === id); 
+  if (t) { 
+    t.size = parseInt(size); 
     const label = document.getElementById(`size-label-${id}`);
     if (label) label.textContent = size + 'px';
-    drawPreview();
-  }
+    drawPreview(); 
+  } 
 }
-
 function selectText(id) {
   state.selectedElement = id;
   updateTextSelectionUI();
@@ -262,79 +206,46 @@ function selectText(id) {
 
 function updateTextSelectionUI() {
   document.querySelectorAll('.text-instance').forEach(el => {
-    const id = parseInt(el.dataset.id);
-    el.classList.toggle('selected', state.selectedElement === id);
-  });
-  document.querySelectorAll('.church-text-input').forEach(el => {
-    el.classList.toggle('active', state.selectedElement === parseInt(el.closest('.text-instance').dataset.id));
+    el.classList.toggle('selected', state.selectedElement === parseInt(el.dataset.id));
   });
 }
 
-async function init() {
-  // Load t-shirt base image first
-  await loadTshirtBase();
-  
-  const crossSelector = document.getElementById('crossSelector');
-  Object.keys(crossSVGs).forEach(key => {
-    const div = document.createElement('div');
-    div.className = 'cross-option' + (key === state.cross ? ' selected' : '');
-    div.innerHTML = crossSVGs[key];
-    div.title = crossNames[key];
-    div.onclick = () => { 
-      state.cross = key; 
-      document.querySelectorAll('.cross-option').forEach(el => el.classList.remove('selected')); 
-      div.classList.add('selected'); 
-      state.selectedElement = 'cross';
-      drawPreview(); 
-    };
-    crossSelector.appendChild(div);
-  });
-
-  document.querySelectorAll('#shirtColors .color-option').forEach(el => {
-    el.onclick = () => { state.shirtColor = el.dataset.color; document.querySelectorAll('#shirtColors .color-option').forEach(c => c.classList.remove('selected')); el.classList.add('selected'); drawPreview(); };
-  });
-
-  document.querySelectorAll('#printColors .color-option').forEach(el => {
-    el.onclick = () => { state.printColor = el.dataset.color; document.querySelectorAll('#printColors .color-option').forEach(c => c.classList.remove('selected')); el.classList.add('selected'); drawPreview(); };
-  });
-
-  document.getElementById('positionSelect').addEventListener('change', (e) => {
-    state.position = e.target.value;
-    state.crossX = null; state.crossY = null;
-    state.texts.forEach(t => { t.x = null; t.y = null; });
-    state.selectedElement = null;
-    drawPreview();
-  });
-
-  // Add text button
-  const addTextBtn = document.getElementById('addTextBtn');
-  if (addTextBtn) {
-    addTextBtn.addEventListener('click', addTextInstance);
-  }
-
-  // Initial render
-  renderTextControls();
-
-  // Canvas events
-  const canvas = document.getElementById('tshirtCanvas');
-  if (canvas) {
-    canvas.addEventListener('touchstart', handleDragStart, { passive: false });
-    canvas.addEventListener('touchmove', handleDragMove, { passive: false });
-    canvas.addEventListener('touchend', handleDragEnd);
-    canvas.addEventListener('mousedown', handleDragStart);
-    canvas.addEventListener('mousemove', handleDragMove);
-    canvas.addEventListener('mouseup', handleDragEnd);
-    canvas.addEventListener('mouseleave', handleDragEnd);
-  }
-
-  drawPreview();
+function renderTextControls() {
+  const container = document.getElementById('textControlsContainer');
+  if (!container) return;
+  container.innerHTML = state.texts.map((t, i) => `
+    <div class="text-instance ${state.selectedElement === t.id ? 'selected' : ''}" data-id="${t.id}">
+      <div class="text-instance-header">
+        <label>Text ${i + 1}</label>
+        ${state.texts.length > 1 ? `<button onclick="removeTextInstance(${t.id})" class="remove-text-btn">&times;</button>` : ''}
+      </div>
+      <input type="text" class="church-text-input ${state.selectedElement === t.id ? 'active' : ''}" placeholder="Enter text..." value="${t.text}" oninput="updateText(${t.id}, this.value)" onfocus="selectText(${t.id})"/>
+      <div class="text-controls-row">
+        <select onchange="updateTextFont(${t.id}, this.value)" class="font-select-small">
+          <option value="Cinzel" ${t.font === 'Cinzel' ? 'selected' : ''}>Cinzel</option>
+          <option value="Inter" ${t.font === 'Inter' ? 'selected' : ''}>Inter</option>
+          <option value="Georgia" ${t.font === 'Georgia' ? 'selected' : ''}>Georgia</option>
+          <option value="Brush Script MT" ${t.font === 'Brush Script MT' ? 'selected' : ''}>Script</option>
+          <option value="Impact" ${t.font === 'Impact' ? 'selected' : ''}>Impact</option>
+          <option value="Playfair Display" ${t.font === 'Playfair Display' ? 'selected' : ''}>Playfair</option>
+          <option value="Oswald" ${t.font === 'Oswald' ? 'selected' : ''}>Oswald</option>
+          <option value="Lobster" ${t.font === 'Lobster' ? 'selected' : ''}>Lobster</option>
+        </select>
+        <input type="color" value="${t.color}" onchange="updateTextColor(${t.id}, this.value)" class="color-picker-small" title="Text color">
+      </div>
+      <div class="size-control">
+        <label>Size: <span id="size-label-${t.id}">${t.size}px</span></label>
+        <input type="range" min="10" max="48" value="${t.size}" oninput="updateTextSize(${t.id}, this.value)" class="size-slider">
+      </div>
+    </div>
+  `).join('');
 }
 
 function resetPositions() {
   state.crossX = null; state.crossY = null;
   state.texts.forEach(t => { t.x = null; t.y = null; });
   state.selectedElement = null;
-  document.getElementById('positionHint').textContent = 'Click on the shirt preview to place elements';
+  document.getElementById('positionHint').textContent = 'Click on the shirt to place elements';
   updateTextSelectionUI();
   drawPreview();
 }
@@ -344,86 +255,31 @@ function handleFileUpload(e) {
   if (file) {
     document.getElementById('uploadedFileName').textContent = 'Uploaded: ' + file.name;
     const reader = new FileReader();
-    reader.onload = (ev) => { const img = new Image(); img.onload = () => { state.uploadedImage = img; drawPreview(); }; img.src = ev.target.result; };
+    reader.onload = (ev) => { 
+      const img = new Image(); 
+      img.onload = () => { state.uploadedImage = img; drawPreview(); }; 
+      img.src = ev.target.result; 
+    };
     reader.readAsDataURL(file);
   }
 }
 
-// T-shirt base images for different colors
-const tshirtImages = {};
-const shirtColorMap = {
-  '#FFFFFF': 'white',
-  '#1a1a1a': 'black',
-  '#1a237e': 'navy',
-  '#c62828': 'red',
-  '#3d1a6e': 'purple',
-  '#c9a227': 'gold',
-  '#1b5e20': 'green'
-};
-
-// Load t-shirt image for specific color
-function loadTshirtImage(color) {
+// Drawing functions
+function drawTShirt(ctx, x, y, w, h, color) {
   const colorName = shirtColorMap[color] || 'white';
-  if (tshirtImages[colorName] && tshirtImages[colorName].complete) {
-    return Promise.resolve(tshirtImages[colorName]);
-  }
-  return new Promise((resolve) => {
-    const img = new Image();
-    img.crossOrigin = 'anonymous';
-    img.onload = () => {
-      tshirtImages[colorName] = img;
-      resolve(img);
-    };
-    img.onerror = () => resolve(null);
-    img.src = `../images/tshirt-flat-${colorName}.png`;
-  });
-}
-
-// Draw t-shirt using actual color image
-async function drawTShirt(ctx, x, y, w, h, color) {
-  ctx.save();
+  const img = tshirtImages[colorName];
   
-  const img = await loadTshirtImage(color);
-  
-  if (img) {
-    // Draw actual t-shirt image - scale to fill canvas
+  if (img && img.complete) {
     const aspect = img.width / img.height;
-    const canvasAspect = w / h;
-    
-    let drawW, drawH, drawX, drawY;
-    
-    if (aspect > canvasAspect) {
-      // Image is wider - fit to height
-      drawH = h * 1.05;
-      drawW = drawH * aspect;
-      drawX = x - (drawW - w) / 2;
-      drawY = y - (drawH - h) / 2;
-    } else {
-      // Image is taller - fit to width
-      drawW = w * 1.05;
-      drawH = drawW / aspect;
-      drawX = x - (drawW - w) / 2;
-      drawY = y - (drawH - h) / 2;
-    }
-    
+    const drawH = h * 0.95;
+    const drawW = drawH * aspect;
+    const drawX = x + (w - drawW) / 2;
+    const drawY = y + (h - drawH) / 2;
     ctx.drawImage(img, drawX, drawY, drawW, drawH);
   } else {
-    // Fallback to simple drawing
     ctx.fillStyle = color;
-    ctx.beginPath();
-    ctx.moveTo(x + w*0.25, y + h*0.15);
-    ctx.lineTo(x + w*0.75, y + h*0.15);
-    ctx.lineTo(x + w*0.85, y + h*0.25);
-    ctx.lineTo(x + w*0.75, y + h*0.35);
-    ctx.lineTo(x + w*0.75, y + h*0.90);
-    ctx.quadraticCurveTo(x + w*0.50, y + h*0.93, x + w*0.25, y + h*0.90);
-    ctx.lineTo(x + w*0.25, y + h*0.35);
-    ctx.lineTo(x + w*0.15, y + h*0.25);
-    ctx.closePath();
-    ctx.fill();
+    ctx.fillRect(x + w*0.2, y + h*0.1, w*0.6, h*0.8);
   }
-  
-  ctx.restore();
 }
 
 function drawCross(ctx, cx, cy, size, color, style) {
@@ -489,30 +345,24 @@ function drawCross(ctx, cx, cy, size, color, style) {
   ctx.restore();
 }
 
-async function drawPreview() {
+function drawPreview() {
   const canvas = document.getElementById('tshirtCanvas');
+  if (!canvas) return;
   const ctx = canvas.getContext('2d');
   
-  // Enable high quality rendering
   ctx.imageSmoothingEnabled = true;
   ctx.imageSmoothingQuality = 'high';
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
   
-  // Clear with white background for better quality
-  ctx.fillStyle = '#f8f6fb';
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
-  
-  await drawTShirt(ctx, 50, 20, 300, 360, state.shirtColor);
+  drawTShirt(ctx, 50, 20, 300, 360, state.shirtColor);
   
   const { cx, cy, scale } = getDefaultPositions();
   const crossX = state.crossX || cx;
   const crossY = state.crossY || cy;
   
-  // Draw dashed border if cross is selected
   if (state.selectedElement === 'cross' && !state.uploadedImage) {
     ctx.save();
-    ctx.strokeStyle = '#c9a227';
-    ctx.lineWidth = 2;
-    ctx.setLineDash([5, 5]);
+    ctx.strokeStyle = '#c9a227'; ctx.lineWidth = 2; ctx.setLineDash([5, 5]);
     ctx.strokeRect(crossX - scale/2 - 5, crossY - scale/2 - 5, scale + 10, scale + 10);
     ctx.restore();
   }
@@ -526,38 +376,91 @@ async function drawPreview() {
     drawCross(ctx, crossX, crossY, scale, state.printColor, state.cross);
   }
   
-  // Draw all text instances
   state.texts.forEach((textObj, index) => {
     if (!textObj.text) return;
-    
     const x = textObj.x || cx;
-    const y = textObj.y || (cy + scale/2 + (state.position === 'back' ? 40 : 25) + index * 25);
+    const y = textObj.y || (cy + scale/2 + 25 + index * 25);
     
-    // Draw dashed border if this text is selected
     if (state.selectedElement === textObj.id) {
       ctx.save();
-      ctx.strokeStyle = '#3d1a6e';
-      ctx.lineWidth = 2;
-      ctx.setLineDash([5, 5]);
+      ctx.strokeStyle = '#3d1a6e'; ctx.lineWidth = 2; ctx.setLineDash([5, 5]);
       ctx.font = textObj.size + 'px ' + textObj.font;
       const metrics = ctx.measureText(textObj.text);
-      const padding = 8;
-      ctx.strokeRect(
-        x - metrics.width/2 - padding,
-        y - textObj.size/2 - padding,
-        metrics.width + padding*2,
-        textObj.size + padding*2
-      );
+      ctx.strokeRect(x - metrics.width/2 - 8, y - textObj.size/2 - 8, metrics.width + 16, textObj.size + 16);
       ctx.restore();
     }
     
-    // Use text's individual color, or fall back to global print color
     ctx.fillStyle = textObj.color || state.printColor;
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     ctx.font = textObj.size + 'px ' + textObj.font;
     ctx.fillText(textObj.text, x, y);
   });
+}
+
+// Init
+function init() {
+  preloadImages();
+  
+  const crossSelector = document.getElementById('crossSelector');
+  Object.keys(crossSVGs).forEach(key => {
+    const div = document.createElement('div');
+    div.className = 'cross-option' + (key === state.cross ? ' selected' : '');
+    div.innerHTML = crossSVGs[key];
+    div.title = crossNames[key];
+    div.onclick = () => { 
+      state.cross = key; 
+      document.querySelectorAll('.cross-option').forEach(el => el.classList.remove('selected')); 
+      div.classList.add('selected'); 
+      state.selectedElement = 'cross';
+      drawPreview(); 
+    };
+    crossSelector.appendChild(div);
+  });
+
+  document.querySelectorAll('#shirtColors .color-option').forEach(el => {
+    el.onclick = () => { 
+      state.shirtColor = el.dataset.color; 
+      document.querySelectorAll('#shirtColors .color-option').forEach(c => c.classList.remove('selected')); 
+      el.classList.add('selected'); 
+      drawPreview(); 
+    };
+  });
+
+  document.querySelectorAll('#printColors .color-option').forEach(el => {
+    el.onclick = () => { 
+      state.printColor = el.dataset.color; 
+      document.querySelectorAll('#printColors .color-option').forEach(c => c.classList.remove('selected')); 
+      el.classList.add('selected'); 
+      drawPreview(); 
+    };
+  });
+
+  document.getElementById('positionSelect').addEventListener('change', (e) => {
+    state.position = e.target.value;
+    state.crossX = null; state.crossY = null;
+    state.texts.forEach(t => { t.x = null; t.y = null; });
+    state.selectedElement = null;
+    drawPreview();
+  });
+
+  const addTextBtn = document.getElementById('addTextBtn');
+  if (addTextBtn) addTextBtn.addEventListener('click', addTextInstance);
+
+  renderTextControls();
+
+  const canvas = document.getElementById('tshirtCanvas');
+  if (canvas) {
+    canvas.addEventListener('touchstart', handleDragStart, { passive: false });
+    canvas.addEventListener('touchmove', handleDragMove, { passive: false });
+    canvas.addEventListener('touchend', handleDragEnd);
+    canvas.addEventListener('mousedown', handleDragStart);
+    canvas.addEventListener('mousemove', handleDragMove);
+    canvas.addEventListener('mouseup', handleDragEnd);
+    canvas.addEventListener('mouseleave', handleDragEnd);
+  }
+
+  // Initial draw after images load
+  setTimeout(drawPreview, 100);
 }
 
 document.addEventListener('DOMContentLoaded', init);
