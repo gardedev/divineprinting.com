@@ -18,10 +18,22 @@ const crossNames = { classic: 'Classic', celtic: 'Celtic', ornate: 'Ornate', fla
 // Pre-load t-shirt images
 const tshirtImages = {};
 const shirtColors = ['white', 'black', 'navy', 'red'];
+let imagesLoaded = false;
 
 function preloadImages() {
+  let loadedCount = 0;
   shirtColors.forEach(color => {
     const img = new Image();
+    img.onload = () => {
+      loadedCount++;
+      if (loadedCount === shirtColors.length) {
+        imagesLoaded = true;
+        drawPreview();
+      }
+    };
+    img.onerror = () => {
+      loadedCount++;
+    };
     img.src = `../images/tshirt-flat-${color}.png`;
     tshirtImages[color] = img;
   });
@@ -269,7 +281,7 @@ function drawTShirt(ctx, x, y, w, h, color) {
   const colorName = shirtColorMap[color] || 'white';
   const img = tshirtImages[colorName];
   
-  if (img && img.complete) {
+  if (img && img.complete && img.naturalWidth > 0) {
     const aspect = img.width / img.height;
     const drawH = h * 0.95;
     const drawW = drawH * aspect;
@@ -277,8 +289,50 @@ function drawTShirt(ctx, x, y, w, h, color) {
     const drawY = y + (h - drawH) / 2;
     ctx.drawImage(img, drawX, drawY, drawW, drawH);
   } else {
+    // Fallback - draw simple t-shirt shape
     ctx.fillStyle = color;
-    ctx.fillRect(x + w*0.2, y + h*0.1, w*0.6, h*0.8);
+    ctx.strokeStyle = '#ddd';
+    ctx.lineWidth = 2;
+    
+    // Body
+    ctx.beginPath();
+    ctx.moveTo(x + w*0.25, y + h*0.15);
+    ctx.lineTo(x + w*0.75, y + h*0.15);
+    ctx.lineTo(x + w*0.85, y + h*0.25);
+    ctx.lineTo(x + w*0.75, y + h*0.35);
+    ctx.lineTo(x + w*0.75, y + h*0.90);
+    ctx.quadraticCurveTo(x + w*0.50, y + h*0.93, x + w*0.25, y + h*0.90);
+    ctx.lineTo(x + w*0.25, y + h*0.35);
+    ctx.lineTo(x + w*0.15, y + h*0.25);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+    
+    // Collar
+    ctx.beginPath();
+    ctx.moveTo(x + w*0.35, y + h*0.15);
+    ctx.quadraticCurveTo(x + w*0.50, y + h*0.22, x + w*0.65, y + h*0.15);
+    ctx.strokeStyle = 'rgba(0,0,0,0.15)';
+    ctx.stroke();
+    
+    // Sleeves
+    ctx.fillStyle = color;
+    ctx.strokeStyle = '#ddd';
+    ctx.beginPath();
+    ctx.moveTo(x + w*0.15, y + h*0.25);
+    ctx.lineTo(x + w*0.05, y + h*0.35);
+    ctx.lineTo(x + w*0.15, y + h*0.45);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+    
+    ctx.beginPath();
+    ctx.moveTo(x + w*0.85, y + h*0.25);
+    ctx.lineTo(x + w*0.95, y + h*0.35);
+    ctx.lineTo(x + w*0.85, y + h*0.45);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
   }
 }
 
@@ -459,8 +513,8 @@ function init() {
     canvas.addEventListener('mouseleave', handleDragEnd);
   }
 
-  // Initial draw after images load
-  setTimeout(drawPreview, 100);
+  // Initial draw - will use fallback until images load
+  drawPreview();
 }
 
 document.addEventListener('DOMContentLoaded', init);
