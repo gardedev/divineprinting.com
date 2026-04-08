@@ -270,7 +270,10 @@ function updateTextSelectionUI() {
   });
 }
 
-function init() {
+async function init() {
+  // Load t-shirt base image first
+  await loadTshirtBase();
+  
   const crossSelector = document.getElementById('crossSelector');
   Object.keys(crossSVGs).forEach(key => {
     const div = document.createElement('div');
@@ -346,47 +349,66 @@ function handleFileUpload(e) {
   }
 }
 
-// Draw simple clean t-shirt
+// T-shirt base image
+let tshirtBaseImage = null;
+
+// Load t-shirt base image
+function loadTshirtBase() {
+  if (tshirtBaseImage) return Promise.resolve();
+  return new Promise((resolve) => {
+    tshirtBaseImage = new Image();
+    tshirtBaseImage.crossOrigin = 'anonymous';
+    tshirtBaseImage.onload = () => resolve();
+    tshirtBaseImage.onerror = () => resolve(); // Continue even if image fails
+    tshirtBaseImage.src = '../images/tshirt-white.png';
+  });
+}
+
+// Color mapping for t-shirt tinting
+const colorFilters = {
+  '#FFFFFF': 'none',
+  '#1a1a1a': 'brightness(0.15)',
+  '#1a237e': 'sepia(0.5) saturate(3) hue-rotate(180deg) brightness(0.6)',
+  '#c62828': 'sepia(0.5) saturate(3) hue-rotate(320deg) brightness(0.8)',
+  '#3d1a6e': 'sepia(0.5) saturate(3) hue-rotate(240deg) brightness(0.5)',
+  '#c9a227': 'sepia(0.8) saturate(2) hue-rotate(10deg) brightness(0.9)',
+  '#1b5e20': 'sepia(0.5) saturate(3) hue-rotate(90deg) brightness(0.5)'
+};
+
+// Draw t-shirt using base image with color tint
 function drawTShirt(ctx, x, y, w, h, color) {
   ctx.save();
   
-  // Main body
-  ctx.fillStyle = color;
-  ctx.beginPath();
-  ctx.moveTo(x + w*0.25, y + h*0.15);
-  ctx.lineTo(x + w*0.75, y + h*0.15);
-  ctx.lineTo(x + w*0.85, y + h*0.25);
-  ctx.lineTo(x + w*0.75, y + h*0.35);
-  ctx.lineTo(x + w*0.75, y + h*0.90);
-  ctx.quadraticCurveTo(x + w*0.50, y + h*0.93, x + w*0.25, y + h*0.90);
-  ctx.lineTo(x + w*0.25, y + h*0.35);
-  ctx.lineTo(x + w*0.15, y + h*0.25);
-  ctx.closePath();
-  ctx.fill();
-  
-  // Collar
-  ctx.beginPath();
-  ctx.moveTo(x + w*0.35, y + h*0.15);
-  ctx.quadraticCurveTo(x + w*0.50, y + h*0.22, x + w*0.65, y + h*0.15);
-  ctx.strokeStyle = 'rgba(0,0,0,0.15)';
-  ctx.lineWidth = 2;
-  ctx.stroke();
-  
-  // Sleeves
-  ctx.fillStyle = color;
-  ctx.beginPath();
-  ctx.moveTo(x + w*0.15, y + h*0.25);
-  ctx.lineTo(x + w*0.05, y + h*0.35);
-  ctx.lineTo(x + w*0.15, y + h*0.45);
-  ctx.closePath();
-  ctx.fill();
-  
-  ctx.beginPath();
-  ctx.moveTo(x + w*0.85, y + h*0.25);
-  ctx.lineTo(x + w*0.95, y + h*0.35);
-  ctx.lineTo(x + w*0.85, y + h*0.45);
-  ctx.closePath();
-  ctx.fill();
+  if (tshirtBaseImage && tshirtBaseImage.complete) {
+    // Draw base image
+    const aspect = tshirtBaseImage.width / tshirtBaseImage.height;
+    const drawW = w * 1.1;
+    const drawH = drawW / aspect;
+    const drawX = x - (drawW - w) / 2;
+    const drawY = y - (drawH - h) / 2 + h * 0.05;
+    
+    // Apply color filter
+    const filter = colorFilters[color] || 'none';
+    ctx.filter = filter;
+    
+    ctx.drawImage(tshirtBaseImage, drawX, drawY, drawW, drawH);
+    
+    ctx.filter = 'none';
+  } else {
+    // Fallback to simple drawing
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.moveTo(x + w*0.25, y + h*0.15);
+    ctx.lineTo(x + w*0.75, y + h*0.15);
+    ctx.lineTo(x + w*0.85, y + h*0.25);
+    ctx.lineTo(x + w*0.75, y + h*0.35);
+    ctx.lineTo(x + w*0.75, y + h*0.90);
+    ctx.quadraticCurveTo(x + w*0.50, y + h*0.93, x + w*0.25, y + h*0.90);
+    ctx.lineTo(x + w*0.25, y + h*0.35);
+    ctx.lineTo(x + w*0.15, y + h*0.25);
+    ctx.closePath();
+    ctx.fill();
+  }
   
   ctx.restore();
 }
