@@ -375,18 +375,43 @@ function handleFileUpload(e) {
   }
 }
 
-// Drawing functions
-function drawTShirt(ctx, x, y, w, h, color) {
-  // Use the loaded shirt image if available
+// Drawing functions - Updated to fill canvas better
+function drawTShirt(ctx, canvasWidth, canvasHeight) {
   if (currentShirtImage && currentShirtImage.complete && currentShirtImage.naturalWidth > 0) {
-    const aspect = currentShirtImage.width / currentShirtImage.height;
-    const drawH = h * 0.95;
-    const drawW = drawH * aspect;
-    const drawX = x + (w - drawW) / 2;
-    const drawY = y + (h - drawH) / 2;
-    ctx.drawImage(currentShirtImage, drawX, drawY, drawW, drawH);
+    // Calculate dimensions to fill the canvas while maintaining aspect ratio
+    const imgAspect = currentShirtImage.width / currentShirtImage.height;
+    const canvasAspect = canvasWidth / canvasHeight;
+    
+    let drawWidth, drawHeight, drawX, drawY;
+    
+    // Fill the canvas with minimal margins (2% padding)
+    const padding = 0.02;
+    const availWidth = canvasWidth * (1 - padding * 2);
+    const availHeight = canvasHeight * (1 - padding * 2);
+    
+    if (imgAspect > canvasAspect) {
+      // Image is wider relative to canvas
+      drawWidth = availWidth;
+      drawHeight = drawWidth / imgAspect;
+      drawX = canvasWidth * padding;
+      drawY = (canvasHeight - drawHeight) / 2;
+    } else {
+      // Image is taller relative to canvas
+      drawHeight = availHeight;
+      drawWidth = drawHeight * imgAspect;
+      drawX = (canvasWidth - drawWidth) / 2;
+      drawY = canvasHeight * padding;
+    }
+    
+    ctx.drawImage(currentShirtImage, drawX, drawY, drawWidth, drawHeight);
   } else {
-    // Fallback - draw simple t-shirt shape
+    // Fallback - draw simple t-shirt shape with selected color
+    const x = canvasWidth * 0.05;
+    const y = canvasHeight * 0.02;
+    const w = canvasWidth * 0.9;
+    const h = canvasHeight * 0.96;
+    const color = state.shirtColor;
+    
     ctx.fillStyle = color;
     ctx.strokeStyle = '#ddd';
     ctx.lineWidth = 2;
