@@ -15,6 +15,107 @@ const crossSVGs = {
 
 const crossNames = { classic: 'Classic', celtic: 'Celtic', ornate: 'Ornate', flame: 'Flame', royal: 'Royal', emerald: 'Emerald', silver: 'Silver', heart: 'Heart', dove: 'Dove', ichthys: 'Ichthys' };
 
+// Color categories for organized display
+const colorCategories = {
+  'Popular': [
+    { name: 'White', hex: '#FFFFFF', image: 'white.jpg' },
+    { name: 'Black', hex: '#1a1a1a', image: 'black.jpg' },
+    { name: 'Navy', hex: '#1a237e', image: 'navy.jpg' },
+    { name: 'Red', hex: '#c62828', image: 'red.jpg' },
+    { name: 'Purple', hex: '#3d1a6e', image: 'purple.jpg' },
+    { name: 'Gold', hex: '#c9a227', image: 'gold.jpg' },
+    { name: 'Forest Green', hex: '#1b5e20', image: 'forest-green.jpg' },
+  ],
+  'Neutrals': [
+    { name: 'Ash', hex: '#B2BEB5', image: 'ash.jpg' },
+    { name: 'Charcoal', hex: '#36454F', image: 'charcoal.jpg' },
+    { name: 'Dark Heather', hex: '#4A4A4A', image: 'dark-heather.jpg' },
+    { name: 'Graphite Heather', hex: '#5A5A5A', image: 'graphite-heather.jpg' },
+    { name: 'Gravel', hex: '#808080', image: 'gravel.jpg' },
+    { name: 'Ice Grey', hex: '#E0E0E0', image: 'ice-grey.jpg' },
+    { name: 'Natural', hex: '#F5F5DC', image: 'natural.jpg' },
+    { name: 'Off White', hex: '#FAF9F6', image: 'off-white.jpg' },
+    { name: 'Sport Grey', hex: '#A9A9A9', image: 'sport-grey.jpg' },
+    { name: 'Tweed', hex: '#8B8589', image: 'tweed.jpg' },
+  ],
+  'Blues': [
+    { name: 'Carolina Blue', hex: '#7BAFD4', image: 'carolina-blue.jpg' },
+    { name: 'Cobalt', hex: '#0047AB', image: 'cobalt.jpg' },
+    { name: 'Indigo Blue', hex: '#3F00FF', image: 'indigo-blue.jpg' },
+    { name: 'Iris', hex: '#5A4FCF', image: 'iris.jpg' },
+    { name: 'Light Blue', hex: '#ADD8E6', image: 'light-blue.jpg' },
+    { name: 'Midnight', hex: '#191970', image: 'midnight.jpg' },
+    { name: 'Royal', hex: '#4169E1', image: 'royal.jpg' },
+    { name: 'Sapphire', hex: '#0F52BA', image: 'sapphire.jpg' },
+    { name: 'Sky', hex: '#87CEEB', image: 'sky.jpg' },
+    { name: 'Tropical Blue', hex: '#00BFFF', image: 'tropical-blue.jpg' },
+    { name: 'Aquatic', hex: '#7FFFD4', image: 'aquatic.jpg' },
+    { name: 'Blue Dusk', hex: '#4A6FA5', image: 'blue-dusk.jpg' },
+  ],
+  'Greens': [
+    { name: 'Irish Green', hex: '#00A86B', image: 'irish-green.jpg' },
+    { name: 'Lime', hex: '#00FF00', image: 'lime.jpg' },
+    { name: 'Mint Green', hex: '#98FF98', image: 'mint-green.jpg' },
+    { name: 'Military Green', hex: '#4B5320', image: 'military-green.jpg' },
+    { name: 'Turf Green', hex: '#006400', image: 'turf-green.jpg' },
+    { name: 'Electric Green', hex: '#00FF00', image: 'electric-green.jpg' },
+    { name: 'Fan Dark Green', hex: '#013220', image: 'fan-dark-green.jpg' },
+    { name: 'Heather Military Green', hex: '#4B5320', image: 'heather-military-green.jpg' },
+    { name: 'Kiwi', hex: '#8EE53F', image: 'kiwi.jpg' },
+    { name: 'Safety Green', hex: '#00FF7F', image: 'safety-green.jpg' },
+    { name: 'Neon Green', hex: '#39FF14', image: 'neon-green.jpg' },
+  ],
+  'Reds & Pinks': [
+    { name: 'Cardinal', hex: '#C41E3A', image: 'cardinal.jpg' },
+    { name: 'Coral Silk', hex: '#F88379', image: 'coral-silk.jpg' },
+    { name: 'Dusty Rose', hex: '#DCAE96', image: 'dusty-rose.jpg' },
+    { name: 'Garnet', hex: '#733635', image: 'garnet.jpg' },
+    { name: 'Heather Red', hex: '#B85450', image: 'heather-red.jpg' },
+    { name: 'Heliconia', hex: '#FF69B4', image: 'heliconia.jpg' },
+    { name: 'Light Pink', hex: '#FFB6C1', image: 'light-pink.jpg' },
+    { name: 'Maroon', hex: '#800000', image: 'maroon.jpg' },
+    { name: 'Safety Pink', hex: '#FF69B4', image: 'safety-pink.jpg' },
+    { name: 'Azalea', hex: '#F4A6D7', image: 'azalea.jpg' },
+    { name: 'Berry', hex: '#8B008B', image: 'berry.jpg' },
+  ],
+  'Purples': [
+    { name: 'Fan Dark Purple', hex: '#301934', image: 'fan-dark-purple.jpg' },
+    { name: 'Heather Radiant Orchid', hex: '#B565A7', image: 'heather-radiant-orchid.jpg' },
+    { name: 'Lilac', hex: '#C8A2C8', image: 'lilac.jpg' },
+    { name: 'Violet', hex: '#8F00FF', image: 'violet.jpg' },
+    { name: 'Blackberry', hex: '#4A0E4E', image: 'blackberry.jpg' },
+  ],
+  'Yellows & Oranges': [
+    { name: 'Daisy', hex: '#FFE4B5', image: 'daisy.jpg' },
+    { name: 'Old Gold', hex: '#CFB53B', image: 'old-gold.jpg' },
+    { name: 'Orange', hex: '#FFA500', image: 'orange.jpg' },
+    { name: 'Safety Orange', hex: '#FF6700', image: 'safety-orange.jpg' },
+    { name: 'Sunset', hex: '#FD5E53', image: 'sunset.jpg' },
+    { name: 'Tangerine', hex: '#F28500', image: 'tangerine.jpg' },
+    { name: 'Tennessee Orange', hex: '#FF8200', image: 'tennessee-orange.jpg' },
+    { name: 'Texas Orange', hex: '#BF5700', image: 'texas-orange.jpg' },
+    { name: 'Yellow Haze', hex: '#FFFF00', image: 'yellow-haze.jpg' },
+    { name: 'Antique Orange', hex: '#CD853F', image: 'antique-orange.jpg' },
+  ],
+  'Antique & Heather': [
+    { name: 'Antique Cherry Red', hex: '#8B3A3A', image: 'antique-cherry-red.jpg' },
+    { name: 'Antique Irish Green', hex: '#4A7C59', image: 'antique-irish-green.jpg' },
+    { name: 'Antique Jade Dome', hex: '#5F9EA0', image: 'antique-jade-dome.jpg' },
+    { name: 'Antique Orange', hex: '#CD853F', image: 'antique-orange.jpg' },
+    { name: 'Antique Sapphire', hex: '#2F4F4F', image: 'antique-sapphire.jpg' },
+    { name: 'Heather Navy', hex: '#2C3E50', image: 'heather-navy.jpg' },
+    { name: 'Heather Sapphire', hex: '#3A5F8A', image: 'heather-sapphire.jpg' },
+  ],
+  'Browns & Earth': [
+    { name: 'Brown Savana', hex: '#8B4513', image: 'brown-savana.jpg' },
+    { name: 'Cornsilk', hex: '#FFF8DC', image: 'cornsilk.jpg' },
+    { name: 'Dark Chocolate', hex: '#3D2817', image: 'dark-chocolate.jpg' },
+    { name: 'Prairie Dust', hex: '#D2B48C', image: 'prairie-dust.jpg' },
+    { name: 'Russet', hex: '#80461B', image: 'russet.jpg' },
+    { name: 'Sand', hex: '#C2B280', image: 'sand.jpg' },
+  ]
+};
+
 // T-shirt images loaded dynamically based on selection
 const tshirtImages = {};
 let imagesLoaded = false;
