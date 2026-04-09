@@ -594,52 +594,63 @@ function init() {
     crossSelector.appendChild(div);
   });
 
-  // Generate organized color grid
-  const shirtColorsContainer = document.getElementById('shirtColors');
-  if (shirtColorsContainer) {
-    shirtColorsContainer.innerHTML = '';
-    Object.entries(colorCategories).forEach(([category, colors]) => {
-      const categoryDiv = document.createElement('div');
-      categoryDiv.className = 'color-category';
-      categoryDiv.innerHTML = `<div class="color-category-title">${category}</div>`;
+  // Generate color tabs
+  const colorTabContent = document.getElementById('colorTabContent');
+  const colorTabs = document.querySelectorAll('.color-tab');
+  
+  function renderColorsForCategory(categoryName) {
+    if (!colorTabContent) return;
+    const colors = colorCategories[categoryName];
+    if (!colors) return;
+    
+    const swatchesDiv = document.createElement('div');
+    swatchesDiv.className = 'color-swatches';
+    
+    colors.forEach(color => {
+      const isSelected = color.image === currentShirtImageName;
+      const borderStyle = (color.name.includes('White') || color.name.includes('Natural') || color.name.includes('Off White') || color.name.includes('Cornsilk')) ? 'border:1px solid #ddd;' : '';
       
-      const swatchesDiv = document.createElement('div');
-      swatchesDiv.className = 'color-swatches';
-      
-      colors.forEach(color => {
-        const isSelected = color.image === currentShirtImageName;
-        const borderStyle = (color.name.includes('White') || color.name.includes('Natural') || color.name.includes('Off White') || color.name.includes('Cornsilk')) ? 'border:1px solid #ddd;' : '';
+      const swatch = document.createElement('div');
+      swatch.className = `color-swatch ${isSelected ? 'selected' : ''}`;
+      swatch.innerHTML = `
+        <div class="color-swatch-circle" style="background:${color.hex};${borderStyle}"></div>
+        <div class="color-swatch-name">${color.name}</div>
+      `;
+      swatch.onclick = () => {
+        state.shirtColor = color.hex;
+        currentShirtImageName = color.image;
+        currentSelectedColorName = color.name;
         
-        const swatch = document.createElement('div');
-        swatch.className = `color-swatch ${isSelected ? 'selected' : ''}`;
-        swatch.innerHTML = `
-          <div class="color-swatch-circle" style="background:${color.hex};${borderStyle}"></div>
-          <div class="color-swatch-name">${color.name}</div>
-        `;
-        swatch.onclick = () => {
-          state.shirtColor = color.hex;
-          currentShirtImageName = color.image;
-          currentSelectedColorName = color.name;
-          
-          // Update UI
-          document.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('selected'));
-          swatch.classList.add('selected');
-          
-          // Update selected color display
-          const preview = document.getElementById('selectedColorPreview');
-          const nameEl = document.getElementById('selectedColorName');
-          if (preview) preview.style.background = color.hex;
-          if (nameEl) nameEl.textContent = color.name;
-          
-          loadShirtImage(color.image);
-        };
-        swatchesDiv.appendChild(swatch);
-      });
-      
-      categoryDiv.appendChild(swatchesDiv);
-      shirtColorsContainer.appendChild(categoryDiv);
+        // Update UI
+        document.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('selected'));
+        swatch.classList.add('selected');
+        
+        // Update selected color display
+        const preview = document.getElementById('selectedColorPreview');
+        const nameEl = document.getElementById('selectedColorName');
+        if (preview) preview.style.background = color.hex;
+        if (nameEl) nameEl.textContent = color.name;
+        
+        loadShirtImage(color.image);
+      };
+      swatchesDiv.appendChild(swatch);
     });
+    
+    colorTabContent.innerHTML = '';
+    colorTabContent.appendChild(swatchesDiv);
   }
+  
+  // Set up tab click handlers
+  colorTabs.forEach(tab => {
+    tab.onclick = () => {
+      colorTabs.forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      renderColorsForCategory(tab.dataset.category);
+    };
+  });
+  
+  // Render initial category (Popular)
+  renderColorsForCategory('Popular');
 
   document.querySelectorAll('#printColors .color-option').forEach(el => {
     el.onclick = () => { 
