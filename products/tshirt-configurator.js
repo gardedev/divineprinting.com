@@ -15,34 +15,39 @@ const crossSVGs = {
 
 const crossNames = { classic: 'Classic', celtic: 'Celtic', ornate: 'Ornate', flame: 'Flame', royal: 'Royal', emerald: 'Emerald', silver: 'Silver', heart: 'Heart', dove: 'Dove', ichthys: 'Ichthys' };
 
-// Pre-load t-shirt images
+// T-shirt images loaded dynamically based on selection
 const tshirtImages = {};
-const shirtColors = ['white', 'black', 'navy', 'red'];
 let imagesLoaded = false;
+let currentShirtImage = null;
 
-function preloadImages() {
-  let loadedCount = 0;
-  shirtColors.forEach(color => {
-    const img = new Image();
-    img.onload = () => {
-      loadedCount++;
-      if (loadedCount === shirtColors.length) {
-        imagesLoaded = true;
-        drawPreview();
-      }
-    };
-    img.onerror = () => {
-      loadedCount++;
-    };
-    img.src = `../images/tshirt-flat-${color}.png`;
-    tshirtImages[color] = img;
-  });
+function loadShirtImage(imageName) {
+  if (tshirtImages[imageName]) {
+    currentShirtImage = tshirtImages[imageName];
+    imagesLoaded = true;
+    drawPreview();
+    return;
+  }
+  
+  const img = new Image();
+  img.onload = () => {
+    tshirtImages[imageName] = img;
+    currentShirtImage = img;
+    imagesLoaded = true;
+    drawPreview();
+  };
+  img.onerror = () => {
+    // Fallback to color fill if image fails to load
+    currentShirtImage = null;
+    imagesLoaded = true;
+    drawPreview();
+  };
+  img.src = `../images/tshirts/${imageName}`;
 }
 
 // State
 let state = {
   cross: null,
-  shirtColor: '#FFFFFF',
+  shirtColor: '#8B3A3A',
   printColor: '#1a1a1a',
   position: 'center',
   uploadedImage: null,
@@ -54,15 +59,8 @@ let state = {
 
 let nextTextId = 1;
 
-const shirtColorMap = {
-  '#FFFFFF': 'white',
-  '#1a1a1a': 'black', 
-  '#1a237e': 'navy',
-  '#c62828': 'red',
-  '#3d1a6e': 'white',
-  '#c9a227': 'white',
-  '#1b5e20': 'white'
-};
+// Current shirt image filename
+let currentShirtImageName = 'antique-cherry-red.jpg';
 
 function getDefaultPositions() {
   let cx, cy, scale;
@@ -278,16 +276,14 @@ function handleFileUpload(e) {
 
 // Drawing functions
 function drawTShirt(ctx, x, y, w, h, color) {
-  const colorName = shirtColorMap[color] || 'white';
-  const img = tshirtImages[colorName];
-  
-  if (img && img.complete && img.naturalWidth > 0) {
-    const aspect = img.width / img.height;
+  // Use the loaded shirt image if available
+  if (currentShirtImage && currentShirtImage.complete && currentShirtImage.naturalWidth > 0) {
+    const aspect = currentShirtImage.width / currentShirtImage.height;
     const drawH = h * 0.95;
     const drawW = drawH * aspect;
     const drawX = x + (w - drawW) / 2;
     const drawY = y + (h - drawH) / 2;
-    ctx.drawImage(img, drawX, drawY, drawW, drawH);
+    ctx.drawImage(currentShirtImage, drawX, drawY, drawW, drawH);
   } else {
     // Fallback - draw simple t-shirt shape
     ctx.fillStyle = color;
@@ -453,7 +449,8 @@ function drawPreview() {
 
 // Init
 function init() {
-  preloadImages();
+  // Load initial shirt image
+  loadShirtImage(currentShirtImageName);
   
   const crossSelector = document.getElementById('crossSelector');
   Object.keys(crossSVGs).forEach(key => {
@@ -476,6 +473,12 @@ function init() {
       state.shirtColor = el.dataset.color; 
       document.querySelectorAll('#shirtColors .color-option').forEach(c => c.classList.remove('selected')); 
       el.classList.add('selected'); 
+      // Load the corresponding shirt image
+      const imageName = el.dataset.image;
+      if (imageName) {
+        currentShirtImageName = imageName;
+        loadShirtImage(imageName);
+      }
       drawPreview(); 
     };
   });
