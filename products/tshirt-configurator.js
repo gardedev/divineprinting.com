@@ -404,7 +404,8 @@ function drawPreview() {
   ctx.imageSmoothingQuality = 'high';
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   
-  drawTShirt(ctx, 50, 20, 300, 360, state.shirtColor);
+  // Updated to use canvas dimensions for better fill
+  drawTShirt(ctx, canvas.width, canvas.height);
   
   const { cx, cy, scale } = getDefaultPositions();
   const crossX = state.crossX || cx;
@@ -468,20 +469,52 @@ function init() {
     crossSelector.appendChild(div);
   });
 
-  document.querySelectorAll('#shirtColors .color-option').forEach(el => {
-    el.onclick = () => { 
-      state.shirtColor = el.dataset.color; 
-      document.querySelectorAll('#shirtColors .color-option').forEach(c => c.classList.remove('selected')); 
-      el.classList.add('selected'); 
-      // Load the corresponding shirt image
-      const imageName = el.dataset.image;
-      if (imageName) {
-        currentShirtImageName = imageName;
-        loadShirtImage(imageName);
-      }
-      drawPreview(); 
-    };
-  });
+  // Generate organized color grid
+  const shirtColorsContainer = document.getElementById('shirtColors');
+  if (shirtColorsContainer) {
+    shirtColorsContainer.innerHTML = '';
+    Object.entries(colorCategories).forEach(([category, colors]) => {
+      const categoryDiv = document.createElement('div');
+      categoryDiv.className = 'color-category';
+      categoryDiv.innerHTML = `<div class="color-category-title">${category}</div>`;
+      
+      const swatchesDiv = document.createElement('div');
+      swatchesDiv.className = 'color-swatches';
+      
+      colors.forEach(color => {
+        const isSelected = color.image === currentShirtImageName;
+        const borderStyle = (color.name.includes('White') || color.name.includes('Natural') || color.name.includes('Off White') || color.name.includes('Cornsilk')) ? 'border:1px solid #ddd;' : '';
+        
+        const swatch = document.createElement('div');
+        swatch.className = `color-swatch ${isSelected ? 'selected' : ''}`;
+        swatch.innerHTML = `
+          <div class="color-swatch-circle" style="background:${color.hex};${borderStyle}"></div>
+          <div class="color-swatch-name">${color.name}</div>
+        `;
+        swatch.onclick = () => {
+          state.shirtColor = color.hex;
+          currentShirtImageName = color.image;
+          currentSelectedColorName = color.name;
+          
+          // Update UI
+          document.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('selected'));
+          swatch.classList.add('selected');
+          
+          // Update selected color display
+          const preview = document.getElementById('selectedColorPreview');
+          const nameEl = document.getElementById('selectedColorName');
+          if (preview) preview.style.background = color.hex;
+          if (nameEl) nameEl.textContent = color.name;
+          
+          loadShirtImage(color.image);
+        };
+        swatchesDiv.appendChild(swatch);
+      });
+      
+      categoryDiv.appendChild(swatchesDiv);
+      shirtColorsContainer.appendChild(categoryDiv);
+    });
+  }
 
   document.querySelectorAll('#printColors .color-option').forEach(el => {
     el.onclick = () => { 
