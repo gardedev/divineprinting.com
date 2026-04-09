@@ -384,23 +384,22 @@ function drawTShirt(ctx, canvasWidth, canvasHeight) {
     
     let drawWidth, drawHeight, drawX, drawY;
     
-    // Fill the canvas with minimal margins (2% padding)
-    const padding = 0.02;
-    const availWidth = canvasWidth * (1 - padding * 2);
-    const availHeight = canvasHeight * (1 - padding * 2);
+    // Zoom in to fill more of the canvas (crop the image slightly to remove excess margins)
+    // Use 115% zoom to crop out the empty space around the shirt
+    const zoomFactor = 1.15;
     
     if (imgAspect > canvasAspect) {
       // Image is wider relative to canvas
-      drawWidth = availWidth;
-      drawHeight = drawWidth / imgAspect;
-      drawX = canvasWidth * padding;
+      drawHeight = canvasHeight * zoomFactor;
+      drawWidth = drawHeight * imgAspect;
+      drawX = (canvasWidth - drawWidth) / 2;
       drawY = (canvasHeight - drawHeight) / 2;
     } else {
       // Image is taller relative to canvas
-      drawHeight = availHeight;
-      drawWidth = drawHeight * imgAspect;
+      drawWidth = canvasWidth * zoomFactor;
+      drawHeight = drawWidth / imgAspect;
       drawX = (canvasWidth - drawWidth) / 2;
-      drawY = canvasHeight * padding;
+      drawY = (canvasHeight - drawHeight) / 2;
     }
     
     ctx.drawImage(currentShirtImage, drawX, drawY, drawWidth, drawHeight);
