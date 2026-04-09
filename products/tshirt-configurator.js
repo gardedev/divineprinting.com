@@ -385,8 +385,8 @@ function drawTShirt(ctx, canvasWidth, canvasHeight) {
     let drawWidth, drawHeight, drawX, drawY;
     
     // Zoom in to fill more of the canvas (crop the image slightly to remove excess margins)
-    // Use 115% zoom to crop out the empty space around the shirt
-    const zoomFactor = 1.15;
+    // Use 108% zoom to crop out some empty space without cutting off the shirt
+    const zoomFactor = 1.08;
     
     if (imgAspect > canvasAspect) {
       // Image is wider relative to canvas
@@ -395,11 +395,11 @@ function drawTShirt(ctx, canvasWidth, canvasHeight) {
       drawX = (canvasWidth - drawWidth) / 2;
       drawY = (canvasHeight - drawHeight) / 2;
     } else {
-      // Image is taller relative to canvas
+      // Image is taller relative to canvas - shift up slightly to show more of the shirt body
       drawWidth = canvasWidth * zoomFactor;
       drawHeight = drawWidth / imgAspect;
       drawX = (canvasWidth - drawWidth) / 2;
-      drawY = (canvasHeight - drawHeight) / 2;
+      drawY = (canvasHeight - drawHeight) / 2 - (canvasHeight * 0.02); // Shift up 2%
     }
     
     ctx.drawImage(currentShirtImage, drawX, drawY, drawWidth, drawHeight);
