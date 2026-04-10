@@ -1,19 +1,34 @@
 // T-Shirt Configurator JavaScript - Multi-text support
 
-const crossSVGs = {
-  classic: '<svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="35" fill="none" stroke="#c9a227" stroke-width="3"/><path d="M50 25v50M25 50h50" stroke="#3d1a6e" stroke-width="6" stroke-linecap="round"/></svg>',
-  celtic: '<svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="35" fill="none" stroke="#1a237e" stroke-width="3"/><circle cx="50" cy="50" r="15" fill="none" stroke="#c9a227" stroke-width="3"/><path d="M50 15v70M15 50h70" stroke="#c62828" stroke-width="5" stroke-linecap="round"/></svg>',
-  ornate: '<svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="38" fill="#f5efe0" stroke="#c9a227" stroke-width="2"/><path d="M50 20v60M20 50h60" stroke="#3d1a6e" stroke-width="5" stroke-linecap="round"/><circle cx="50" cy="50" r="8" fill="#c9a227"/></svg>',
-  flame: '<svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="35" fill="none" stroke="#c62828" stroke-width="3"/><path d="M50 20c-5 15-10 25-10 35 0 12 5 20 10 20s10-8 10-20c0-10-5-20-10-35z" fill="#ff6b35" opacity="0.9"/><path d="M50 30v45M30 50h40" stroke="#c62828" stroke-width="4" stroke-linecap="round"/></svg>',
-  royal: '<svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="35" fill="#3d1a6e"/><path d="M50 22v56M22 50h56" stroke="#c9a227" stroke-width="5" stroke-linecap="round"/><circle cx="50" cy="50" r="10" fill="#c9a227"/></svg>',
-  emerald: '<svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="35" fill="none" stroke="#1b5e20" stroke-width="3"/><path d="M50 18c-8 12-12 22-12 32 0 15 5 25 12 25s12-10 12-25c0-10-4-20-12-32z" fill="#4caf50"/><path d="M50 25v50M25 50h50" stroke="#1b5e20" stroke-width="4" stroke-linecap="round"/></svg>',
-  silver: '<svg viewBox="0 0 100 100"><defs><linearGradient id="g1" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#e0e0e0"/><stop offset="50%" stop-color="#909090"/><stop offset="100%" stop-color="#e0e0e0"/></linearGradient></defs><circle cx="50" cy="50" r="35" fill="url(#g1)" stroke="#606060" stroke-width="2"/><path d="M50 20v60M20 50h60" stroke="#3d1a6e" stroke-width="5" stroke-linecap="round"/></svg>',
-  heart: '<svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="35" fill="none" stroke="#c62828" stroke-width="3"/><path d="M50 35c-10-10-25-5-25 10 0 15 25 30 25 30s25-15 25-30c0-15-15-20-25-10z" fill="#e91e63"/><path d="M50 30v40M30 50h40" stroke="#fff" stroke-width="3" stroke-linecap="round"/></svg>',
-  dove: '<svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="35" fill="#e3f2fd" stroke="#1a237e" stroke-width="2"/><path d="M30 50c10-5 15-10 20-10s15 5 20 10c-5 8-10 15-20 15s-15-7-20-15z" fill="#fff" stroke="#1a237e" stroke-width="2"/><path d="M50 25v50M25 50h50" stroke="#1a237e" stroke-width="3" stroke-linecap="round"/></svg>',
-  ichthys: '<svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="35" fill="none" stroke="#c9a227" stroke-width="3"/><path d="M30 50c15-15 30-10 35 0-5 10-20 15-35 0z" fill="none" stroke="#3d1a6e" stroke-width="3"/><circle cx="58" cy="45" r="3" fill="#3d1a6e"/><path d="M50 25v50M25 50h50" stroke="#3d1a6e" stroke-width="3" stroke-linecap="round" opacity="0.3"/></svg>'
+// PNG Design options (replacing SVG crosses)
+const designOptions = {
+  'cross-modern': { name: 'Modern Cross', file: 'cross-1-isolated.png' },
+  'cross-celtic': { name: 'Celtic Cross', file: 'cross-celtic.png' },
+  'cross-flame': { name: 'Flame Cross', file: 'cross-flame.png' },
+  'cross-wood': { name: 'Rustic Wood Cross', file: 'cross-wood-rustic.png' },
+  'crown-thorns': { name: 'Crown of Thorns', file: 'crown-thorns-isolated.png' },
+  'dove': { name: 'Peace Dove', file: 'dove-isolated.png' },
+  'praying-hands': { name: 'Praying Hands', file: 'praying-hands.png' },
+  'heart-cross': { name: 'Heart with Cross', file: 'heart-cross.png' },
+  'anchor': { name: 'Anchor Cross', file: 'anchor-cross.png' },
+  'lamb': { name: 'Lamb of God', file: 'lamb-god.png' },
+  'bible': { name: 'Bible with Cross', file: 'bible-cross.png' },
+  'chi-rho': { name: 'Chi Rho Symbol', file: 'chi-rho.png' },
+  'three-crosses': { name: 'Three Crosses', file: 'three-crosses.png' },
+  'butterfly': { name: 'Butterfly Cross', file: 'butterfly-cross.png' },
+  'alpha-omega': { name: 'Alpha & Omega', file: 'alpha-omega.png' },
+  'fish': { name: 'Christian Fish', file: 'fish-isolated.png' }
 };
 
-const crossNames = { classic: 'Classic', celtic: 'Celtic', ornate: 'Ornate', flame: 'Flame', royal: 'Royal', emerald: 'Emerald', silver: 'Silver', heart: 'Heart', dove: 'Dove', ichthys: 'Ichthys' };
+// Preload design images
+const designImages = {};
+function loadDesignImages() {
+  Object.entries(designOptions).forEach(([key, option]) => {
+    const img = new Image();
+    img.src = `../images/designs/${option.file}`;
+    designImages[key] = img;
+  });
+}
 
 // Color categories for organized display
 const colorCategories = {
@@ -147,13 +162,12 @@ function loadShirtImage(imageName) {
 
 // State
 let state = {
-  cross: null,
+  selectedDesign: null,
   shirtColor: '#8B3A3A',
-  printColor: '#1a1a1a',
   position: 'center',
   uploadedImage: null,
-  crossX: null,
-  crossY: null,
+  designX: null,
+  designY: null,
   selectedElement: null,
   texts: [{ id: 0, text: '', x: null, y: null, font: 'Cinzel', size: 16, color: '#1a1a1a' }]
 };
@@ -177,13 +191,13 @@ document.addEventListener('keydown', (e) => {
   if (!state.selectedElement) return;
   const { cx, cy, scale } = getDefaultPositions();
   
-  if (state.selectedElement === 'cross') {
-    if (!state.crossX) { state.crossX = cx; state.crossY = cy; }
+  if (state.selectedElement === 'design') {
+    if (!state.designX) { state.designX = cx; state.designY = cy; }
     switch(e.key) {
-      case 'ArrowUp': state.crossY -= MOVE_STEP; e.preventDefault(); break;
-      case 'ArrowDown': state.crossY += MOVE_STEP; e.preventDefault(); break;
-      case 'ArrowLeft': state.crossX -= MOVE_STEP; e.preventDefault(); break;
-      case 'ArrowRight': state.crossX += MOVE_STEP; e.preventDefault(); break;
+      case 'ArrowUp': state.designY -= MOVE_STEP; e.preventDefault(); break;
+      case 'ArrowDown': state.designY += MOVE_STEP; e.preventDefault(); break;
+      case 'ArrowLeft': state.designX -= MOVE_STEP; e.preventDefault(); break;
+      case 'ArrowRight': state.designX += MOVE_STEP; e.preventDefault(); break;
     }
   } else {
     const textObj = state.texts.find(t => t.id === state.selectedElement);
@@ -237,14 +251,14 @@ function handleDragStart(e) {
     }
   }
   
-  const crossX = state.crossX || cx;
-  const crossY = state.crossY || cy;
-  if (Math.sqrt(Math.pow(coords.x - crossX, 2) + Math.pow(coords.y - crossY, 2)) < 50) {
+  const designX = state.designX || cx;
+  const designY = state.designY || cy;
+  if (Math.sqrt(Math.pow(coords.x - designX, 2) + Math.pow(coords.y - designY, 2)) < 50) {
     isDragging = true;
-    state.selectedElement = 'cross';
-    dragOffsetX = crossX - coords.x;
-    dragOffsetY = crossY - coords.y;
-    document.getElementById('positionHint').textContent = 'Dragging icon...';
+    state.selectedElement = 'design';
+    dragOffsetX = designX - coords.x;
+    dragOffsetY = designY - coords.y;
+    document.getElementById('positionHint').textContent = 'Dragging design...';
     e.preventDefault();
     drawPreview();
   }
@@ -253,9 +267,9 @@ function handleDragStart(e) {
 function handleDragMove(e) {
   if (!isDragging) return;
   const coords = getCanvasCoords(e);
-  if (state.selectedElement === 'cross') {
-    state.crossX = coords.x + dragOffsetX;
-    state.crossY = coords.y + dragOffsetY;
+  if (state.selectedElement === 'design') {
+    state.designX = coords.x + dragOffsetX;
+    state.designY = coords.y + dragOffsetY;
   } else {
     const textObj = state.texts.find(t => t.id === state.selectedElement);
     if (textObj) { textObj.x = coords.x + dragOffsetX; textObj.y = coords.y + dragOffsetY; }
@@ -267,7 +281,7 @@ function handleDragMove(e) {
 function handleDragEnd() {
   if (isDragging) {
     isDragging = false;
-    const name = state.selectedElement === 'cross' ? 'Icon' : 'Text';
+    const name = state.selectedElement === 'design' ? 'Design' : 'Text';
     document.getElementById('positionHint').textContent = name + ' positioned - drag to move or use arrow keys';
     drawPreview();
   }
@@ -353,7 +367,7 @@ function renderTextControls() {
 }
 
 function resetPositions() {
-  state.crossX = null; state.crossY = null;
+  state.designX = null; state.designY = null;
   state.texts.forEach(t => { t.x = null; t.y = null; });
   state.selectedElement = null;
   document.getElementById('positionHint').textContent = 'Click on the shirt to place elements';
@@ -524,32 +538,38 @@ function drawPreview() {
   const canvas = document.getElementById('tshirtCanvas');
   if (!canvas) return;
   const ctx = canvas.getContext('2d');
-  
+
   ctx.imageSmoothingEnabled = true;
   ctx.imageSmoothingQuality = 'high';
   ctx.clearRect(0, 0, canvas.width, canvas.height);
-  
+
   // Updated to use canvas dimensions for better fill
   drawTShirt(ctx, canvas.width, canvas.height);
-  
+
   const { cx, cy, scale } = getDefaultPositions();
-  const crossX = state.crossX || cx;
-  const crossY = state.crossY || cy;
-  
-  if (state.selectedElement === 'cross' && !state.uploadedImage) {
+  const designX = state.designX || cx;
+  const designY = state.designY || cy;
+
+  if (state.selectedElement === 'design' && !state.uploadedImage) {
     ctx.save();
     ctx.strokeStyle = '#c9a227'; ctx.lineWidth = 2; ctx.setLineDash([5, 5]);
-    ctx.strokeRect(crossX - scale/2 - 5, crossY - scale/2 - 5, scale + 10, scale + 10);
+    ctx.strokeRect(designX - scale/2 - 5, designY - scale/2 - 5, scale + 10, scale + 10);
     ctx.restore();
   }
-  
+
   if (state.uploadedImage) {
     const aspect = state.uploadedImage.width / state.uploadedImage.height;
     const dw = scale * (aspect > 1 ? 1 : aspect);
     const dh = scale / (aspect > 1 ? aspect : 1);
-    ctx.drawImage(state.uploadedImage, crossX - dw/2, crossY - dh/2, dw, dh);
-  } else if (state.cross) {
-    drawCross(ctx, crossX, crossY, scale, state.printColor, state.cross);
+    ctx.drawImage(state.uploadedImage, designX - dw/2, designY - dh/2, dw, dh);
+  } else if (state.selectedDesign && designImages[state.selectedDesign]) {
+    const designImg = designImages[state.selectedDesign];
+    if (designImg && designImg.complete && designImg.naturalWidth > 0) {
+      const aspect = designImg.width / designImg.height;
+      const dw = scale * (aspect > 1 ? 1 : aspect);
+      const dh = scale / (aspect > 1 ? aspect : 1);
+      ctx.drawImage(designImg, designX - dw/2, designY - dh/2, dw, dh);
+    }
   }
   
   state.texts.forEach((textObj, index) => {
@@ -578,21 +598,43 @@ function init() {
   // Load initial shirt image
   loadShirtImage(currentShirtImageName);
   
+  // Load design images
+  loadDesignImages();
+  
+  // Create design selector with PNG thumbnails
   const crossSelector = document.getElementById('crossSelector');
-  Object.keys(crossSVGs).forEach(key => {
-    const div = document.createElement('div');
-    div.className = 'cross-option' + (key === state.cross ? ' selected' : '');
-    div.innerHTML = crossSVGs[key];
-    div.title = crossNames[key];
-    div.onclick = () => { 
-      state.cross = key; 
-      document.querySelectorAll('.cross-option').forEach(el => el.classList.remove('selected')); 
-      div.classList.add('selected'); 
-      state.selectedElement = 'cross';
-      drawPreview(); 
-    };
-    crossSelector.appendChild(div);
-  });
+  if (crossSelector) {
+    crossSelector.innerHTML = '';
+    crossSelector.style.gridTemplateColumns = 'repeat(4, 1fr)';
+    
+    Object.entries(designOptions).forEach(([key, option]) => {
+      const div = document.createElement('div');
+      div.className = 'design-option' + (key === state.selectedDesign ? ' selected' : '');
+      div.style.cssText = 'aspect-ratio: 1; border: 2px solid #e8e2f5; border-radius: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; background: #fff; overflow: hidden; padding: 8px;';
+      
+      const img = document.createElement('img');
+      img.src = `../images/designs/${option.file}`;
+      img.style.cssText = 'max-width: 100%; max-height: 100%; object-fit: contain;';
+      img.alt = option.name;
+      div.appendChild(img);
+      
+      div.title = option.name;
+      div.onclick = () => { 
+        state.selectedDesign = key; 
+        document.querySelectorAll('.design-option').forEach(el => {
+          el.classList.remove('selected');
+          el.style.borderColor = '#e8e2f5';
+          el.style.background = '#fff';
+        }); 
+        div.classList.add('selected');
+        div.style.borderColor = '#3d1a6e';
+        div.style.background = '#f5efe0';
+        state.selectedElement = 'design';
+        drawPreview(); 
+      };
+      crossSelector.appendChild(div);
+    });
+  }
 
   // Generate color tabs
   const colorTabContent = document.getElementById('colorTabContent');
