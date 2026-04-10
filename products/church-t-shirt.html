@@ -181,6 +181,14 @@
       <div class="control-group">
         <label>Choose a Design</label>
         <div class="cross-selector" id="crossSelector"></div>
+        
+        <div class="design-size-control" style="margin-top: 12px;">
+          <label style="font-size: 0.8rem; color: var(--gray); display: flex; justify-content: space-between;">
+            <span>Design Size</span>
+            <span id="designSizeLabel">100%</span>
+          </label>
+          <input type="range" id="designSizeSlider" min="50" max="200" value="100" class="size-slider" oninput="updateDesignSize(this.value)">
+        </div>
       </div>
       
       <div class="control-group">

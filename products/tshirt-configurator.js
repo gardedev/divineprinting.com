@@ -168,6 +168,9 @@ let state = {
   uploadedImage: null,
   designX: null,
   designY: null,
+  designScale: 1.0,
+  uploadedImageScale: 1.0,
+  uploadedImageStretch: false,
   selectedElement: null,
   texts: [{ id: 0, text: '', x: null, y: null, font: 'Cinzel', size: 16, color: '#1a1a1a' }]
 };
@@ -375,6 +378,13 @@ function resetPositions() {
   drawPreview();
 }
 
+function updateDesignSize(value) {
+  state.designScale = value / 100;
+  const label = document.getElementById('designSizeLabel');
+  if (label) label.textContent = value + '%';
+  drawPreview();
+}
+
 function handleFileUpload(e) {
   const file = e.target.files[0];
   if (file) {
@@ -558,16 +568,17 @@ function drawPreview() {
   }
 
   if (state.uploadedImage) {
-    const aspect = state.uploadedImage.width / state.uploadedImage.height;
-    const dw = scale * (aspect > 1 ? 1 : aspect);
-    const dh = scale / (aspect > 1 ? aspect : 1);
+    // Uploaded images can stretch to fill the area
+    const dw = scale * state.uploadedImageScale;
+    const dh = scale * state.uploadedImageScale;
     ctx.drawImage(state.uploadedImage, designX - dw/2, designY - dh/2, dw, dh);
   } else if (state.selectedDesign && designImages[state.selectedDesign]) {
     const designImg = designImages[state.selectedDesign];
     if (designImg && designImg.complete && designImg.naturalWidth > 0) {
       const aspect = designImg.width / designImg.height;
-      const dw = scale * (aspect > 1 ? 1 : aspect);
-      const dh = scale / (aspect > 1 ? aspect : 1);
+      const baseScale = scale * state.designScale;
+      const dw = baseScale * (aspect > 1 ? 1 : aspect);
+      const dh = baseScale / (aspect > 1 ? aspect : 1);
       ctx.drawImage(designImg, designX - dw/2, designY - dh/2, dw, dh);
     }
   }
