@@ -125,11 +125,12 @@ nav a.active { color: var(--gold-lt); }
   position: relative;
 }
 .header-icon:hover { background: rgba(255,255,255,.12); }
-.header-icon svg { display: block; }
+.header-icon svg { display: block; pointer-events: none; }
 .icon-label {
   font-size: .65rem;
   margin-top: 2px;
   opacity: .9;
+  pointer-events: none;
 }
 .cart-icon { position: relative; }
 .cart-count {
@@ -147,6 +148,7 @@ nav a.active { color: var(--gold-lt); }
   align-items: center;
   justify-content: center;
   padding: 0 4px;
+  pointer-events: none;
 }
 .cart-count:empty,
 .cart-count[data-count="0"],
