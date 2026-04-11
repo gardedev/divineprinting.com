@@ -73,10 +73,81 @@ src="https://www.facebook.com/tr?id=2413483535782004&ev=PageView&noscript=1"
   <script src="https://js.hcaptcha.com/1/api.js" async defer></script>
 </head>
 <body>
-<div class="topbar"><span>&#10013; Queens, NY Based &mdash; Serving Ministries Nationwide</span> &nbsp;|&nbsp; <span>&#9889; Same-day production available</span></div><header><div class="nav-inner">
-  <a href="../index.html" class="logo"><div class="logo-icon"><img src="../images/logo-icon.png" alt="Divine Printing Logo" /></div><div class="logo-text"><div class="brand">Divine Printing</div><div class="tagline">Crafted for the Kingdom</div></div></a>
-  <nav><a href="../index.html">Home</a><a href="../index.html#banners">Banners &amp; Flags</a><a href="../index.html#events">Event Displays</a><a href="../index.html#signage">Signs</a><a href="../index.html#promo">Promo &amp; Stickers</a><a href="../index.html#print">Print</a><a href="#quote" class="nav-cta">Get a Quote &rarr;</a></nav>
-</div></header>
+<div class="topbar"><span>&#10013; Queens, NY Based &mdash; Serving Ministries Nationwide</span> &nbsp;|&nbsp; <span>&#9889; Same-day production available</span></div><header>
+  <div class="nav-inner">
+    <a href="../index.html" class="logo">
+      <div class="logo-icon"><img src="../images/logo-icon.png" alt="Divine Printing Logo" /></div>
+      <div class="logo-text">
+        <div class="brand">Divine Printing</div>
+        <div class="tagline">Crafted for the Kingdom</div>
+      </div>
+    </a>
+    <nav class="desktop-nav">
+      <a href="../index.html">Home</a>
+      <a href="../index.html#banners">Banners &amp; Flags</a>
+      <a href="../index.html#events">Event Displays</a>
+      <a href="../index.html#signage">Signs</a>
+      <a href="../index.html#promo">Promo &amp; Stickers</a>
+      <a href="../index.html#print">Print</a>
+      <a href="../blog/index.html">Blog</a>
+      <a href="../contact.html" class="nav-cta">Get a Quote &rarr;</a>
+    </nav>
+    <div class="header-actions">
+      <a href="../account/account.html" class="header-icon" aria-label="My Account">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+          <circle cx="12" cy="7" r="4"></circle>
+        </svg>
+        <span class="icon-label">Account</span>
+      </a>
+      <a href="#" class="header-icon cart-icon" aria-label="Shopping Cart" onclick="event.preventDefault(); alert('Cart coming soon!');">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="9" cy="21" r="1"></circle>
+          <circle cx="20" cy="21" r="1"></circle>
+          <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
+        </svg>
+        <span class="cart-count" id="cart-count">0</span>
+        <span class="icon-label">Cart</span>
+      </a>
+      <button class="mobile-menu-btn" aria-label="Open Menu" onclick="toggleMobileMenu()">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="3" y1="12" x2="21" y2="12"></line>
+          <line x1="3" y1="6" x2="21" y2="6"></line>
+          <line x1="3" y1="18" x2="21" y2="18"></line>
+        </svg>
+      </button>
+    </div>
+  </div>
+  <!-- Mobile Menu -->
+  <div class="mobile-menu" id="mobile-menu">
+    <div class="mobile-menu-header">
+      <a href="../index.html" class="logo">
+        <div class="logo-icon"><img src="../images/logo-icon.png" alt="Divine Printing Logo" /></div>
+        <div class="logo-text">
+          <div class="brand">Divine Printing</div>
+        </div>
+      </a>
+      <button class="mobile-menu-close" aria-label="Close Menu" onclick="toggleMobileMenu()">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
+    </div>
+    <nav class="mobile-nav">
+      <a href="../index.html">Home</a>
+      <a href="../index.html#banners">Banners &amp; Flags</a>
+      <a href="../index.html#events">Event Displays</a>
+      <a href="../index.html#signage">Signs</a>
+      <a href="../index.html#promo">Promo &amp; Stickers</a>
+      <a href="../index.html#print">Print</a>
+      <a href="../blog/index.html">Blog</a>
+      <a href="../account/account.html">My Account</a>
+      <a href="#" onclick="event.preventDefault(); alert('Cart coming soon!');">My Cart</a>
+      <a href="../contact.html" class="nav-cta">Get a Quote &rarr;</a>
+    </nav>
+  </div>
+</header>
 <div class="breadcrumb"><div style="max-width:1280px;margin:0 auto;padding:0 24px;">
   <a href="../index.html">Home</a> <span>›</span> <a href="../index.html#products">Event Displays</a> <span>›</span> <span>Stage Backdrop Banner</span>
 </div></div>
