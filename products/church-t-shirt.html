@@ -7,6 +7,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@400;600;700&family=Oswald:wght@400;600&family=Lobster&display=swap" rel="stylesheet"/>
 <link rel="stylesheet" href="../styles.css"/>
 <link rel="stylesheet" href="../product.css"/>
+<link rel="stylesheet" href="https://cdn.snipcart.com/themes/v3.0.31/default/snipcart.css"/>
 <style>
 :root { --purple: #3d1a6e; --gold: #c9a227; --gold-pale: #f5efe0; --dark: #1a0d30; --gray: #6b5b7a; }
 .configurator-section { max-width: 1280px; margin: 48px auto; padding: 0 24px; }
@@ -71,6 +72,11 @@
 .print-color-option:hover { transform: scale(1.1); }
 .print-color-option.selected { border-color: var(--purple); box-shadow: 0 0 0 2px #fff, 0 0 0 4px var(--purple); }
 
+/* Snipcart cart button styles */
+.snipcart-checkout { transition: all 0.2s; }
+.snipcart-checkout:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(201, 162, 39, 0.4); }
+.snipcart-modal__container { z-index: 9999 !important; }
+
 @media (max-width: 900px) { 
   .configurator-wrap { grid-template-columns: 1fr; gap: 24px; padding: 16px; }
   .cross-selector { grid-template-columns: repeat(4, 1fr); }
@@ -93,7 +99,7 @@
 <div class="topbar"><span>&#10013; Queens, NY Based - Serving Ministries Nationwide</span></div>
 <header><div class="nav-inner">
   <a href="../index.html" class="logo"><div class="logo-icon"><img src="../images/logo-icon.png" alt="Divine Printing Logo" /></div><div class="logo-text"><div class="brand">Divine Printing</div><div class="tagline">Crafted for the Kingdom</div></div></a>
-  <nav><a href="../index.html">Home</a><a href="../index.html#banners">Banners</a><a href="../index.html#events">Events</a><a href="../index.html#signage">Signs</a><a href="#designer" class="nav-cta">Design Your Shirt</a></nav>
+  <nav><a href="../index.html">Home</a><a href="../index.html#banners">Banners</a><a href="../index.html#events">Events</a><a href="../index.html#signage">Signs</a><a href="#designer" class="nav-cta">Design Your Shirt</a><button class="snipcart-checkout" style="background:var(--gold);color:var(--purple);border:none;padding:8px 16px;border-radius:8px;cursor:pointer;font-weight:600;margin-left:12px;">🛒 Cart (<span class="snipcart-items-count">0</span>)</button></nav>
 </div></header>
 
 <div class="product-hero">
@@ -241,7 +247,41 @@
         <div id="uploadedFileName"></div>
       </div>
       
-      <button class="snipcart-btn snipcart-add-item" data-item-id="church-t-shirt" data-item-name="Custom Church T-Shirt" data-item-price="15.00" data-item-url="https://www.divineprinting.com/products/church-t-shirt.html" data-item-description="Custom church t-shirt with cross design" data-item-custom1-name="Church Name" data-item-custom2-name="Cross Design" data-item-custom3-name="T-Shirt Color" data-item-custom4-name="Print Color" data-item-custom5-name="Position" data-item-custom6-name="Quantity" data-item-custom6-options="1-5[$25.00]|6-10[$22.00]|11-24[$18.00]|25-49[$15.00]|50-99[$13.00]|100+[$11.00]">
+      <div class="control-group">
+        <label>Size</label>
+        <select id="sizeSelect" class="snipcart-size-select">
+          <option value="S">Small (S)</option>
+          <option value="M">Medium (M)</option>
+          <option value="L" selected>Large (L)</option>
+          <option value="XL">X-Large (XL)</option>
+          <option value="2XL">2X-Large (2XL)</option>
+          <option value="3XL">3X-Large (3XL)</option>
+          <option value="4XL">4X-Large (4XL)</option>
+          <option value="5XL">5X-Large (5XL)</option>
+        </select>
+      </div>
+      
+      <div class="control-group">
+        <label>Quantity</label>
+        <input type="number" id="quantityInput" min="1" value="25" style="padding: 12px 16px; border: 2px solid #e8e2f5; border-radius: 10px; font-size: 1rem; width: 100%;">
+        <small style="color: var(--gray);">Pricing: 1-5 ($25) | 6-10 ($22) | 11-24 ($18) | 25-49 ($15) | 50-99 ($13) | 100+ ($11)</small>
+      </div>
+      
+      <button class="snipcart-btn snipcart-add-item" 
+        data-item-id="church-t-shirt" 
+        data-item-name="Custom Church T-Shirt" 
+        data-item-price="15.00" 
+        data-item-url="https://divineprinting.com/products/church-t-shirt.html"
+        data-item-description="Custom designed church t-shirt"
+        data-item-custom1-name="Text on Shirt"
+        data-item-custom2-name="Design"
+        data-item-custom3-name="Shirt Color"
+        data-item-custom4-name="Print Position"
+        data-item-custom5-name="Design Type"
+        data-item-custom6-name="Size"
+        data-item-custom6-options="S|M|L|XL|2XL|3XL|4XL|5XL"
+        data-item-custom7-name="Quantity Tier"
+        data-item-custom7-options="1-5[$25.00]|6-10[$22.00]|11-24[$18.00]|25-49[$15.00]|50-99[$13.00]|100+[$11.00]">
         Add to Cart - $15.00
       </button>
     </div>
@@ -250,6 +290,6 @@
 
 <script src="tshirt-configurator.js"></script>
 <script async src="https://cdn.snipcart.com/themes/v3.0.31/default/snipcart.js"></script>
-<div hidden id="snipcart" data-api-key="YOUR_SNIPCART_API_KEY"></div>
+<div hidden id="snipcart" data-api-key="ZjljZmI1ODItM2VmOS00M2ZhLTg3ZGItNmUwY2NiZjViMjQ4NjM5MTE0Njk1NzE1MTQwNTE3"></div>
 </body>
 </html>

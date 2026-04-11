@@ -602,6 +602,9 @@ function drawPreview() {
     ctx.font = textObj.size + 'px ' + textObj.font;
     ctx.fillText(textObj.text, x, y);
   });
+  
+  // Update cart button with current design
+  updateCartButton();
 }
 
 // Init
@@ -725,6 +728,18 @@ function init() {
   const addTextBtn = document.getElementById('addTextBtn');
   if (addTextBtn) addTextBtn.addEventListener('click', addTextInstance);
 
+  // Quantity and size change listeners
+  const quantityInput = document.getElementById('quantityInput');
+  if (quantityInput) {
+    quantityInput.addEventListener('change', updateCartButton);
+    quantityInput.addEventListener('input', updateCartButton);
+  }
+  
+  const sizeSelect = document.getElementById('sizeSelect');
+  if (sizeSelect) {
+    sizeSelect.addEventListener('change', updateCartButton);
+  }
+
   renderTextControls();
 
   const canvas = document.getElementById('tshirtCanvas');
@@ -740,6 +755,55 @@ function init() {
 
   // Initial draw - will use fallback until images load
   drawPreview();
+}
+
+// Snipcart integration - Update cart button with current design
+function updateCartButton() {
+  const btn = document.querySelector('.snipcart-add-item');
+  if (!btn) return;
+  
+  // Get current design info
+  const designName = state.selectedDesign ? designOptions[state.selectedDesign]?.name : 'Custom Upload';
+  const colorName = document.getElementById('selectedColorName')?.textContent || 'Antique Cherry Red';
+  const position = document.getElementById('positionSelect')?.value || 'center';
+  const size = document.getElementById('sizeSelect')?.value || 'L';
+  const quantity = parseInt(document.getElementById('quantityInput')?.value || '25');
+  const texts = state.texts.filter(t => t.text).map(t => t.text).join(', ') || 'None';
+  
+  // Determine price based on quantity
+  let price = 15.00;
+  let tier = '25-49';
+  if (quantity <= 5) { price = 25.00; tier = '1-5'; }
+  else if (quantity <= 10) { price = 22.00; tier = '6-10'; }
+  else if (quantity <= 24) { price = 18.00; tier = '11-24'; }
+  else if (quantity <= 49) { price = 15.00; tier = '25-49'; }
+  else if (quantity <= 99) { price = 13.00; tier = '50-99'; }
+  else { price = 11.00; tier = '100+'; }
+  
+  // Update data attributes
+  btn.setAttribute('data-item-price', price.toFixed(2));
+  btn.setAttribute('data-item-quantity', quantity);
+  btn.setAttribute('data-item-custom1-value', texts);
+  btn.setAttribute('data-item-custom2-value', designName);
+  btn.setAttribute('data-item-custom3-value', colorName);
+  btn.setAttribute('data-item-custom4-value', position);
+  btn.setAttribute('data-item-custom5-value', state.uploadedImage ? 'Custom Upload' : 'Standard Design');
+  btn.setAttribute('data-item-custom6-value', size);
+  btn.setAttribute('data-item-custom7-value', tier);
+  
+  // Update button text
+  btn.textContent = `Add to Cart - $${price.toFixed(2)} each`;
+  
+  // Generate design preview image
+  const canvas = document.getElementById('tshirtCanvas');
+  if (canvas) {
+    try {
+      const previewUrl = canvas.toDataURL('image/png');
+      btn.setAttribute('data-item-image', previewUrl);
+    } catch (e) {
+      console.log('Could not generate preview image');
+    }
+  }
 }
 
 document.addEventListener('DOMContentLoaded', init);
