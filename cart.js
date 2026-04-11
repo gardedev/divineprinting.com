@@ -33,6 +33,13 @@ function showToast(message) {
 }
 
 function addToCart(product) {
+  console.log('Adding to cart:', product);
+  if (!product || !product.id) {
+    console.error('Invalid product data:', product);
+    showToast('Error: Could not add to cart');
+    return;
+  }
+  
   const cart = getCart();
   const existing = cart.find(item => item.id === product.id);
   
@@ -51,6 +58,7 @@ function addToCart(product) {
   
   saveCart(cart);
   showToast(product.name + ' added to cart!');
+  console.log('Cart updated:', cart);
 }
 
 function removeFromCart(id) {

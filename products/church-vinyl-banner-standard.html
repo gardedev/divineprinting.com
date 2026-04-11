@@ -101,9 +101,9 @@
     
     <label style="font-weight:600;color:var(--purple);margin-bottom:8px;display:block;">Select Size:</label>
     <div class="size-selector">
-      <button class="size-option selected" onclick="selectSize('2x4 ft')">2x4 ft - $29.99</button>
-      <button class="size-option" onclick="selectSize('3x6 ft')">3x6 ft - $45.99</button>
-      <button class="size-option" onclick="selectSize('4x8 ft')">4x8 ft - $69.99</button>
+      <button class="size-option selected" onclick="selectSize('2x4 ft', this)">2x4 ft - $29.99</button>
+      <button class="size-option" onclick="selectSize('3x6 ft', this)">3x6 ft - $45.99</button>
+      <button class="size-option" onclick="selectSize('4x8 ft', this)">4x8 ft - $69.99</button>
     </div>
     
     <div class="qty-selector">
@@ -165,10 +165,14 @@ function updateQty(change) {
   updatePrice();
 }
 
-function selectSize(size) {
+function selectSize(size, clickedBtn) {
   selectedSize = size;
   document.querySelectorAll('.size-option').forEach(el => el.classList.remove('selected'));
-  event.target.classList.add('selected');
+  if (clickedBtn) {
+    clickedBtn.classList.add('selected');
+  } else if (event && event.target) {
+    event.target.classList.add('selected');
+  }
   basePrice = PRICING[size];
   updatePrice();
 }
