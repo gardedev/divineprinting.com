@@ -117,9 +117,12 @@
     
     <div class="price-display-large" id="price">$0.15</div>
     
-    <button class="quick-checkout" onclick="addToCart(getProductData())">
-      &#10013; Add to Cart - Checkout Now
+    <button class="quick-checkout" onclick="addToCart(getProductData()); showViewCartButton();">
+      &#10013; Add to Cart
     </button>
+    <a href="../cart.html" class="btn-view-cart" style="display:none;width:100%;text-align:center;padding:12px;background:var(--purple);color:#fff;border-radius:8px;text-decoration:none;margin-top:8px;font-weight:600;" id="viewCartBtn">
+      View Cart &rarr;
+    </a>
     
     <p style="text-align:center;margin-top:12px;font-size:0.85rem;color:var(--gray);">
       <a href="../contact.html" style="color:var(--purple);">Need a custom quote?</a> We offer bulk discounts for 100+ quantity.
@@ -190,7 +193,7 @@ function updatePrice() {
 function getProductData() {
   return {
     id: 'church-flyers-standard-' + selectedSize.replace(/\s+/g, '-').toLowerCase(),
-    name: 'Church Flyers - Standard 8.5x11 - ' + selectedSize,
+    name: 'Church Flyers - ' + selectedSize,
     price: basePrice,
     qty: currentQty,
     image: '../images/flyers-standard.png',
@@ -200,6 +203,15 @@ function getProductData() {
 
 // Initialize
 updatePrice();
+
+// Show "View Cart" button after adding to cart
+function showViewCartButton() {
+  const btn = document.getElementById('viewCartBtn');
+  if (btn) {
+    btn.style.display = 'block';
+    btn.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+}
 </script>
 </body>
 </html>

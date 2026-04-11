@@ -225,20 +225,40 @@ nav a.active { color: var(--gold-lt); }
 /* TOAST NOTIFICATION */
 .toast {
   position: fixed;
-  bottom: 24px;
-  right: 24px;
+  top: 100px;
+  left: 50%;
+  transform: translateX(-50%) translateY(-100px);
   background: var(--purple);
   color: #fff;
-  padding: 16px 24px;
-  border-radius: 12px;
-  box-shadow: 0 8px 32px rgba(0,0,0,0.3);
-  transform: translateY(100px);
+  padding: 20px 28px;
+  border-radius: 16px;
+  box-shadow: 0 12px 40px rgba(0,0,0,0.4);
   opacity: 0;
-  transition: all 0.3s;
-  z-index: 1000;
+  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  z-index: 10000;
   font-weight: 500;
+  min-width: 320px;
+  max-width: 90vw;
+  text-align: left;
 }
-.toast.show { transform: translateY(0); opacity: 1; }
+.toast.show { 
+  transform: translateX(-50%) translateY(0);
+  opacity: 1;
+}
+@media (max-width: 600px) {
+  .toast {
+    top: auto;
+    bottom: 24px;
+    left: 16px;
+    right: 16px;
+    transform: translateY(100px);
+    min-width: auto;
+    max-width: none;
+  }
+  .toast.show {
+    transform: translateY(0);
+  }
+}
 
 /* ADD TO CART BUTTON */
 .add-to-cart-btn {

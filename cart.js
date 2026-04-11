@@ -20,16 +20,40 @@ function updateCartCount() {
 }
 
 function showToast(message) {
-  let toast = document.getElementById('toast');
-  if (!toast) {
-    toast = document.createElement('div');
-    toast.id = 'toast';
-    toast.className = 'toast';
-    document.body.appendChild(toast);
+  // Remove any existing toast
+  const existingToast = document.getElementById('toast');
+  if (existingToast) {
+    existingToast.remove();
   }
-  toast.textContent = message;
-  toast.classList.add('show');
-  setTimeout(() => toast.classList.remove('show'), 3000);
+  
+  // Create new toast
+  const toast = document.createElement('div');
+  toast.id = 'toast';
+  toast.className = 'toast';
+  toast.innerHTML = `
+    <div style="display:flex;align-items:center;gap:12px;">
+      <span style="font-size:1.5rem;">✓</span>
+      <div>
+        <div style="font-weight:600;">${message}</div>
+        <div style="font-size:0.85rem;opacity:0.9;margin-top:4px;">
+          <a href="cart.html" style="color:#fff;text-decoration:underline;">View Cart</a> or 
+          <a href="index.html#products" style="color:#fff;text-decoration:underline;">Continue Shopping</a>
+        </div>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(toast);
+  
+  // Show with animation
+  requestAnimationFrame(() => {
+    toast.classList.add('show');
+  });
+  
+  // Auto hide after 5 seconds
+  setTimeout(() => {
+    toast.classList.remove('show');
+    setTimeout(() => toast.remove(), 300);
+  }, 5000);
 }
 
 function addToCart(product) {
