@@ -219,6 +219,18 @@
         <small>Per shirt for 25+ qty. Pricing adjusts based on quantity.</small>
       </div>
       
+      <button class="add-to-cart-btn" onclick="addToCart({
+        id: 'church-t-shirt',
+        name: 'Custom Church T-Shirt',
+        price: 15.00,
+        qty: 1,
+        image: '../images/tshirt.jpg',
+        options: 'Custom design - price varies by quantity'
+      })" style="width:100%;margin-bottom:16px;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:18px;height:18px;"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+        Add to Cart
+      </button>
+      
       <div class="control-group">
         <label>Text Elements <button type="button" id="addTextBtn" style="margin-left:10px;padding:4px 12px;background:var(--gold);border:none;border-radius:6px;cursor:pointer;font-size:0.85rem;">+ Add Text</button></label>
         <div id="textControlsContainer" style="display:flex;flex-direction:column;gap:12px;">

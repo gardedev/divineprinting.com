@@ -333,8 +333,39 @@ function proceedToCheckout() {
     showToast('Your cart is empty');
     return;
   }
-  // For now, redirect to contact page for quote
-  window.location.href = 'contact.html?checkout=true';
+  
+  // Transfer items to Snipcart and open checkout
+  cart.forEach((item, index) => {
+    // Create a hidden Snipcart add item button and click it
+    const btn = document.createElement('button');
+    btn.className = 'snipcart-add-item';
+    btn.style.display = 'none';
+    btn.dataset.itemId = item.id;
+    btn.dataset.itemName = item.name;
+    btn.dataset.itemPrice = item.price;
+    btn.dataset.itemQuantity = item.qty;
+    btn.dataset.itemImage = item.image;
+    btn.dataset.itemUrl = window.location.origin + '/products/' + item.id + '.html';
+    if (item.options) {
+      btn.dataset.itemDescription = item.options;
+    }
+    document.body.appendChild(btn);
+    
+    // Trigger Snipcart add item
+    btn.click();
+    
+    // Clean up
+    setTimeout(() => btn.remove(), 100);
+  });
+  
+  // Clear our custom cart after transferring to Snipcart
+  setTimeout(() => {
+    clearCart();
+    // Open Snipcart checkout
+    if (window.Snipcart) {
+      Snipcart.api.cart.open();
+    }
+  }, 500);
 }
 
 // Initialize
@@ -345,5 +376,7 @@ document.addEventListener('DOMContentLoaded', () => {
 </script>
 
 <script src="cart.js"></script>
+<script src="https://cdn.snipcart.com/themes/v3.0.31/default/snipcart.js"></script>
+<div hidden id="snipcart" data-api-key="ZjljZmI1ODItM2VmOS00M2ZhLTg3ZGItNmUwY2NiZjViMjQ4NjM5MTE0Njk1NzE1MTQwNTE3"></div>
 </body>
 </html>
