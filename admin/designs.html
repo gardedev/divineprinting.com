@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Admin - Order Designs | Divine Printing</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+<style>
+:root { --purple: #3d1a6e; --gold: #c9a227; --gold-pale: #f5efe0; --dark: #1a0d30; --gray: #6b5b7a; }
+
+* { box-sizing: border-box; }
+body { font-family: 'Inter', sans-serif; margin: 0; padding: 0; background: #f8f6fb; }
+
+header { background: var(--purple); color: #fff; padding: 20px 32px; }
+header h1 { font-family: 'Cinzel', serif; margin: 0; font-size: 1.5rem; }
+
+.container { max-width: 1400px; margin: 0 auto; padding: 32px; }
+
+.stats-bar { display: flex; gap: 24px; margin-bottom: 32px; flex-wrap: wrap; }
+.stat-box { background: #fff; padding: 20px 32px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+.stat-box .number { font-size: 2rem; font-weight: 700; color: var(--purple); }
+.stat-box .label { color: var(--gray); font-size: 0.9rem; }
+
+.filters { background: #fff; padding: 20px; border-radius: 12px; margin-bottom: 24px; display: flex; gap: 16px; flex-wrap: wrap; }
+.filters input, .filters select { padding: 10px 16px; border: 2px solid #e8e2f5; border-radius: 8px; font-size: 0.95rem; }
+.filters button { background: var(--purple); color: #fff; border: none; padding: 10px 24px; border-radius: 8px; font-weight: 600; cursor: pointer; }
+
+.order-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(400px, 1fr)); gap: 24px; }
+
+.order-card { background: #fff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 16px rgba(0,0,0,0.08); }
+.order-header { background: var(--gold-pale); padding: 16px 20px; display: flex; justify-content: space-between; align-items: center; }
+.order-header h3 { margin: 0; color: var(--purple); font-size: 1rem; }
+.order-header .date { color: var(--gray); font-size: 0.85rem; }
+
+.order-body { padding: 20px; }
+.design-preview { background: #f8f6fb; border-radius: 12px; padding: 16px; text-align: center; margin-bottom: 16px; }
+.design-preview img { max-width: 100%; max-height: 300px; border-radius: 8px; }
+
+.design-details { font-size: 0.9rem; }
+.design-details p { margin: 4px 0; color: var(--gray); }
+.design-details strong { color: var(--purple); }
+
+.order-actions { display: flex; gap: 8px; padding: 16px 20px; background: #f8f6fb; }
+.order-actions a, .order-actions button { flex: 1; padding: 12px; border-radius: 8px; text-align: center; text-decoration: none; font-weight: 600; font-size: 0.9rem; cursor: pointer; border: none; }
+.btn-preview { background: var(--purple); color: #fff; }
+.btn-print { background: var(--gold); color: var(--purple); }
+.btn-delete { background: #ffebee; color: #c62828; flex: 0 0 50px; }
+
+.empty-state { text-align: center; padding: 64px; background: #fff; border-radius: 16px; }
+.empty-state h2 { color: var(--purple); font-family: 'Cinzel', serif; }
+.empty-state p { color: var(--gray); }
+
+@media (max-width: 768px) {
+  .order-grid { grid-template-columns: 1fr; }
+  .container { padding: 16px; }
+}
+</style>
+</head>
+<body>
+<header>
+  <h1>🎨 Divine Printing - Order Design Files</h1>
+</header>
+
+<div class="container">
+  <div class="stats-bar">
+    <div class="stat-box">
+      <div class="number" id="totalOrders">0</div>
+      <div class="label">Total Orders with Designs</div>
+    </div>
+    <div class="stat-box">
+      <div class="number" id="todayOrders">0</div>
+      <div class="label">Today's Orders</div>
+    </div>
+  </div>
+  
+  <div class="filters">
+    <input type="text" id="searchInput" placeholder="Search by order #...">
+    <input type="date" id="dateFilter">
+    <button onclick="exportAllDesigns()">📦 Export All Designs</button>
+    <button onclick="clearAllData()" style="background: #c62828;">🗑 Clear All Data</button>
+  </div>
+  
+  <div id="ordersContainer">
+    <!-- Orders loaded here -->
+  </div>
+</div>
+
+<script>
+// Load and display all orders with designs
+function loadOrders() {
+  const pendingOrders = JSON.parse(localStorage.getItem('divinePrinting_pendingOrders') || '[]');
+  const container = document.getElementById('ordersContainer');
+  
+  // Update stats
+  document.getElementById('totalOrders').textContent = pendingOrders.length;
+  
+  const today = new Date().toDateString();
+  const todayCount = pendingOrders.filter(o => new Date(o.timestamp).toDateString() === today).length;
+  document.getElementById('todayOrders').textContent = todayCount;
+  
+  if (pendingOrders.length === 0) {
+    container.innerHTML = `
+      <div class="empty-state">
+        <h2>No Design Files Yet</h2>
+        <p>Design files will appear here when customers place orders through the t-shirt configurator.</p>
+      </div>
+    `;
+    return;
+  }
+  
+  // Sort by date (newest first)
+  pendingOrders.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+  
+  container.innerHTML = `<div class="order-grid">${pendingOrders.map(order => `
+    <div class="order-card" data-token="${order.orderToken}">
+      <div class="order-header">
+        <div>
+          <h3>Order #${order.orderToken}</h3>
+          <span class="date">${new Date(order.timestamp).toLocaleString()}</span>
+        </div>
+      </div>
+      
+      <div class="order-body">
+        <div class="design-preview">
+          <img src="${order.previewImage}" alt="Design Preview" onclick="viewFullSize('${order.previewImage}')">
+        </div>
+        
+        <div class="design-details">
+          <p><strong>Design:</strong> ${order.designInfo.design}</p>
+          <p><strong>Shirt Color:</strong> ${order.designInfo.color}</p>
+          <p><strong>Text:</strong> ${order.designInfo.texts}</p>
+          <p><strong>Position:</strong> ${order.designInfo.position}</p>
+          <p><strong>Size:</strong> ${order.designInfo.size}</p>
+          <p><strong>Quantity:</strong> ${order.designInfo.quantity}</p>
+        </div>
+      </div>
+      
+      <div class="order-actions">
+        <a href="${order.previewImage}" download="preview-${order.orderToken}.png" class="btn-preview">📷 Preview</a>
+        <a href="${order.printableImage}" download="printable-${order.orderToken}.png" class="btn-print">🖨️ Print File</a>
+        <button class="btn-delete" onclick="deleteOrder('${order.orderToken}')">🗑</button>
+      </div>
+    </div>
+  `).join('')}</div>`;
+}
+
+// View full size image
+function viewFullSize(imageSrc) {
+  const win = window.open();
+  win.document.write(`<img src="${imageSrc}" style="max-width:100%">`);
+}
+
+// Delete a specific order
+function deleteOrder(orderToken) {
+  if (!confirm('Delete this order design?')) return;
+  
+  let pendingOrders = JSON.parse(localStorage.getItem('divinePrinting_pendingOrders') || '[]');
+  pendingOrders = pendingOrders.filter(o => o.orderToken !== orderToken);
+  localStorage.setItem('divinePrinting_pendingOrders', JSON.stringify(pendingOrders));
+  
+  loadOrders();
+}
+
+// Export all designs as a JSON file
+function exportAllDesigns() {
+  const pendingOrders = JSON.parse(localStorage.getItem('divinePrinting_pendingOrders') || '[]');
+  
+  if (pendingOrders.length === 0) {
+    alert('No designs to export');
+    return;
+  }
+  
+  const dataStr = JSON.stringify(pendingOrders, null, 2);
+  const dataBlob = new Blob([dataStr], {type: 'application/json'});
+  
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(dataBlob);
+  link.download = `divine-printing-designs-${new Date().toISOString().split('T')[0]}.json`;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+}
+
+// Clear all data
+function clearAllData() {
+  if (!confirm('WARNING: This will delete ALL saved order designs. Are you sure?')) return;
+  if (!confirm('Really sure? This cannot be undone.')) return;
+  
+  localStorage.removeItem('divinePrinting_pendingOrders');
+  loadOrders();
+}
+
+// Search functionality
+document.getElementById('searchInput')?.addEventListener('input', function(e) {
+  const query = e.target.value.toLowerCase();
+  const cards = document.querySelectorAll('.order-card');
+  
+  cards.forEach(card => {
+    const token = card.getAttribute('data-token').toLowerCase();
+    card.style.display = token.includes(query) ? 'block' : 'none';
+  });
+});
+
+// Date filter
+document.getElementById('dateFilter')?.addEventListener('change', function(e) {
+  const selectedDate = e.target.value ? new Date(e.target.value).toDateString() : null;
+  const cards = document.querySelectorAll('.order-card');
+  
+  cards.forEach(card => {
+    if (!selectedDate) {
+      card.style.display = 'block';
+      return;
+    }
+    
+    const orderData = JSON.parse(localStorage.getItem('divinePrinting_pendingOrders') || '[]')
+      .find(o => o.orderToken === card.getAttribute('data-token'));
+    
+    if (orderData) {
+      const orderDate = new Date(orderData.timestamp).toDateString();
+      card.style.display = orderDate === selectedDate ? 'block' : 'none';
+    }
+  });
+});
+
+// Load on page load
+loadOrders();
+
+// Refresh every 30 seconds
+setInterval(loadOrders, 30000);
+</script>
+
+</body>
+</html>

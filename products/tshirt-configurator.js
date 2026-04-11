@@ -857,4 +857,94 @@ function loadDesignFromUrl() {
   drawPreview();
 }
 
+// Generate high-resolution printable design (300 DPI, 12" x 12" = 3600x3600px)
+function generatePrintableDesign() {
+  const canvas = document.createElement('canvas');
+  canvas.width = 3600;
+  canvas.height = 3600;
+  const ctx = canvas.getContext('2d');
+  
+  // Transparent background for print
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  
+  const { cx, cy, scale } = getDefaultPositions();
+  const designX = state.designX || cx;
+  const designY = state.designY || cy;
+  
+  // Scale up for print resolution
+  const printScale = scale * 9;
+  
+  if (state.uploadedImage) {
+    const dw = printScale * state.uploadedImageScale;
+    const dh = printScale * state.uploadedImageScale;
+    ctx.drawImage(state.uploadedImage, designX * 9 - dw/2, designY * 9 - dh/2, dw, dh);
+  } else if (state.selectedDesign && designImages[state.selectedDesign]) {
+    const designImg = designImages[state.selectedDesign];
+    if (designImg && designImg.complete && designImg.naturalWidth > 0) {
+      const aspect = designImg.width / designImg.height;
+      const baseScale = printScale * state.designScale;
+      const dw = baseScale * (aspect > 1 ? 1 : aspect);
+      const dh = baseScale / (aspect > 1 ? aspect : 1);
+      ctx.drawImage(designImg, designX * 9 - dw/2, designY * 9 - dh/2, dw, dh);
+    }
+  }
+  
+  // Add text at high resolution
+  state.texts.forEach((textObj, index) => {
+    if (!textObj.text) return;
+    const x = (textObj.x || cx) * 9;
+    const y = (textObj.y || (cy + scale/2 + 25 + index * 25)) * 9;
+    
+    ctx.fillStyle = textObj.color || state.printColor;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.font = (textObj.size * 9) + 'px ' + textObj.font;
+    ctx.fillText(textObj.text, x, y);
+  });
+  
+  return canvas.toDataURL('image/png');
+}
+
+// Save printable design when order is placed
+async function saveOrderDesign(orderToken) {
+  try {
+    const printableDataUrl = generatePrintableDesign();
+    const previewDataUrl = document.getElementById('tshirtCanvas').toDataURL('image/png');
+    
+    const orderData = {
+      orderToken: orderToken,
+      previewImage: previewDataUrl,
+      printableImage: printableDataUrl,
+      designInfo: {
+        design: state.selectedDesign ? designOptions[state.selectedDesign]?.name : 'Custom Upload',
+        color: document.getElementById('selectedColorName')?.textContent || 'Antique Cherry Red',
+        texts: state.texts.filter(t => t.text).map(t => t.text).join(', ') || 'None',
+        position: document.getElementById('positionSelect')?.value || 'center',
+        size: document.getElementById('sizeSelect')?.value || 'L',
+        quantity: document.getElementById('quantityInput')?.value || '25'
+      },
+      timestamp: new Date().toISOString()
+    };
+    
+    // Store in localStorage
+    const pendingOrders = JSON.parse(localStorage.getItem('divinePrinting_pendingOrders') || '[]');
+    pendingOrders.push(orderData);
+    localStorage.setItem('divinePrinting_pendingOrders', JSON.stringify(pendingOrders));
+    
+    console.log('Design saved for order:', orderToken);
+    return orderData;
+  } catch (e) {
+    console.error('Error saving design:', e);
+    return null;
+  }
+}
+
 document.addEventListener('DOMContentLoaded', init);
+
+// Listen for Snipcart order completion
+document.addEventListener('snipcart.ready', function() {
+  Snipcart.events.on('order.completed', function(order) {
+    console.log('Order completed:', order.token);
+    saveOrderDesign(order.token);
+  });
+});

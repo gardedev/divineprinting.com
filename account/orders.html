@@ -200,6 +200,8 @@ function renderOrders(orders) {
             </div>
           `).join('')}
         </div>
+        
+        ${getDesignDownloadHtml(order.token)}
       </div>
       
       <div class="order-footer">
@@ -257,6 +259,52 @@ function reorder(orderToken) {
       });
     });
   }
+}
+
+// Get design download HTML for an order
+function getDesignDownloadHtml(orderToken) {
+  const pendingOrders = JSON.parse(localStorage.getItem('divinePrinting_pendingOrders') || '[]');
+  const orderDesign = pendingOrders.find(o => o.orderToken === orderToken);
+  
+  if (!orderDesign) return '';
+  
+  return `
+    <div class="design-download" style="margin-top: 16px; padding: 16px; background: var(--gold-pale); border-radius: 12px;">
+      <h4 style="color: var(--purple); margin-bottom: 12px;">🎨 Design Files</h4>
+      <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+        <a href="${orderDesign.previewImage}" download="design-preview-${orderToken}.png" class="btn-download" style="background: var(--purple); color: #fff; padding: 10px 20px; border-radius: 8px; text-decoration: none; font-weight: 600;">
+          📷 Download Preview
+        </a>
+        <a href="${orderDesign.printableImage}" download="design-printable-${orderToken}.png" class="btn-download" style="background: var(--gold); color: var(--purple); padding: 10px 20px; border-radius: 8px; text-decoration: none; font-weight: 600;">
+          🖨️ Download Print File (300 DPI)
+        </a>
+      </div>
+      <div style="margin-top: 12px; font-size: 0.85rem; color: var(--gray);">
+        <p><strong>Design:</strong> ${orderDesign.designInfo.design}</p>
+        <p><strong>Color:</strong> ${orderDesign.designInfo.color}</p>
+        <p><strong>Text:</strong> ${orderDesign.designInfo.texts}</p>
+        <p><strong>Position:</strong> ${orderDesign.designInfo.position}</p>
+      </div>
+    </div>
+  `;
+}
+
+// Download design file
+function downloadDesign(orderToken, type) {
+  const pendingOrders = JSON.parse(localStorage.getItem('divinePrinting_pendingOrders') || '[]');
+  const orderDesign = pendingOrders.find(o => o.orderToken === orderToken);
+  
+  if (!orderDesign) {
+    alert('Design file not found. It may have been created before this feature was added.');
+    return;
+  }
+  
+  const link = document.createElement('a');
+  link.download = `design-${type}-${orderToken}.png`;
+  link.href = type === 'preview' ? orderDesign.previewImage : orderDesign.printableImage;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
 }
 </script>
 
