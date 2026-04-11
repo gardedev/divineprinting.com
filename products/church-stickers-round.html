@@ -8,6 +8,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
 <link rel="stylesheet" href="../styles.css"/>
 <link rel="stylesheet" href="../product.css"/>
+  <link rel="stylesheet" href="https://cdn.snipcart.com/themes/v3.0.31/default/snipcart.css"/>
 <style>
 :root { --purple: #3d1a6e; --gold: #c9a227; --gold-pale: #f5efe0; --dark: #1a0d30; --gray: #6b5b7a; }
 .size-selector { display: flex; flex-wrap: wrap; gap: 8px; margin: 16px 0; }
@@ -49,11 +50,11 @@
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
         <span class="icon-label">Account</span>
       </a>
-      <a href="../cart.html" class="header-icon cart-icon" aria-label="Shopping Cart">
+      <button class="header-icon cart-icon snipcart-checkout" aria-label="Shopping Cart" style="background:none;border:none;cursor:pointer;">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
-        <span class="cart-count" id="cart-count">0</span>
+        <span class="snipcart-items-count" style="position:absolute;top:2px;right:6px;background:var(--gold);color:var(--dark);font-size:.65rem;font-weight:700;min-width:16px;height:16px;border-radius:50%;display:flex;align-items:center;justify-content:center;padding:0 4px;">0</span>
         <span class="icon-label">Cart</span>
-      </a>
+      </button>
       <button class="mobile-menu-btn" aria-label="Open Menu" onclick="toggleMobileMenu()">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
       </button>
@@ -76,7 +77,7 @@
       <a href="../index.html#print">Print</a>
       <a href="../blog/index.html">Blog</a>
       <a href="../account/account.html">My Account</a>
-      <a href="../cart.html">My Cart</a>
+      <button class="snipcart-checkout" style="background:none;border:none;color:#fff;font-size:1.1rem;font-weight:500;padding:14px 16px;text-align:left;width:100%;">My Cart (<span class="snipcart-items-count">0</span>)</button>
       <a href="../contact.html" class="nav-cta">Get a Quote &rarr;</a>
     </nav>
   </div>
@@ -115,12 +116,16 @@
     
     <div class="price-display-large" id="price">$0.25</div>
     
-    <button class="quick-checkout" onclick="addToCart(getProductData()); showViewCartButton();">
-      &#10013; Add to Cart
+    <button class="snipcart-add-item quick-checkout"
+      data-item-id="stickers-round-2in"
+      data-item-name="Church Stickers - 2 inch Round"
+      data-item-price="0.25"
+      data-item-image="../images/stickers-round.png"
+      data-item-url="/products/church-stickers-round.html"
+      data-item-description="Vinyl stickers - 50 minimum order">
+      &#10013; Add to Cart - $0.25
     </button>
-    <a href="../cart.html" class="btn-view-cart" style="display:none;width:100%;text-align:center;padding:12px;background:var(--purple);color:#fff;border-radius:8px;text-decoration:none;margin-top:8px;font-weight:600;" id="viewCartBtn">
-      View Cart &rarr;
-    </a>
+    <p style="font-size:0.85rem;color:var(--gray);margin-top:8px;text-align:center;">Need different options? <a href="../contact.html" style="color:var(--purple);">Request custom quote</a></p>
     
     <p style="text-align:center;margin-top:12px;font-size:0.85rem;color:var(--gray);">
       <a href="../contact.html" style="color:var(--purple);">Need a custom quote?</a> We offer bulk discounts for 100+ quantity.
@@ -211,5 +216,7 @@ function showViewCartButton() {
   }
 }
 </script>
+<script async src="https://cdn.snipcart.com/themes/v3.0.31/default/snipcart.js"></script>
+<div hidden id="snipcart" data-api-key="ZjljZmI1ODItM2VmOS00M2ZhLTg3ZGItNmUwY2NiZjViMjQ4NjM5MTE0Njk1NzE1MTQwNTE3" data-config-modal-style="side"></div>
 </body>
 </html>
