@@ -806,4 +806,55 @@ function updateCartButton() {
   }
 }
 
+// Save current design to localStorage
+function saveCurrentDesign() {
+  const canvas = document.getElementById('tshirtCanvas');
+  let previewUrl = null;
+  
+  try {
+    previewUrl = canvas.toDataURL('image/png');
+  } catch (e) {
+    console.log('Could not generate preview');
+  }
+  
+  const designName = prompt('Enter a name for this design:');
+  if (!designName) return;
+  
+  const design = {
+    name: designName,
+    date: new Date().toISOString(),
+    design: state.selectedDesign ? designOptions[state.selectedDesign]?.name : 'Custom Upload',
+    color: document.getElementById('selectedColorName')?.textContent || 'Antique Cherry Red',
+    text: state.texts.filter(t => t.text).map(t => t.text).join(', ') || 'None',
+    position: document.getElementById('positionSelect')?.value || 'center',
+    preview: previewUrl,
+    state: JSON.parse(JSON.stringify(state))
+  };
+  
+  const savedDesigns = JSON.parse(localStorage.getItem('divinePrinting_savedDesigns') || '[]');
+  savedDesigns.push(design);
+  localStorage.setItem('divinePrinting_savedDesigns', JSON.stringify(savedDesigns));
+  
+  alert('Design saved! View it in My Account → Saved Designs');
+}
+
+// Load design from URL params if present
+function loadDesignFromUrl() {
+  const params = new URLSearchParams(window.location.search);
+  const designParam = params.get('design');
+  const colorParam = params.get('color');
+  const textParam = params.get('text');
+  
+  if (designParam && designOptions[designParam]) {
+    state.selectedDesign = designParam;
+  }
+  
+  if (textParam) {
+    state.texts[0].text = textParam;
+  }
+  
+  renderTextControls();
+  drawPreview();
+}
+
 document.addEventListener('DOMContentLoaded', init);

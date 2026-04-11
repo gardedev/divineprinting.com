@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>My Orders | Divine Printing</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="../styles.css"/>
+<link rel="stylesheet" href="../product.css"/>
+<link rel="stylesheet" href="https://cdn.snipcart.com/themes/v3.0.31/default/snipcart.css"/>
+<style>
+:root { --purple: #3d1a6e; --gold: #c9a227; --gold-pale: #f5efe0; --dark: #1a0d30; --gray: #6b5b7a; }
+
+.orders-section { max-width: 1200px; margin: 48px auto; padding: 0 24px; }
+.orders-section h1 { font-family: 'Cinzel', serif; color: var(--purple); font-size: 2.5rem; margin-bottom: 8px; }
+.orders-section .subtitle { color: var(--gray); margin-bottom: 32px; }
+
+.account-grid { display: grid; grid-template-columns: 280px 1fr; gap: 32px; }
+
+.sidebar { background: #fff; border-radius: 16px; padding: 24px; box-shadow: 0 4px 24px rgba(61,26,110,.08); height: fit-content; }
+.sidebar-nav { display: flex; flex-direction: column; gap: 8px; }
+.sidebar-nav a { padding: 12px 16px; border-radius: 10px; color: var(--gray); text-decoration: none; font-weight: 500; transition: all 0.2s; }
+.sidebar-nav a:hover { background: var(--gold-pale); color: var(--purple); }
+.sidebar-nav a.active { background: var(--purple); color: #fff; }
+
+.main-content { background: #fff; border-radius: 16px; padding: 32px; box-shadow: 0 4px 24px rgba(61,26,110,.08); }
+
+.filters { display: flex; gap: 16px; margin-bottom: 24px; flex-wrap: wrap; }
+.filters select, .filters input { padding: 10px 16px; border: 2px solid #e8e2f5; border-radius: 10px; font-size: 0.95rem; }
+.filters select:focus, .filters input:focus { outline: none; border-color: var(--gold); }
+
+.order-list { display: flex; flex-direction: column; gap: 16px; }
+
+.order-card { border: 2px solid #e8e2f5; border-radius: 16px; overflow: hidden; }
+.order-header { background: var(--gold-pale); padding: 16px 24px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; }
+.order-header h3 { color: var(--purple); font-family: 'Cinzel', serif; margin: 0; }
+.order-meta { display: flex; gap: 24px; color: var(--gray); font-size: 0.9rem; }
+.order-status { padding: 6px 16px; border-radius: 20px; font-size: 0.85rem; font-weight: 600; }
+.status-processing { background: #fff3e0; color: #e65100; }
+.status-shipped { background: #e8f5e9; color: #2e7d32; }
+.status-delivered { background: #e3f2fd; color: #1565c0; }
+.status-cancelled { background: #ffebee; color: #c62828; }
+
+.order-body { padding: 24px; }
+.order-items { margin-bottom: 24px; }
+.order-item { display: flex; gap: 16px; padding: 12px 0; border-bottom: 1px solid #e8e2f5; }
+.order-item:last-child { border-bottom: none; }
+.item-image { width: 80px; height: 80px; background: #f8f6fb; border-radius: 8px; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+.item-image img { max-width: 100%; max-height: 100%; object-fit: contain; }
+.item-details { flex: 1; }
+.item-details h4 { color: var(--purple); margin-bottom: 4px; }
+.item-details p { color: var(--gray); font-size: 0.85rem; margin: 2px 0; }
+.item-price { font-weight: 700; color: var(--purple); font-size: 1.1rem; }
+
+.order-footer { background: #f8f6fb; padding: 16px 24px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; }
+.order-totals { text-align: right; }
+.order-totals .total-row { display: flex; justify-content: flex-end; gap: 24px; margin: 4px 0; }
+.order-totals .total-row.total { font-weight: 700; color: var(--purple); font-size: 1.2rem; margin-top: 8px; padding-top: 8px; border-top: 2px solid #e8e2f5; }
+
+.btn-track, .btn-reorder { padding: 10px 20px; border-radius: 8px; font-weight: 600; cursor: pointer; border: none; }
+.btn-track { background: var(--purple); color: #fff; }
+.btn-reorder { background: var(--gold); color: var(--purple); }
+
+.empty-state { text-align: center; padding: 64px 32px; }
+.empty-state h2 { font-family: 'Cinzel', serif; color: var(--purple); margin-bottom: 16px; }
+.empty-state p { color: var(--gray); margin-bottom: 24px; }
+.btn-shop { background: linear-gradient(135deg, var(--purple) 0%, #5a2d8a 100%); color: #fff; border: none; padding: 16px 32px; border-radius: 12px; font-size: 1rem; font-weight: 600; cursor: pointer; text-decoration: none; display: inline-block; }
+
+.login-prompt { text-align: center; padding: 64px 32px; }
+.login-prompt h2 { font-family: 'Cinzel', serif; color: var(--purple); margin-bottom: 16px; }
+.login-prompt p { color: var(--gray); margin-bottom: 24px; }
+.btn-login { background: linear-gradient(135deg, var(--purple) 0%, #5a2d8a 100%); color: #fff; border: none; padding: 16px 32px; border-radius: 12px; font-size: 1rem; font-weight: 600; cursor: pointer; }
+
+@media (max-width: 900px) {
+  .account-grid { grid-template-columns: 1fr; }
+  .sidebar { order: 2; }
+  .order-header { flex-direction: column; align-items: flex-start; }
+  .order-meta { flex-direction: column; gap: 4px; }
+}
+</style>
+</head>
+<body>
+<div class="topbar"><span>&#10013; Queens, NY Based - Serving Ministries Nationwide</span></div>
+<header><div class="nav-inner">
+  <a href="../index.html" class="logo"><div class="logo-icon"><img src="../images/logo-icon.png" alt="Divine Printing Logo" /></div><div class="logo-text"><div class="brand">Divine Printing</div><div class="tagline">Crafted for the Kingdom</div></div></a>
+  <nav><a href="../index.html">Home</a><a href="../index.html#banners">Banners</a><a href="../index.html#events">Events</a><a href="../index.html#signage">Signs</a><a href="products/church-t-shirt.html">T-Shirts</a><button class="snipcart-checkout" style="background:var(--gold);color:var(--purple);border:none;padding:8px 16px;border-radius:8px;cursor:pointer;font-weight:600;margin-left:12px;">🛒 Cart (<span class="snipcart-items-count">0</span>)</button></nav>
+</div></header>
+
+<section class="orders-section">
+  <h1>My Orders</h1>
+  <p class="subtitle">View and track your order history</p>
+  
+  <div class="account-grid">
+    <aside class="sidebar">
+      <nav class="sidebar-nav">
+        <a href="account.html">Dashboard</a>
+        <a href="orders.html" class="active">My Orders</a>
+        <a href="saved-designs.html">Saved Designs</a>
+        <a href="#" class="snipcart-customer-signin">Account Settings</a>
+        <a href="#" class="snipcart-customer-signout">Sign Out</a>
+      </nav>
+    </aside>
+    
+    <main class="main-content">
+      <!-- Logged in state -->
+      <div id="loggedInContent" style="display: none;">
+        <div class="filters">
+          <select id="statusFilter">
+            <option value="">All Statuses</option>
+            <option value="Processing">Processing</option>
+            <option value="Shipped">Shipped</option>
+            <option value="Delivered">Delivered</option>
+            <option value="Cancelled">Cancelled</option>
+          </select>
+          <input type="text" id="searchOrders" placeholder="Search orders...">
+        </div>
+        
+        <div id="ordersList" class="order-list">
+          <!-- Orders loaded via JavaScript -->
+        </div>
+      </div>
+      
+      <!-- Empty state -->
+      <div id="emptyState" class="empty-state" style="display: none;">
+        <h2>No Orders Yet</h2>
+        <p>You haven't placed any orders yet. Start designing your custom church t-shirts!</p>
+        <a href="products/church-t-shirt.html" class="btn-shop">Design a T-Shirt</a>
+      </div>
+      
+      <!-- Logged out state -->
+      <div id="loggedOutContent" class="login-prompt">
+        <h2>Sign In to View Orders</h2>
+        <p>Access your complete order history and track your shipments.</p>
+        <button class="btn-login snipcart-customer-signin">Sign In / Create Account</button>
+      </div>
+    </main>
+  </div>
+</section>
+
+<script src="https://cdn.snipcart.com/themes/v3.0.31/default/snipcart.js"></script>
+<div hidden id="snipcart" data-api-key="ZjljZmI1ODItM2VmOS00M2ZhLTg3ZGItNmUwY2NiZjViMjQ4NjM5MTE0Njk1NzE1MTQwNTE3"></div>
+
+<script>
+let allOrders = [];
+
+document.addEventListener('snipcart.ready', function() {
+  Snipcart.store.subscribe(function() {
+    const customer = Snipcart.store.getState().customer;
+    const orders = Snipcart.store.getState().orders;
+    
+    if (customer && customer.status === 'SignedIn') {
+      document.getElementById('loggedInContent').style.display = 'block';
+      document.getElementById('loggedOutContent').style.display = 'none';
+      
+      if (orders && orders.length > 0) {
+        allOrders = orders;
+        document.getElementById('emptyState').style.display = 'none';
+        renderOrders(orders);
+      } else {
+        document.getElementById('emptyState').style.display = 'block';
+        document.getElementById('loggedInContent').style.display = 'none';
+      }
+    } else {
+      document.getElementById('loggedInContent').style.display = 'none';
+      document.getElementById('loggedOutContent').style.display = 'block';
+      document.getElementById('emptyState').style.display = 'none';
+    }
+  });
+});
+
+function renderOrders(orders) {
+  const container = document.getElementById('ordersList');
+  
+  container.innerHTML = orders.map(order => `
+    <div class="order-card" data-status="${order.status}">
+      <div class="order-header">
+        <div>
+          <h3>Order #${order.token}</h3>
+          <div class="order-meta">
+            <span>📅 ${new Date(order.creationDate).toLocaleDateString()}</span>
+            <span>📦 ${order.items.length} item(s)</span>
+          </div>
+        </div>
+        <span class="order-status status-${order.status.toLowerCase()}">${order.status}</span>
+      </div>
+      
+      <div class="order-body">
+        <div class="order-items">
+          ${order.items.map(item => `
+            <div class="order-item">
+              <div class="item-image">
+                ${item.image ? `<img src="${item.image}" alt="${item.name}">` : '📷'}
+              </div>
+              <div class="item-details">
+                <h4>${item.name}</h4>
+                <p>Qty: ${item.quantity}</p>
+                ${item.customFields ? Object.entries(item.customFields).map(([key, val]) => `<p>${key}: ${val}</p>`).join('') : ''}
+              </div>
+              <div class="item-price">$${(item.totalPrice || 0).toFixed(2)}</div>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+      
+      <div class="order-footer">
+        <div>
+          ${order.trackingNumber ? `<button class="btn-track" onclick="trackOrder('${order.trackingNumber}')">Track Shipment</button>` : ''}
+          <button class="btn-reorder" onclick="reorder('${order.token}')">Reorder</button>
+        </div>
+        <div class="order-totals">
+          <div class="total-row"><span>Subtotal:</span><span>$${(order.subtotal || 0).toFixed(2)}</span></div>
+          <div class="total-row"><span>Shipping:</span><span>$${(order.shipping || 0).toFixed(2)}</span></div>
+          <div class="total-row"><span>Tax:</span><span>$${(order.taxes || 0).toFixed(2)}</span></div>
+          <div class="total-row total"><span>Total:</span><span>$${order.total.toFixed(2)}</span></div>
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
+// Filter functionality
+document.getElementById('statusFilter')?.addEventListener('change', function(e) {
+  const status = e.target.value;
+  if (!status) {
+    renderOrders(allOrders);
+  } else {
+    const filtered = allOrders.filter(o => o.status === status);
+    renderOrders(filtered);
+  }
+});
+
+document.getElementById('searchOrders')?.addEventListener('input', function(e) {
+  const query = e.target.value.toLowerCase();
+  const filtered = allOrders.filter(o => 
+    o.token.toLowerCase().includes(query) ||
+    o.items.some(i => i.name.toLowerCase().includes(query))
+  );
+  renderOrders(filtered);
+});
+
+function trackOrder(trackingNumber) {
+  // Open tracking in new tab (you'll need to integrate with your shipping provider)
+  window.open(`https://track.example.com/${trackingNumber}`, '_blank');
+}
+
+function reorder(orderToken) {
+  // Find order and add items to cart
+  const order = allOrders.find(o => o.token === orderToken);
+  if (order) {
+    order.items.forEach(item => {
+      Snipcart.api.cart.items.add({
+        id: item.id,
+        name: item.name,
+        price: item.price,
+        quantity: item.quantity,
+        url: item.url || window.location.href
+      });
+    });
+  }
+}
+</script>
+
+</body>
+</html>
