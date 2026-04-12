@@ -1,0 +1,393 @@
+/**
+ * Divine Printing Custom Snipcart Theme
+ * Matches site colors: Purple #3d1a6e, Gold #c9a227
+ */
+
+/* Root variables for Snipcart */
+.snipcart {
+  --color-primary: #3d1a6e !important;
+  --color-primary-dark: #2a124d !important;
+  --color-primary-light: #5a2d8c !important;
+  --color-secondary: #c9a227 !important;
+  --color-secondary-dark: #a8881f !important;
+  --color-secondary-light: #e8c04a !important;
+  
+  --color-text: #2c1f4a !important;
+  --color-text-light: #5a4a7a !important;
+  --color-text-muted: #8a8097 !important;
+  
+  --color-background: #ffffff !important;
+  --color-background-light: #faf8ff !important;
+  --color-background-dark: #f3f0fa !important;
+  --color-background-alt: #fdf3d0 !important;
+  
+  --color-border: #e8e0f0 !important;
+  --color-border-light: #f0ebf5 !important;
+  
+  --color-success: #22c55e !important;
+  --color-error: #ef4444 !important;
+  --color-warning: #f59e0b !important;
+  
+  --font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif !important;
+  --font-family-heading: 'Cinzel', Georgia, serif !important;
+  
+  --border-radius: 8px !important;
+  --shadow-sm: 0 1px 2px rgba(61, 26, 110, 0.05) !important;
+  --shadow-md: 0 4px 12px rgba(61, 26, 110, 0.1) !important;
+  --shadow-lg: 0 8px 24px rgba(61, 26, 110, 0.15) !important;
+}
+
+/* Modal/Drawer Styling */
+.snipcart-modal {
+  background: rgba(26, 13, 48, 0.85) !important;
+  backdrop-filter: blur(4px) !important;
+}
+
+.snipcart-modal__container {
+  background: var(--color-background) !important;
+  box-shadow: -8px 0 40px rgba(61, 26, 110, 0.25) !important;
+}
+
+/* Header */
+.snipcart-cart-header {
+  background: linear-gradient(135deg, #3d1a6e 0%, #5a2d8c 100%) !important;
+  border-bottom: 2px solid #c9a227 !important;
+}
+
+.snipcart-cart-header__title {
+  font-family: 'Cinzel', serif !important;
+  color: #ffffff !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.05em !important;
+}
+
+.snipcart-cart-header__close-button {
+  color: #c9a227 !important;
+}
+
+.snipcart-cart-header__close-button:hover {
+  color: #e8c04a !important;
+}
+
+.snipcart-cart-header__count {
+  background: #c9a227 !important;
+  color: #1a0d30 !important;
+  font-weight: 700 !important;
+}
+
+/* Cart Content */
+.snipcart-cart__content {
+  background: #faf8ff !important;
+}
+
+.snipcart-cart__footer {
+  background: #ffffff !important;
+  border-top: 2px solid #e8e0f0 !important;
+}
+
+/* Items */
+.snipcart-item-line {
+  background: #ffffff !important;
+  border: 1px solid #e8e0f0 !important;
+  border-radius: 8px !important;
+  margin-bottom: 12px !important;
+  box-shadow: 0 2px 8px rgba(61, 26, 110, 0.06) !important;
+}
+
+.snipcart-item-line__title {
+  font-family: 'Cinzel', serif !important;
+  color: #3d1a6e !important;
+  font-weight: 600 !important;
+}
+
+.snipcart-item-line__description {
+  color: #5a4a7a !important;
+}
+
+.snipcart-item-line__price {
+  color: #3d1a6e !important;
+  font-weight: 700 !important;
+}
+
+/* Quantity Selector */
+.snipcart-item-quantity__quantity {
+  border-color: #c9a227 !important;
+  color: #3d1a6e !important;
+  font-weight: 600 !important;
+}
+
+.snipcart-item-quantity__button {
+  background: #fdf3d0 !important;
+  color: #3d1a6e !important;
+  border-color: #c9a227 !important;
+}
+
+.snipcart-item-quantity__button:hover {
+  background: #c9a227 !important;
+  color: #1a0d30 !important;
+}
+
+/* Remove Button */
+.snipcart-button-icon {
+  color: #8a8097 !important;
+}
+
+.snipcart-button-icon:hover {
+  color: #ef4444 !important;
+}
+
+/* Summary / Totals */
+.snipcart-cart__footer .snipcart-summary {
+  background: #f3f0fa !important;
+  border-radius: 8px !important;
+  padding: 16px !important;
+}
+
+.snipcart-summary__item {
+  color: #5a4a7a !important;
+}
+
+.snipcart-summary__total {
+  color: #3d1a6e !important;
+  font-family: 'Cinzel', serif !important;
+  font-weight: 700 !important;
+  font-size: 1.2em !important;
+}
+
+.snipcart-summary__total-price {
+  color: #c9a227 !important;
+  font-weight: 700 !important;
+}
+
+/* Primary Buttons */
+.snipcart-button-primary {
+  background: linear-gradient(135deg, #c9a227 0%, #e8c04a 100%) !important;
+  color: #1a0d30 !important;
+  font-family: 'Inter', sans-serif !important;
+  font-weight: 600 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.08em !important;
+  border: none !important;
+  border-radius: 8px !important;
+  padding: 14px 28px !important;
+  box-shadow: 0 4px 12px rgba(201, 162, 39, 0.3) !important;
+  transition: all 0.2s ease !important;
+}
+
+.snipcart-button-primary:hover {
+  background: linear-gradient(135deg, #e8c04a 0%, #f5d76e 100%) !important;
+  box-shadow: 0 6px 16px rgba(201, 162, 39, 0.4) !important;
+  transform: translateY(-1px) !important;
+}
+
+.snipcart-button-primary:active {
+  transform: translateY(0) !important;
+}
+
+/* Secondary Buttons */
+.snipcart-button-secondary {
+  background: transparent !important;
+  color: #3d1a6e !important;
+  border: 2px solid #3d1a6e !important;
+  font-weight: 600 !important;
+  border-radius: 8px !important;
+  transition: all 0.2s ease !important;
+}
+
+.snipcart-button-secondary:hover {
+  background: #3d1a6e !important;
+  color: #ffffff !important;
+}
+
+/* Form Elements */
+.snipcart-form__input,
+.snipcart-form__select,
+.snipcart-form__textarea {
+  border: 2px solid #e8e0f0 !important;
+  border-radius: 8px !important;
+  color: #2c1f4a !important;
+  font-family: 'Inter', sans-serif !important;
+  background: #ffffff !important;
+}
+
+.snipcart-form__input:focus,
+.snipcart-form__select:focus,
+.snipcart-form__textarea:focus {
+  border-color: #c9a227 !important;
+  box-shadow: 0 0 0 3px rgba(201, 162, 39, 0.15) !important;
+  outline: none !important;
+}
+
+.snipcart-form__label {
+  color: #3d1a6e !important;
+  font-weight: 600 !important;
+  font-size: 0.9em !important;
+}
+
+/* Discount Code */
+.snipcart-discount-box {
+  background: #fdf3d0 !important;
+  border: 1px dashed #c9a227 !important;
+  border-radius: 8px !important;
+}
+
+.snipcart-discount-box__button {
+  background: #3d1a6e !important;
+  color: #ffffff !important;
+  font-weight: 600 !important;
+}
+
+/* Shipping Options */
+.snipcart-shipping-rates-list__item {
+  border: 2px solid #e8e0f0 !important;
+  border-radius: 8px !important;
+  background: #ffffff !important;
+}
+
+.snipcart-shipping-rates-list__item--highlight {
+  border-color: #c9a227 !important;
+  background: #fdf3d0 !important;
+}
+
+/* Payment Methods */
+.snipcart-payment-methods__list-item {
+  border: 2px solid #e8e0f0 !important;
+  border-radius: 8px !important;
+}
+
+.snipcart-payment-methods__list-item--selected {
+  border-color: #c9a227 !important;
+  background: #fdf3d0 !important;
+}
+
+/* Checkout Steps */
+.snipcart-checkout-step__header {
+  background: #f3f0fa !important;
+  border-left: 4px solid #c9a227 !important;
+}
+
+.snipcart-checkout-step__title {
+  color: #3d1a6e !important;
+  font-family: 'Cinzel', serif !important;
+  font-weight: 600 !important;
+}
+
+.snipcart-checkout-step__number {
+  background: #3d1a6e !important;
+  color: #c9a227 !important;
+  font-weight: 700 !important;
+}
+
+/* Empty Cart */
+.snipcart-cart__empty {
+  text-align: center !important;
+  padding: 60px 20px !important;
+}
+
+.snipcart-cart__empty-title {
+  font-family: 'Cinzel', serif !important;
+  color: #3d1a6e !important;
+  font-size: 1.5em !important;
+  margin-bottom: 12px !important;
+}
+
+.snipcart-cart__empty-description {
+  color: #8a8097 !important;
+  margin-bottom: 24px !important;
+}
+
+/* Loading States */
+.snipcart-loading {
+  color: #3d1a6e !important;
+}
+
+.snipcart-loading__icon {
+  border-color: #e8e0f0 !important;
+  border-top-color: #c9a227 !important;
+}
+
+/* Notifications */
+.snipcart-flash-message--success {
+  background: #f0fdf4 !important;
+  border-left: 4px solid #22c55e !important;
+  color: #166534 !important;
+}
+
+.snipcart-flash-message--error {
+  background: #fef2f2 !important;
+  border-left: 4px solid #ef4444 !important;
+  color: #991b1b !important;
+}
+
+/* Links */
+.snipcart__link {
+  color: #3d1a6e !important;
+  text-decoration: none !important;
+  border-bottom: 1px solid #c9a227 !important;
+  transition: all 0.2s ease !important;
+}
+
+.snipcart__link:hover {
+  color: #5a2d8c !important;
+  border-bottom-color: #e8c04a !important;
+}
+
+/* Badges */
+.snipcart-badge {
+  background: #c9a227 !important;
+  color: #1a0d30 !important;
+  font-weight: 700 !important;
+  font-size: 0.75em !important;
+}
+
+/* Product Images in Cart */
+.snipcart-item-line__image {
+  border-radius: 6px !important;
+  border: 1px solid #e8e0f0 !important;
+}
+
+/* Order Summary Sidebar */
+.snipcart-cart__secondary-header {
+  background: #f3f0fa !important;
+  border-bottom: 1px solid #e8e0f0 !important;
+}
+
+/* Featured Payment Icons */
+.snipcart-payment-methods__icon {
+  filter: grayscale(30%) !important;
+  opacity: 0.9 !important;
+}
+
+/* Mobile Responsiveness */
+@media (max-width: 768px) {
+  .snipcart-modal__container {
+    max-width: 100% !important;
+  }
+  
+  .snipcart-button-primary {
+    padding: 12px 20px !important;
+    font-size: 0.9em !important;
+  }
+  
+  .snipcart-cart-header__title {
+    font-size: 1.1em !important;
+  }
+}
+
+/* Scrollbar Styling */
+.snipcart-modal__container::-webkit-scrollbar {
+  width: 8px !important;
+}
+
+.snipcart-modal__container::-webkit-scrollbar-track {
+  background: #f3f0fa !important;
+}
+
+.snipcart-modal__container::-webkit-scrollbar-thumb {
+  background: #c9a227 !important;
+  border-radius: 4px !important;
+}
+
+.snipcart-modal__container::-webkit-scrollbar-thumb:hover {
+  background: #e8c04a !important;
+}
