@@ -116,13 +116,7 @@
     
     <div class="price-display-large" id="price">$12.99</div>
     
-    <button class="snipcart-add-item quick-checkout"
-      data-item-id="yard-sign-18x24"
-      data-item-name="Church Yard Sign - 18x24"
-      data-item-price="12.99"
-      data-item-image="../images/yard-sign-standard.png"
-      data-item-url="/products/church-yard-sign-standard.html"
-      data-item-description="Double-sided corrugated yard sign with H-stake">
+    <button class="quick-checkout" onclick="addToSnipcart()">
       &#10013; Add to Cart - $12.99
     </button>
     <p style="font-size:0.85rem;color:var(--gray);margin-top:8px;text-align:center;">Need different options? <a href="../contact.html" style="color:var(--purple);">Request custom quote</a></p>
@@ -215,6 +209,26 @@ function showViewCartButton() {
     btn.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   }
 }
+</script>
+<script>
+  // Add to Snipcart and show cart (not checkout)
+  function addToSnipcart() {
+    if (typeof Snipcart !== 'undefined' && Snipcart.api) {
+      Snipcart.api.cart.items.add({
+        id: 'yard-sign-18x24',
+        name: 'Church Yard Sign - 18x24',
+        price: 12.99,
+        image: '../images/yard-sign-standard.png',
+        description: 'Double-sided corrugated yard sign'
+      }).then(function() {
+        Snipcart.api.cart.open();
+      });
+    } else {
+      // Fallback: show alert if Snipcart not loaded
+      alert('Please try again in a moment...');
+      setTimeout(addToSnipcart, 1000);
+    }
+  }
 </script>
 <script async src="https://cdn.snipcart.com/themes/v3.0.31/default/snipcart.js"></script>
 <div hidden id="snipcart" data-api-key="ZjljZmI1ODItM2VmOS00M2ZhLTg3ZGItNmUwY2NiZjViMjQ4NjM5MTE0Njk1NzE1MTQwNTE3" data-config-modal-style="side"></div>

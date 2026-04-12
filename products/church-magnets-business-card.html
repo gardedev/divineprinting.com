@@ -116,13 +116,7 @@
     
     <div class="price-display-large" id="price">$1.49</div>
     
-    <button class="snipcart-add-item quick-checkout"
-      data-item-id="magnets-business-card"
-      data-item-name="Church Magnets - Business Card Size"
-      data-item-price="1.49"
-      data-item-image="../images/magnets-business-card.png"
-      data-item-url="/products/church-magnets-business-card.html"
-      data-item-description="30mil magnetic business card">
+    <button class="quick-checkout" onclick="addToSnipcart()">
       &#10013; Add to Cart - $1.49
     </button>
     <p style="font-size:0.85rem;color:var(--gray);margin-top:8px;text-align:center;">Need different options? <a href="../contact.html" style="color:var(--purple);">Request custom quote</a></p>
@@ -215,6 +209,26 @@ function showViewCartButton() {
     btn.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   }
 }
+</script>
+<script>
+  // Add to Snipcart and show cart (not checkout)
+  function addToSnipcart() {
+    if (typeof Snipcart !== 'undefined' && Snipcart.api) {
+      Snipcart.api.cart.items.add({
+        id: 'magnets-business-card',
+        name: 'Church Magnets - Business Card Size',
+        price: 1.49,
+        image: '../images/magnets-business-card.png',
+        description: '30mil magnetic business card'
+      }).then(function() {
+        Snipcart.api.cart.open();
+      });
+    } else {
+      // Fallback: show alert if Snipcart not loaded
+      alert('Please try again in a moment...');
+      setTimeout(addToSnipcart, 1000);
+    }
+  }
 </script>
 <script async src="https://cdn.snipcart.com/themes/v3.0.31/default/snipcart.js"></script>
 <div hidden id="snipcart" data-api-key="ZjljZmI1ODItM2VmOS00M2ZhLTg3ZGItNmUwY2NiZjViMjQ4NjM5MTE0Njk1NzE1MTQwNTE3" data-config-modal-style="side"></div>

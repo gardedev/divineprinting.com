@@ -116,13 +116,7 @@
     
     <div class="price-display-large" id="price">$0.25</div>
     
-    <button class="snipcart-add-item quick-checkout"
-      data-item-id="stickers-round-2in"
-      data-item-name="Church Stickers - 2 inch Round"
-      data-item-price="0.25"
-      data-item-image="../images/stickers-round.png"
-      data-item-url="/products/church-stickers-round.html"
-      data-item-description="Vinyl stickers - 50 minimum order">
+    <button class="quick-checkout" onclick="addToSnipcart()">
       &#10013; Add to Cart - $0.25
     </button>
     <p style="font-size:0.85rem;color:var(--gray);margin-top:8px;text-align:center;">Need different options? <a href="../contact.html" style="color:var(--purple);">Request custom quote</a></p>
@@ -215,6 +209,26 @@ function showViewCartButton() {
     btn.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   }
 }
+</script>
+<script>
+  // Add to Snipcart and show cart (not checkout)
+  function addToSnipcart() {
+    if (typeof Snipcart !== 'undefined' && Snipcart.api) {
+      Snipcart.api.cart.items.add({
+        id: 'stickers-round-2in',
+        name: 'Church Stickers - 2 inch Round',
+        price: 0.25,
+        image: '../images/stickers-round.png',
+        description: 'Vinyl stickers - 50 minimum order'
+      }).then(function() {
+        Snipcart.api.cart.open();
+      });
+    } else {
+      // Fallback: show alert if Snipcart not loaded
+      alert('Please try again in a moment...');
+      setTimeout(addToSnipcart, 1000);
+    }
+  }
 </script>
 <script async src="https://cdn.snipcart.com/themes/v3.0.31/default/snipcart.js"></script>
 <div hidden id="snipcart" data-api-key="ZjljZmI1ODItM2VmOS00M2ZhLTg3ZGItNmUwY2NiZjViMjQ4NjM5MTE0Njk1NzE1MTQwNTE3" data-config-modal-style="side"></div>
