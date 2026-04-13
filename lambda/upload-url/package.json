@@ -1,0 +1,14 @@
+{
+  "name": "divine-printing-upload-url",
+  "version": "1.0.0",
+  "description": "AWS Lambda: generate presigned POST URLs for S3 artwork uploads",
+  "main": "index.js",
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.0.0",
+    "@aws-sdk/s3-presigned-post": "^3.0.0",
+    "uuid": "^9.0.0"
+  },
+  "engines": {
+    "node": ">=18.x"
+  }
+}
