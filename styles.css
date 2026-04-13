@@ -260,31 +260,7 @@ nav a.active { color: var(--gold-lt); }
   }
 }
 
-/* ADD TO CART BUTTON */
-.add-to-cart-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  background: var(--gold);
-  color: var(--dark);
-  border: none;
-  padding: 12px 24px;
-  border-radius: 8px;
-  font-weight: 700;
-  font-size: 0.95rem;
-  cursor: pointer;
-  transition: all 0.2s;
-  text-decoration: none;
-}
-.add-to-cart-btn:hover {
-  background: var(--gold-lt);
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(201,162,39,0.4);
-}
-.add-to-cart-btn svg {
-  width: 18px;
-  height: 18px;
-}
+/* (Add to Cart button styles moved to cart sidebar layout section below) */
 
 /* HERO */
 .hero {
@@ -705,6 +681,118 @@ footer {
   text-decoration: none;
 }
 .footer-bottom a:hover { color: var(--gold-lt); }
+
+/* CART SIDEBAR LAYOUT FIX */
+/* Prevent Snipcart cart overlay from cutting off main content */
+body.snipcart-sidecart--opened {
+  overflow: hidden;
+}
+
+/* Ensure Snipcart modal sits above everything */
+.snipcart-modal {
+  z-index: 10000 !important;
+}
+.snipcart-modal__container {
+  z-index: 10001 !important;
+  max-width: 420px !important;
+}
+
+/* Prevent main content from being clipped by cart */
+.product-hero,
+.product-info,
+.product-desc,
+.section-inner {
+  position: relative;
+  z-index: 1;
+}
+
+/* ADD TO CART BUTTON — Enhanced */
+.add-to-cart-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  background: linear-gradient(135deg, var(--gold) 0%, var(--gold-lt) 100%);
+  color: var(--dark);
+  border: none;
+  padding: 16px 32px;
+  border-radius: 12px;
+  font-weight: 700;
+  font-size: 1.05rem;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  text-decoration: none;
+  letter-spacing: 0.02em;
+  box-shadow: 0 4px 16px rgba(201, 162, 39, 0.35);
+  position: relative;
+  overflow: hidden;
+}
+.add-to-cart-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+  transition: left 0.5s ease;
+}
+.add-to-cart-btn:hover::before {
+  left: 100%;
+}
+.add-to-cart-btn:hover {
+  background: linear-gradient(135deg, var(--gold-lt) 0%, #f5d76e 100%);
+  transform: translateY(-3px);
+  box-shadow: 0 8px 24px rgba(201, 162, 39, 0.45);
+}
+.add-to-cart-btn:active {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(201, 162, 39, 0.3);
+}
+.add-to-cart-btn svg {
+  width: 20px;
+  height: 20px;
+}
+
+/* Quick Checkout button — Enhanced (product pages) */
+.quick-checkout {
+  background: linear-gradient(135deg, var(--gold) 0%, var(--gold-lt) 100%) !important;
+  color: var(--dark) !important;
+  border: none;
+  padding: 18px 36px;
+  border-radius: 14px;
+  font-size: 1.15rem;
+  font-weight: 700;
+  cursor: pointer;
+  width: 100%;
+  margin-top: 16px;
+  transition: all 0.25s ease;
+  box-shadow: 0 6px 20px rgba(201, 162, 39, 0.35);
+  letter-spacing: 0.03em;
+  position: relative;
+  overflow: hidden;
+}
+.quick-checkout::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+  transition: left 0.5s ease;
+}
+.quick-checkout:hover::before {
+  left: 100%;
+}
+.quick-checkout:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 10px 30px rgba(201, 162, 39, 0.45);
+  background: linear-gradient(135deg, var(--gold-lt) 0%, #f5d76e 100%) !important;
+}
+.quick-checkout:active {
+  transform: translateY(-1px);
+}
 
 /* RESPONSIVE */
 @media (max-width: 900px) {

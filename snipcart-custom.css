@@ -37,15 +37,38 @@
   --shadow-lg: 0 8px 24px rgba(61, 26, 110, 0.15) !important;
 }
 
-/* Modal/Drawer Styling */
+/* Modal/Drawer Styling — Cart sidebar */
 .snipcart-modal {
-  background: rgba(26, 13, 48, 0.85) !important;
-  backdrop-filter: blur(4px) !important;
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  z-index: 10000 !important;
+  background: rgba(26, 13, 48, 0.7) !important;
+  backdrop-filter: blur(6px) !important;
+  -webkit-backdrop-filter: blur(6px) !important;
 }
 
 .snipcart-modal__container {
+  position: fixed !important;
+  top: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  max-width: 420px !important;
+  width: 100% !important;
   background: var(--color-background) !important;
-  box-shadow: -8px 0 40px rgba(61, 26, 110, 0.25) !important;
+  box-shadow: -8px 0 40px rgba(61, 26, 110, 0.3) !important;
+  z-index: 10001 !important;
+  overflow-y: auto !important;
+}
+
+/* Ensure cart doesn't clip underlying product content */
+.snipcart-layout {
+  z-index: 10000 !important;
+}
+.snipcart-layout__content {
+  z-index: 10001 !important;
 }
 
 /* Header */
@@ -362,6 +385,7 @@
 @media (max-width: 768px) {
   .snipcart-modal__container {
     max-width: 100% !important;
+    width: 100% !important;
   }
   
   .snipcart-button-primary {
@@ -371,6 +395,18 @@
   
   .snipcart-cart-header__title {
     font-size: 1.1em !important;
+  }
+
+  /* On mobile, cart should be full-screen overlay */
+  .snipcart-modal {
+    background: rgba(26, 13, 48, 0.85) !important;
+  }
+}
+
+/* Prevent content from being obscured when cart is open */
+@media (min-width: 769px) {
+  .snipcart-modal__container {
+    max-width: 420px !important;
   }
 }
 
