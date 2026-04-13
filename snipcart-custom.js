@@ -1,70 +1,57 @@
 /**
  * Divine Printing Snipcart Customizations
- * Handles View Cart link interception and other Snipcart behaviors
+ * Forces View Cart to go to custom cart page
  */
 
-// Wait for Snipcart to be ready
+// Override Snipcart's default behavior before it loads
+window.SnipcartSettings = window.SnipcartSettings || {};
+
+// Listen for when Snipcart is ready
 document.addEventListener('snipcart.ready', function() {
   
-  // Override the View Cart link behavior in Snipcart's popup
-  // Snipcart creates the popup dynamically, so we need to watch for it
-  const observer = new MutationObserver(function(mutations) {
-    mutations.forEach(function(mutation) {
-      // Look for the View Cart link in Snipcart's confirmation popup
-      const viewCartLinks = document.querySelectorAll('.snipcart-cart-button, .snipcart-cart__footer a[href*="cart"], a.snipcart-cart-button');
-      
-      viewCartLinks.forEach(function(link) {
-        // Check if we've already processed this link
-        if (link.dataset.dpHandled) return;
-        link.dataset.dpHandled = 'true';
-        
-        // Override the click behavior
-        link.addEventListener('click', function(e) {
-          e.preventDefault();
-          e.stopPropagation();
-          
-          // Navigate to our custom cart page
-          window.location.href = '/cart.html';
-        });
-      });
-      
-      // Also look for the "View Cart" button in the add-to-cart confirmation
-      const confirmationButtons = document.querySelectorAll('.snipcart-add-product-confirmation__button, .snipcart-add-product-confirmation__cart-button');
-      
-      confirmationButtons.forEach(function(button) {
-        if (button.dataset.dpHandled) return;
-        button.dataset.dpHandled = 'true';
-        
-        // Check if this is the "View Cart" button (not "Continue Shopping")
-        const buttonText = button.textContent.toLowerCase();
-        if (buttonText.includes('cart') || buttonText.includes('view')) {
-          button.addEventListener('click', function(e) {
-            e.preventDefault();
-            e.stopPropagation();
-            window.location.href = '/cart.html';
-          });
-        }
-      });
-    });
-  });
+  // Override the cart URL in Snipcart's configuration
+  if (Snipcart.api && Snipcart.api.cart) {
+    // Try to override the cart URL
+    Snipcart.api.cart.setUrl = function() {
+      window.location.href = '/cart.html';
+    };
+  }
   
-  // Start observing the document for Snipcart elements
-  observer.observe(document.body, {
-    childList: true,
-    subtree: true
-  });
+  // Aggressive override - intercept ALL clicks on links that might be cart links
+  document.addEventListener('click', function(e) {
+    const target = e.target.closest('a, button');
+    if (!target) return;
+    
+    // Check if this is inside Snipcart modal
+    const isInSnipcart = target.closest('.snipcart-modal, .snipcart-add-product-confirmation');
+    if (!isInSnipcart) return;
+    
+    // Check if it's a cart-related link/button
+    const text = (target.textContent || '').toLowerCase();
+    const href = target.getAttribute('href') || '';
+    const classes = (target.className || '').toLowerCase();
+    
+    // If it mentions cart or view, redirect to our cart
+    if (text.includes('cart') || text.includes('view cart') || 
+        href.includes('cart') || classes.includes('cart')) {
+      e.preventDefault();
+      e.stopPropagation();
+      window.location.href = '/cart.html';
+      return false;
+    }
+  }, true); // Use capture phase
   
 });
 
-// Also handle clicks on snipcart-checkout class to go to our cart
+// Also try to catch the click before Snipcart processes it
 document.addEventListener('click', function(e) {
-  const checkoutButton = e.target.closest('.snipcart-checkout');
-  if (checkoutButton && !checkoutButton.classList.contains('snipcart-modal-open')) {
-    // If it's not inside the Snipcart modal, redirect to our cart
-    const isInModal = checkoutButton.closest('.snipcart-modal__container');
-    if (!isInModal) {
-      e.preventDefault();
-      window.location.href = '/cart.html';
-    }
+  const target = e.target.closest('a[href*="cart"], button');
+  if (!target) return;
+  
+  // Check if this is the problematic URL pattern
+  const href = target.getAttribute('href') || '';
+  if (href.includes('/products/cart/') || href.includes('/cart/products/')) {
+    e.preventDefault();
+    window.location.href = '/cart.html';
   }
-});
+}, true);
