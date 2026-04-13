@@ -36,8 +36,8 @@ function showToast(message) {
       <div>
         <div style="font-weight:600;">${message}</div>
         <div style="font-size:0.85rem;opacity:0.9;margin-top:4px;">
-          <a href="cart.html" style="color:#fff;text-decoration:underline;">View Cart</a> or 
-          <a href="index.html#products" style="color:#fff;text-decoration:underline;">Continue Shopping</a>
+          <a href="/cart.html" style="color:#fff;text-decoration:underline;">View Cart</a> or 
+          <a href="/#products" style="color:#fff;text-decoration:underline;">Continue Shopping</a>
         </div>
       </div>
     </div>
