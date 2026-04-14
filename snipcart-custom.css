@@ -98,6 +98,55 @@
   font-weight: 700 !important;
 }
 
+/* ========================================
+   CHECKOUT HEADER — Price & Icon Visibility
+   ======================================== */
+
+/* Header summary (price area in checkout header) */
+.snipcart-modal__header-summary-title,
+.snipcart-modal__header-sumary {
+  color: #c9a227 !important;
+}
+
+/* Price text in the checkout header */
+.snipcart-cart-header .snipcart__font--secondary,
+.snipcart-cart-header .snipcart__font--bold,
+.snipcart-cart-header .snipcart__font--xlarge,
+.snipcart-cart-header .snipcart-cart-header__option {
+  color: #c9a227 !important;
+}
+
+/* Shopping bag / cart icon in header */
+.snipcart-cart-header__icon path,
+.snipcart-cart-header svg path {
+  fill: #c9a227 !important;
+}
+
+/* Close button text in header */
+.snipcart-modal__close {
+  color: #c9a227 !important;
+}
+
+.snipcart-modal__close:hover {
+  color: #e8c04a !important;
+}
+
+.snipcart-modal__close-icon path,
+.snipcart-modal__close svg path {
+  fill: #c9a227 !important;
+}
+
+/* Secondary header (order summary bar) */
+.snipcart-cart__secondary-header {
+  background-color: #f3f0fa !important;
+  border-bottom: 1px solid #e8e0f0 !important;
+}
+
+.snipcart-cart__secondary-header-title {
+  color: #3d1a6e !important;
+  font-weight: 600 !important;
+}
+
 /* Cart Content */
 .snipcart-cart__content {
   background: #faf8ff !important;
@@ -283,7 +332,27 @@
   background: #fdf3d0 !important;
 }
 
-/* Checkout Steps */
+/* ========================================
+   CHECKOUT STEP INDICATORS & BADGES
+   ======================================== */
+
+/* Step number badges — inactive state */
+.snipcart__box--badge {
+  background-color: transparent !important;
+  border: 3px solid #3d1a6e !important;
+  color: #3d1a6e !important;
+  font-weight: 700 !important;
+}
+
+/* Step number badges — active/highlighted state */
+.snipcart__box--badge-highlight {
+  background: #3d1a6e !important;
+  background-image: none !important;
+  border: 3px solid #3d1a6e !important;
+  color: #c9a227 !important;
+}
+
+/* Checkout step header area */
 .snipcart-checkout-step__header {
   background: #f3f0fa !important;
   border-left: 4px solid #c9a227 !important;
@@ -299,6 +368,15 @@
   background: #3d1a6e !important;
   color: #c9a227 !important;
   font-weight: 700 !important;
+}
+
+/* Checkout step icon (checkmark on completed steps) */
+.snipcart-checkout-step__icon {
+  color: #c9a227 !important;
+}
+
+.snipcart-checkout-step__icon path {
+  fill: #c9a227 !important;
 }
 
 /* Empty Cart */
@@ -379,6 +457,224 @@
 .snipcart-payment-methods__icon {
   filter: grayscale(30%) !important;
   opacity: 0.9 !important;
+}
+
+/* ========================================
+   ACCENT COLOR OVERRIDES (Blue → Purple/Gold)
+   ======================================== */
+
+/* Override all blue accent colors used by Snipcart default theme */
+
+/* Links */
+.snipcart__actions--link {
+  color: #5a2d8c !important;
+}
+
+.snipcart__actions--link:hover {
+  color: #3d1a6e !important;
+}
+
+/* Guest checkout link */
+.snipcart-guest-checkout__link {
+  color: #5a2d8c !important;
+}
+
+/* Sign-in / register links */
+.snipcart-signin__register-link,
+.snipcart-register__register-link,
+.snipcart-signin__forgot-password {
+  color: #5a2d8c !important;
+}
+
+/* Checkboxes — checked state */
+.snipcart-checkbox:focus + label:before,
+.snipcart-checkbox:hover + label:before {
+  border: 1px solid #c9a227 !important;
+}
+
+.snipcart-checkbox:checked + label:before {
+  border: 1px solid #c9a227 !important;
+  background-color: #c9a227 !important;
+  box-shadow: 0 2px 3px rgba(201, 162, 39, 0.3) !important;
+}
+
+/* Radio buttons — checked state */
+.snipcart-form-radio:checked + label:before {
+  background: linear-gradient(135deg, #3d1a6e, #5a2d8c) !important;
+  border: none !important;
+}
+
+/* Form focus states — inputs and selects */
+.snipcart-input:focus-within {
+  border: 1px solid #c9a227 !important;
+  box-shadow: 0 0 0 3px rgba(201, 162, 39, 0.15) !important;
+}
+
+.snipcart-form__select:focus {
+  border: 1px solid #c9a227 !important;
+}
+
+.snipcart-textbox--focus {
+  border: 1px solid #c9a227 !important;
+  box-shadow: 0 0 0 3px rgba(201, 162, 39, 0.15) !important;
+}
+
+/* Icon button focus state */
+.snipcart__button--icon:active,
+.snipcart__button--icon:focus,
+.snipcart__button--with-icon:active,
+.snipcart__button--with-icon:focus {
+  border: 1px solid #c9a227 !important;
+}
+
+/* Shipping rate selected highlight */
+.snipcart-shipping-rates-list-item:focus-within {
+  border: 1px solid #c9a227 !important;
+}
+
+.snipcart-shipping-rates-list-item--highlight {
+  border: 1px solid #c9a227 !important;
+  background-color: #fdf3d0 !important;
+}
+
+/* Discount box form border */
+.snipcart-discount-box__form {
+  border: 1px solid #c9a227 !important;
+}
+
+.snipcart-discount-box__submit {
+  color: #3d1a6e !important;
+}
+
+.snipcart-discount-box__button:focus {
+  border: 1px solid #c9a227 !important;
+}
+
+/* Error message action link */
+.snipcart-error-message__action {
+  color: #5a2d8c !important;
+}
+
+/* Order invoice highlight */
+.snipcart-order__invoice-number--highlight {
+  color: #c9a227 !important;
+}
+
+/* SVG icon recoloring — replace blue icons with purple/gold */
+.snipcart__icon--blue-light path {
+  fill: #c9a227 !important;
+}
+
+.snipcart__icon--blue-dark path {
+  fill: #3d1a6e !important;
+}
+
+/* Quantity button focus */
+.snipcart-item-quantity__button:focus path {
+  fill: #c9a227 !important;
+}
+
+/* ========================================
+   CHECKOUT FLOW — "Continue to Payment" & Submit Buttons
+   ======================================== */
+
+/* All primary action buttons in the checkout flow */
+.snipcart-base-button--primary,
+.snipcart-cart__checkout-button .snipcart-button-primary,
+.snipcart-payment__form .snipcart-button-primary,
+.snipcart-submit-button,
+[class*="submit-button"],
+button.snipcart-button-primary {
+  background: linear-gradient(135deg, #c9a227 0%, #e8c04a 100%) !important;
+  color: #1a0d30 !important;
+  border: none !important;
+  font-weight: 600 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.08em !important;
+  border-radius: 8px !important;
+  box-shadow: 0 4px 12px rgba(201, 162, 39, 0.3) !important;
+  transition: all 0.2s ease !important;
+}
+
+.snipcart-base-button--primary:hover,
+button.snipcart-button-primary:hover {
+  background: linear-gradient(135deg, #e8c04a 0%, #f5d76e 100%) !important;
+  box-shadow: 0 6px 16px rgba(201, 162, 39, 0.4) !important;
+  transform: translateY(-1px) !important;
+}
+
+/* ========================================
+   PAYMENT METHODS & COMPLETED STEPS
+   ======================================== */
+
+/* Payment method list item selected */
+.snipcart-payment-methods-list-item__button:hover,
+.snipcart-payment-methods-list-item__button:focus {
+  border-color: #c9a227 !important;
+}
+
+/* Completed step titles */
+.snipcart-billing-completed__step-title,
+.snipcart-shipping-completed__step-title {
+  color: #3d1a6e !important;
+  font-family: 'Cinzel', serif !important;
+}
+
+/* Cart summary in checkout */
+.snipcart-cart-summary {
+  background-color: #faf8ff !important;
+}
+
+.snipcart-cart-summary__content {
+  background-color: #ffffff !important;
+}
+
+.snipcart-cart-summary-fees__amount {
+  color: #3d1a6e !important;
+  font-weight: 600 !important;
+}
+
+/* Featured payment methods section */
+.snipcart-featured-payment-methods {
+  border-top-color: #e8e0f0 !important;
+}
+
+.snipcart-featured-payment-methods__title {
+  background-color: #faf8ff !important;
+  color: #3d1a6e !important;
+}
+
+/* Tool tips */
+.snipcart-tool-tip {
+  box-shadow: 0 8px 16px rgba(61, 26, 110, 0.15) !important;
+}
+
+.snipcart-tool-tip--bordered .snipcart-tool-tip__container {
+  border: 1px solid rgba(61, 26, 110, 0.1) !important;
+}
+
+/* ========================================
+   OVERALL CHECKOUT BACKGROUND & LAYOUT
+   ======================================== */
+
+/* Main checkout/cart modal background — use the light purple tint */
+.snipcart-modal {
+  background-color: #faf8ff !important;
+}
+
+/* Checkout content area */
+.snipcart-checkout__content {
+  color: #2c1f4a !important;
+}
+
+/* Cart summary sidebar separator */
+.snipcart-cart-summary__separator {
+  background: #e8e0f0 !important;
+}
+
+/* Order status green stays green but make order link purple */
+.snipcart-order__link {
+  color: #5a2d8c !important;
 }
 
 /* Mobile Responsiveness */
