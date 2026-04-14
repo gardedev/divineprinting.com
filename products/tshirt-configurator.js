@@ -163,7 +163,7 @@ function loadShirtImage(imageName) {
 // State
 let state = {
   selectedDesign: 'cross-modern',
-  shirtColor: '#FFFFFF',
+  shirtColor: '#8B3A3A',
   position: 'center',
   uploadedImage: null,
   designX: null,
@@ -173,15 +173,15 @@ let state = {
   uploadedImageStretch: false,
   selectedElement: null,
   texts: [
-    { id: 0, text: 'Your Church Name', x: 200, y: 185, font: 'Cinzel', size: 20, color: '#1a1a1a' },
-    { id: 1, text: 'Faith • Hope • Love', x: 200, y: 210, font: 'Inter', size: 14, color: '#1a1a1a' }
+    { id: 0, text: 'Your Church Name', x: 200, y: 185, font: 'Cinzel', size: 20, color: '#FFFFFF' },
+    { id: 1, text: 'Faith • Hope • Love', x: 200, y: 210, font: 'Inter', size: 14, color: '#FFFFFF' }
   ]
 };
 
 let nextTextId = 2;
 
 // Current shirt image filename
-let currentShirtImageName = 'white.jpg';
+let currentShirtImageName = 'antique-cherry-red.jpg';
 
 function getDefaultPositions() {
   let cx, cy, scale;
