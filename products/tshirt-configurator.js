@@ -163,7 +163,7 @@ function loadShirtImage(imageName) {
 // State
 let state = {
   selectedDesign: 'cross-modern',
-  shirtColor: '#8B3A3A',
+  shirtColor: '#FFFFFF',
   position: 'center',
   uploadedImage: null,
   designX: null,
@@ -173,15 +173,15 @@ let state = {
   uploadedImageStretch: false,
   selectedElement: null,
   texts: [
-    { id: 0, text: 'Your Church Name', x: null, y: null, font: 'Cinzel', size: 20, color: '#1a1a1a' },
-    { id: 1, text: 'Faith • Hope • Love', x: null, y: null, font: 'Inter', size: 14, color: '#1a1a1a' }
+    { id: 0, text: 'Your Church Name', x: 200, y: 185, font: 'Cinzel', size: 20, color: '#1a1a1a' },
+    { id: 1, text: 'Faith • Hope • Love', x: 200, y: 210, font: 'Inter', size: 14, color: '#1a1a1a' }
   ]
 };
 
 let nextTextId = 2;
 
 // Current shirt image filename
-let currentShirtImageName = 'antique-cherry-red.jpg';
+let currentShirtImageName = 'white.jpg';
 
 function getDefaultPositions() {
   let cx, cy, scale;
@@ -589,7 +589,8 @@ function drawPreview() {
   state.texts.forEach((textObj, index) => {
     if (!textObj.text) return;
     const x = textObj.x || cx;
-    const y = textObj.y || (cy + scale/2 + 25 + index * 25);
+    // Position text closer to design: design is at cy, text starts just below it
+    const y = textObj.y || (cy + scale/2 + 10 + index * 22);
     
     if (state.selectedElement === textObj.id) {
       ctx.save();
