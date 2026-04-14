@@ -173,8 +173,8 @@ let state = {
   uploadedImageStretch: false,
   selectedElement: null,
   texts: [
-    { id: 0, text: 'Your Church Name', x: 200, y: 185, font: 'Cinzel', size: 20, color: '#FFFFFF' },
-    { id: 1, text: 'Faith • Hope • Love', x: 200, y: 210, font: 'Inter', size: 14, color: '#FFFFFF' }
+    { id: 0, text: 'Your Church Name', x: 200, y: 165, font: 'Cinzel', size: 20, color: '#FFFFFF' },
+    { id: 1, text: 'Faith • Hope • Love', x: 200, y: 190, font: 'Inter', size: 14, color: '#FFFFFF' }
   ]
 };
 
@@ -185,8 +185,8 @@ let currentShirtImageName = 'antique-cherry-red.jpg';
 
 function getDefaultPositions() {
   let cx, cy, scale;
-  if (state.position === 'center') { cx = 200; cy = 140; scale = 70; }
-  else if (state.position === 'left') { cx = 140; cy = 130; scale = 50; }
+  if (state.position === 'center') { cx = 200; cy = 120; scale = 70; }
+  else if (state.position === 'left') { cx = 140; cy = 110; scale = 50; }
   else { cx = 200; cy = 200; scale = 90; }
   return { cx, cy, scale };
 }
@@ -602,8 +602,13 @@ function drawPreview() {
     }
     
     ctx.fillStyle = textObj.color || state.printColor;
-    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.font = textObj.size + 'px ' + textObj.font;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    // Use bolder font weight and ensure crisp rendering
+    ctx.font = '600 ' + textObj.size + 'px "' + textObj.font + '", sans-serif';
+    // Enable sub-pixel rendering
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
     ctx.fillText(textObj.text, x, y);
   });
   
