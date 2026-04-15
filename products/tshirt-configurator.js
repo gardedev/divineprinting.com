@@ -22,11 +22,22 @@ const designOptions = {
 
 // Preload design images
 const designImages = {};
+let designImagesLoaded = false;
+
 function loadDesignImages() {
-  Object.entries(designOptions).forEach(([key, option]) => {
-    const img = new Image();
-    img.src = `../images/designs/${option.file}`;
-    designImages[key] = img;
+  const promises = Object.entries(designOptions).map(([key, option]) => {
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.onload = () => resolve();
+      img.onerror = () => resolve(); // Resolve even on error to not block
+      img.src = `../images/designs/${option.file}`;
+      designImages[key] = img;
+    });
+  });
+  
+  Promise.all(promises).then(() => {
+    designImagesLoaded = true;
+    drawPreview(); // Redraw once all images are loaded
   });
 }
 
@@ -173,8 +184,8 @@ let state = {
   uploadedImageStretch: false,
   selectedElement: null,
   texts: [
-    { id: 0, text: 'Your Church Name', x: 200, y: 165, font: 'Cinzel', size: 20, color: '#FFFFFF' },
-    { id: 1, text: 'Faith • Hope • Love', x: 200, y: 190, font: 'Inter', size: 14, color: '#FFFFFF' }
+    { id: 0, text: 'Your Church Name', x: 400, y: 330, font: 'Cinzel', size: 32, color: '#FFFFFF', arch: 0 },
+    { id: 1, text: 'Faith • Hope • Love', x: 400, y: 376, font: 'Inter', size: 24, color: '#FFFFFF', arch: 0 }
   ]
 };
 
@@ -185,8 +196,9 @@ let currentShirtImageName = 'antique-cherry-red.jpg';
 
 function getDefaultPositions() {
   let cx, cy, scale;
-  if (state.position === 'center') { cx = 200; cy = 120; scale = 70; }
-  else if (state.position === 'left') { cx = 140; cy = 110; scale = 50; }
+  // Using 800x800 canvas, so coordinates are doubled from 400x400
+  if (state.position === 'center') { cx = 400; cy = 240; scale = 140; }
+  else if (state.position === 'left') { cx = 280; cy = 220; scale = 100; }
   else { cx = 200; cy = 200; scale = 90; }
   return { cx, cy, scale };
 }
@@ -386,6 +398,46 @@ function updateDesignSize(value) {
   const label = document.getElementById('designSizeLabel');
   if (label) label.textContent = value + '%';
   drawPreview();
+}
+
+// Draw arched/curved text
+// arch: positive = upward curve, negative = downward curve, 0 = straight
+function drawArchedText(ctx, text, x, y, size, font, color, arch) {
+  ctx.save();
+  ctx.font = '600 ' + size + 'px "' + font + '", sans-serif';
+  ctx.fillStyle = color;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  
+  const totalWidth = ctx.measureText(text).width;
+  const radius = (totalWidth / 2) / Math.sin(Math.abs(arch) * Math.PI / 180) || totalWidth * 2;
+  const angleStep = (Math.abs(arch) * 2 * Math.PI / 180) / text.length;
+  const startAngle = -Math.abs(arch) * Math.PI / 180;
+  
+  ctx.translate(x, y);
+  
+  for (let i = 0; i < text.length; i++) {
+    const char = text[i];
+    const charWidth = ctx.measureText(char).width;
+    const angle = startAngle + (i + 0.5) * angleStep;
+    
+    ctx.save();
+    if (arch > 0) {
+      // Upward arch
+      ctx.rotate(angle);
+      ctx.fillText(char, 0, -radius);
+    } else if (arch < 0) {
+      // Downward arch
+      ctx.rotate(-angle);
+      ctx.fillText(char, 0, radius);
+    }
+    ctx.restore();
+    
+    // Move to next character position
+    ctx.rotate(angleStep);
+  }
+  
+  ctx.restore();
 }
 
 function handleFileUpload(e) {
@@ -602,14 +654,17 @@ function drawPreview() {
     }
     
     ctx.fillStyle = textObj.color || state.printColor;
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    // Use bolder font weight and ensure crisp rendering
-    ctx.font = '600 ' + textObj.size + 'px "' + textObj.font + '", sans-serif';
-    // Enable sub-pixel rendering
-    ctx.imageSmoothingEnabled = true;
-    ctx.imageSmoothingQuality = 'high';
-    ctx.fillText(textObj.text, x, y);
+    
+    // Draw text with arch/curve support
+    if (textObj.arch && textObj.arch !== 0) {
+      drawArchedText(ctx, textObj.text, x, y, textObj.size, textObj.font, textObj.color, textObj.arch);
+    } else {
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      // Use bolder font weight and ensure crisp rendering
+      ctx.font = '600 ' + textObj.size + 'px "' + textObj.font + '", sans-serif';
+      ctx.fillText(textObj.text, x, y);
+    }
   });
   
   // Update cart button with current design
