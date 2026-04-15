@@ -340,6 +340,16 @@ function updateTextSize(id, size) {
     drawPreview(); 
   } 
 }
+
+function updateTextArch(id, arch) {
+  const t = state.texts.find(x => x.id === id);
+  if (t) {
+    t.arch = parseInt(arch);
+    const label = document.getElementById(`arch-label-${id}`);
+    if (label) label.textContent = arch + '°';
+    drawPreview();
+  }
+}
 function selectText(id) {
   state.selectedElement = id;
   updateTextSelectionUI();
@@ -379,6 +389,10 @@ function renderTextControls() {
       <div class="size-control">
         <label>Size: <span id="size-label-${t.id}">${t.size}px</span></label>
         <input type="range" min="10" max="48" value="${t.size}" oninput="updateTextSize(${t.id}, this.value)" class="size-slider">
+      </div>
+      <div class="arch-control">
+        <label>Arch: <span id="arch-label-${t.id}">${t.arch || 0}°</span></label>
+        <input type="range" min="-30" max="30" value="${t.arch || 0}" oninput="updateTextArch(${t.id}, this.value)" class="arch-slider" title="Curve text up or down">
       </div>
     </div>
   `).join('');
