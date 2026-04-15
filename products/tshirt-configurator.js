@@ -430,39 +430,46 @@ function drawArchedText(ctx, text, x, y, size, font, color, arch) {
   ctx.save();
   ctx.font = '600 ' + size + 'px "' + font + '", sans-serif';
   ctx.fillStyle = color;
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
   
-  // Calculate the arc radius based on arch angle
-  const totalWidth = ctx.measureText(text).width;
-  const archRad = Math.abs(arch) * Math.PI / 180;
-  const radius = totalWidth / (2 * Math.sin(archRad));
+  // Get text metrics
+  const metrics = ctx.measureText(text);
+  const totalWidth = metrics.width;
   
-  // Calculate the angle per character
-  const totalAngle = 2 * archRad;
-  const anglePerChar = totalAngle / text.length;
+  // Calculate arc parameters - use a fixed radius based on text width
+  // This creates a more predictable curve
+  const radius = Math.max(totalWidth * 1.5, 200);
+  const archRad = (arch * Math.PI / 180) * 0.5; // Scale down the arch effect
   
-  // Start from the left side of the arc
-  const startAngle = -archRad + anglePerChar / 2;
+  // Calculate the arc span
+  const arcLength = totalWidth;
+  const arcAngle = arcLength / radius;
   
-  // For upward arch (positive), curve above the baseline
-  // For downward arch (negative), curve below the baseline
-  const isUpward = arch > 0;
+  // Start position (left side of arc)
+  let currentAngle = -arcAngle / 2;
+  const angleStep = arcAngle / text.length;
   
+  // Draw each character
   for (let i = 0; i < text.length; i++) {
     const char = text[i];
-    const angle = startAngle + i * anglePerChar;
+    const charWidth = ctx.measureText(char).width;
     
-    // Calculate position on the arc
-    const charX = x + Math.sin(angle) * radius;
-    const charY = y + (isUpward ? -Math.cos(angle) * radius : Math.cos(angle) * radius) + (isUpward ? radius : -radius);
+    // Calculate position on arc
+    const angle = currentAngle + (i * angleStep);
     
-    // Rotate character to follow the curve
-    const rotation = isUpward ? angle : -angle;
+    // For upward arch (positive arch), curve up
+    // For downward arch (negative arch), curve down
+    const curveFactor = Math.sin(archRad);
+    const charX = x + Math.sin(angle) * (totalWidth / 2);
+    const charY = y - Math.cos(angle) * radius * curveFactor + radius * curveFactor;
+    
+    // Rotation follows the curve
+    const rotation = angle * curveFactor;
     
     ctx.save();
     ctx.translate(charX, charY);
     ctx.rotate(rotation);
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
     ctx.fillText(char, 0, 0);
     ctx.restore();
   }
