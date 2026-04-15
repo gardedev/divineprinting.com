@@ -415,40 +415,56 @@ function updateDesignSize(value) {
 }
 
 // Draw arched/curved text
-// arch: positive = upward curve, negative = downward curve, 0 = straight
+// arch: positive = upward curve (smile), negative = downward curve (frown), 0 = straight
 function drawArchedText(ctx, text, x, y, size, font, color, arch) {
+  if (!arch || arch === 0) {
+    // Fallback to straight text
+    ctx.fillStyle = color;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.font = '600 ' + size + 'px "' + font + '", sans-serif';
+    ctx.fillText(text, x, y);
+    return;
+  }
+  
   ctx.save();
   ctx.font = '600 ' + size + 'px "' + font + '", sans-serif';
   ctx.fillStyle = color;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   
+  // Calculate the arc radius based on arch angle
   const totalWidth = ctx.measureText(text).width;
-  const radius = (totalWidth / 2) / Math.sin(Math.abs(arch) * Math.PI / 180) || totalWidth * 2;
-  const angleStep = (Math.abs(arch) * 2 * Math.PI / 180) / text.length;
-  const startAngle = -Math.abs(arch) * Math.PI / 180;
+  const archRad = Math.abs(arch) * Math.PI / 180;
+  const radius = totalWidth / (2 * Math.sin(archRad));
   
-  ctx.translate(x, y);
+  // Calculate the angle per character
+  const totalAngle = 2 * archRad;
+  const anglePerChar = totalAngle / text.length;
+  
+  // Start from the left side of the arc
+  const startAngle = -archRad + anglePerChar / 2;
+  
+  // For upward arch (positive), curve above the baseline
+  // For downward arch (negative), curve below the baseline
+  const isUpward = arch > 0;
   
   for (let i = 0; i < text.length; i++) {
     const char = text[i];
-    const charWidth = ctx.measureText(char).width;
-    const angle = startAngle + (i + 0.5) * angleStep;
+    const angle = startAngle + i * anglePerChar;
+    
+    // Calculate position on the arc
+    const charX = x + Math.sin(angle) * radius;
+    const charY = y + (isUpward ? -Math.cos(angle) * radius : Math.cos(angle) * radius) + (isUpward ? radius : -radius);
+    
+    // Rotate character to follow the curve
+    const rotation = isUpward ? angle : -angle;
     
     ctx.save();
-    if (arch > 0) {
-      // Upward arch
-      ctx.rotate(angle);
-      ctx.fillText(char, 0, -radius);
-    } else if (arch < 0) {
-      // Downward arch
-      ctx.rotate(-angle);
-      ctx.fillText(char, 0, radius);
-    }
+    ctx.translate(charX, charY);
+    ctx.rotate(rotation);
+    ctx.fillText(char, 0, 0);
     ctx.restore();
-    
-    // Move to next character position
-    ctx.rotate(angleStep);
   }
   
   ctx.restore();
