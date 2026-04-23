@@ -1,0 +1,10 @@
+{
+  "name": "divineprinting-list-designs",
+  "version": "1.0.0",
+  "description": "Lambda function to list order designs from S3",
+  "main": "index.js",
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.450.0",
+    "@aws-sdk/s3-request-presigner": "^3.450.0"
+  }
+}

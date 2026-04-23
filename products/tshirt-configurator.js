@@ -431,39 +431,57 @@ function drawArchedText(ctx, text, x, y, size, font, color, arch) {
   ctx.font = '600 ' + size + 'px "' + font + '", sans-serif';
   ctx.fillStyle = color;
   
-  // Get text metrics
-  const metrics = ctx.measureText(text);
-  const totalWidth = metrics.width;
+  // Calculate total width by measuring each character
+  let totalWidth = 0;
+  const charWidths = [];
+  for (let i = 0; i < text.length; i++) {
+    const w = ctx.measureText(text[i]).width;
+    charWidths.push(w);
+    totalWidth += w;
+  }
   
-  // Calculate arc parameters - use a fixed radius based on text width
-  // This creates a more predictable curve
-  const radius = Math.max(totalWidth * 1.5, 200);
-  const archRad = (arch * Math.PI / 180) * 0.5; // Scale down the arch effect
+  // Add small spacing between characters for better curve
+  const charSpacing = size * 0.05;
+  totalWidth += charSpacing * (text.length - 1);
   
-  // Calculate the arc span
-  const arcLength = totalWidth;
-  const arcAngle = arcLength / radius;
+  // Convert arch degrees to radians
+  const archRad = arch * Math.PI / 180;
   
-  // Start position (left side of arc)
-  let currentAngle = -arcAngle / 2;
-  const angleStep = arcAngle / text.length;
+  // Calculate radius based on desired arch angle and text width
+  // Use a minimum radius to prevent extreme curves on short text
+  const minRadius = totalWidth * 0.8;
+  const calculatedRadius = totalWidth / (2 * Math.sin(Math.abs(archRad) / 2));
+  const radius = Math.max(minRadius, calculatedRadius);
+  
+  // Determine curve direction
+  const curveDirection = arch > 0 ? 1 : -1; // Positive = curve up (smile)
+  
+  // Arc center is below the text for upward curve, above for downward
+  const arcCenterY = y + curveDirection * radius;
+  
+  // Calculate the angular width of the text along the arc
+  const angularWidth = 2 * Math.asin(totalWidth / (2 * radius));
+  
+  // Start angle (left side of text)
+  let currentAngle = -angularWidth / 2;
   
   // Draw each character
   for (let i = 0; i < text.length; i++) {
     const char = text[i];
-    const charWidth = ctx.measureText(char).width;
+    const charWidth = charWidths[i];
     
-    // Calculate position on arc
-    const angle = currentAngle + (i * angleStep);
+    // Calculate the angle span for this character
+    const charAngleSpan = (charWidth + charSpacing) / radius;
     
-    // For upward arch (positive arch), curve up
-    // For downward arch (negative arch), curve down
-    const curveFactor = Math.sin(archRad);
-    const charX = x + Math.sin(angle) * (totalWidth / 2);
-    const charY = y - Math.cos(angle) * radius * curveFactor + radius * curveFactor;
+    // Angle at the center of this character
+    const angle = currentAngle + charAngleSpan / 2;
     
-    // Rotation follows the curve
-    const rotation = angle * curveFactor;
+    // Calculate position on the arc
+    const charX = x + radius * Math.sin(angle);
+    const charY = arcCenterY - curveDirection * radius * Math.cos(angle);
+    
+    // Rotation follows the curve tangent
+    const rotation = -curveDirection * angle;
     
     ctx.save();
     ctx.translate(charX, charY);
@@ -472,6 +490,9 @@ function drawArchedText(ctx, text, x, y, size, font, color, arch) {
     ctx.textBaseline = 'middle';
     ctx.fillText(char, 0, 0);
     ctx.restore();
+    
+    // Move to next character position
+    currentAngle += charAngleSpan;
   }
   
   ctx.restore();
@@ -858,6 +879,33 @@ function init() {
   drawPreview();
 }
 
+// Get current design data as object for webhook
+function getDesignDataForWebhook() {
+  const canvas = document.getElementById('tshirtCanvas');
+  let previewUrl = null;
+  let printableUrl = null;
+  
+  try {
+    previewUrl = canvas.toDataURL('image/png');
+    printableUrl = generatePrintableDesign();
+  } catch (e) {
+    console.log('Could not generate design images');
+  }
+  
+  return {
+    previewImage: previewUrl,
+    printableImage: printableUrl,
+    designInfo: {
+      design: state.selectedDesign ? designOptions[state.selectedDesign]?.name : 'Custom Upload',
+      color: document.getElementById('selectedColorName')?.textContent || 'Antique Cherry Red',
+      texts: state.texts.filter(t => t.text).map(t => t.text).join(', ') || 'None',
+      position: document.getElementById('positionSelect')?.value || 'center',
+      size: document.getElementById('sizeSelect')?.value || 'L',
+      quantity: document.getElementById('quantityInput')?.value || '25'
+    }
+  };
+}
+
 // Snipcart integration - Update cart button with current design
 function updateCartButton() {
   const btn = document.querySelector('.snipcart-add-item');
@@ -881,6 +929,9 @@ function updateCartButton() {
   else if (quantity <= 99) { price = 13.00; tier = '50-99'; }
   else { price = 11.00; tier = '100+'; }
   
+  // Get design data for webhook
+  const designData = getDesignDataForWebhook();
+  
   // Update data attributes
   btn.setAttribute('data-item-price', price.toFixed(2));
   btn.setAttribute('data-item-quantity', quantity);
@@ -891,6 +942,9 @@ function updateCartButton() {
   btn.setAttribute('data-item-custom5-value', state.uploadedImage ? 'Custom Upload' : 'Standard Design');
   btn.setAttribute('data-item-custom6-value', size);
   btn.setAttribute('data-item-custom7-value', tier);
+  
+  // Store design data in a global variable for the webhook to access
+  window.divinePrintingDesignData = designData;
   
   // Update button text
   btn.textContent = `Add to Cart - $${price.toFixed(2)} each`;
@@ -1042,10 +1096,64 @@ async function saveOrderDesign(orderToken) {
 
 document.addEventListener('DOMContentLoaded', init);
 
+// Webhook endpoint URL - UPDATE THIS after deploying the Lambda
+const WEBHOOK_ENDPOINT = 'https://s7ovzglni1.execute-api.us-east-2.amazonaws.com/default/divineprinting-save-design';
+
 // Listen for Snipcart order completion
 document.addEventListener('snipcart.ready', function() {
   Snipcart.events.on('order.completed', function(order) {
     console.log('Order completed:', order.token);
+    
+    // Save to localStorage (for admin page viewing)
     saveOrderDesign(order.token);
+    
+    // Send design data to webhook for S3 storage
+    sendDesignToWebhook(order);
   });
 });
+
+// Send design data to webhook endpoint
+async function sendDesignToWebhook(order) {
+  try {
+    // Get the design data we stored when updating the cart button
+    const designData = window.divinePrintingDesignData;
+    
+    if (!designData || !designData.previewImage) {
+      console.log('No design data available for webhook');
+      return;
+    }
+    
+    // Prepare payload matching what the Lambda expects
+    const payload = {
+      eventName: 'order.completed',
+      content: {
+        token: order.token,
+        invoiceNumber: order.invoiceNumber,
+        email: order.email,
+        billingAddress: order.billingAddress,
+        customFields: order.customFields,
+        metadata: {
+          designData: designData
+        }
+      }
+    };
+    
+    // Send to webhook
+    const response = await fetch(WEBHOOK_ENDPOINT, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(payload)
+    });
+    
+    if (response.ok) {
+      const result = await response.json();
+      console.log('Design saved to S3:', result);
+    } else {
+      console.error('Webhook failed:', response.status, await response.text());
+    }
+  } catch (error) {
+    console.error('Error sending design to webhook:', error);
+  }
+}

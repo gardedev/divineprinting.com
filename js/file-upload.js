@@ -14,6 +14,12 @@
   'use strict';
 
   // ─── Config ──────────────────────────────────────────────────────────────
+  // API Gateway endpoint — Lambda returns presigned S3 upload URLs
+  // Endpoint: POST https://oq0flihx9i.execute-api.us-east-2.amazonaws.com/upload-url
+  // Body: { fileName, fileType, fileSize, orderId? }
+  // Response: { uploadUrl, fields, key }
+  const API_UPLOAD_URL    = 'https://oq0flihx9i.execute-api.us-east-2.amazonaws.com/upload-url';
+
   const MAX_FILE_SIZE     = 10 * 1024 * 1024; // 10 MB
   const MAX_FILES         = 5;
   const ALLOWED_EXTS      = ['jpg', 'jpeg', 'png', 'pdf', 'ai', 'eps', 'psd'];
@@ -38,7 +44,7 @@
      */
     init(containerId, options = {}) {
       this._options = {
-        apiUrl: options.apiUrl || window.UPLOAD_API_URL || '',
+        apiUrl: options.apiUrl || window.UPLOAD_API_URL || API_UPLOAD_URL,
         orderId: options.orderId || null,
         onUploadComplete: options.onUploadComplete || null,
         onError: options.onError || null,
@@ -463,7 +469,7 @@
     const autoZone = document.querySelector('[data-dpu-auto]');
     if (autoZone) {
       DivinePrintingUpload.init(autoZone.id, {
-        apiUrl:  autoZone.dataset.dpuApiUrl  || window.UPLOAD_API_URL,
+        apiUrl:  autoZone.dataset.dpuApiUrl  || window.UPLOAD_API_URL || API_UPLOAD_URL,
         orderId: autoZone.dataset.dpuOrderId || null,
       });
     }
