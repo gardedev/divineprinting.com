@@ -518,41 +518,31 @@ function addToCart() {
   }
 }
 
-// Sync default text preview with text controls
+// Bidirectional sync between default text preview (left) and text controls (right)
 document.addEventListener('DOMContentLoaded', function() {
-  const defaultHeadline = document.querySelector('.default-headline');
-  const defaultSubtext = document.querySelector('.default-subtext');
+  // When text controls (right panel) are re-rendered via renderTextControls(),
+  // the inline oninput calls updateText() which now also calls syncDefaultTextPreview().
+  // The contenteditable listeners are set up in init() of tshirt-configurator.js.
   
-  // Function to sync with first two text inputs
-  function syncWithTextControls() {
-    const textInputs = document.querySelectorAll('.church-text-input');
-    if (textInputs.length >= 1 && defaultHeadline) {
-      defaultHeadline.textContent = textInputs[0].value || 'Your Church Name';
-    }
-    if (textInputs.length >= 2 && defaultSubtext) {
-      defaultSubtext.textContent = textInputs[1].value || 'Your custom message here...';
-    }
-  }
-  
-  // Listen for input changes on text controls
-  document.addEventListener('input', function(e) {
-    if (e.target.classList.contains('church-text-input')) {
-      syncWithTextControls();
-    }
-  });
-  
-  // Also update when text controls are added/removed
-  const observer = new MutationObserver(function(mutations) {
-    syncWithTextControls();
-  });
-  
+  // Watch for when renderTextControls() rebuilds the inputs (e.g. after addTextInstance/removeTextInstance)
+  // and re-sync the preview panel.
   const textContainer = document.getElementById('textControlsContainer');
   if (textContainer) {
-    observer.observe(textContainer, { childList: true, subtree: true });
+    const observer = new MutationObserver(function() {
+      // After text controls are rebuilt, sync the preview panel
+      if (typeof syncDefaultTextPreview === 'function') {
+        syncDefaultTextPreview();
+      }
+    });
+    observer.observe(textContainer, { childList: true });
   }
   
-  // Initial sync after a short delay to let tshirt-configurator.js initialize
-  setTimeout(syncWithTextControls, 500);
+  // Initial sync after configurator.js init completes
+  setTimeout(function() {
+    if (typeof syncDefaultTextPreview === 'function') {
+      syncDefaultTextPreview();
+    }
+  }, 600);
 });
 </script>
 <script async src="https://cdn.snipcart.com/themes/v3.0.31/default/snipcart.js"></script>

@@ -328,7 +328,42 @@ function removeTextInstance(id) {
   drawPreview();
 }
 
-function updateText(id, value) { const t = state.texts.find(x => x.id === id); if (t) { t.text = value; drawPreview(); } }
+function updateText(id, value) { 
+  const t = state.texts.find(x => x.id === id); 
+  if (t) { 
+    t.text = value; 
+    syncDefaultTextPreview(); 
+    drawPreview(); 
+  } 
+}
+
+// Sync the default-text-preview panel (left side) with state.texts
+function syncDefaultTextPreview() {
+  const headline = document.querySelector('.default-headline');
+  const subtext = document.querySelector('.default-subtext');
+  if (headline && state.texts.length >= 1) {
+    const val = state.texts[0].text;
+    if (headline.textContent !== val) {
+      headline.textContent = val || '';
+    }
+  }
+  if (subtext && state.texts.length >= 2) {
+    const val = state.texts[1].text;
+    if (subtext.textContent !== val) {
+      subtext.textContent = val || '';
+    }
+  }
+}
+
+// Sync text input fields (right side) with state.texts
+function syncTextInputs() {
+  const inputs = document.querySelectorAll('.church-text-input');
+  state.texts.forEach((t, i) => {
+    if (inputs[i] && inputs[i].value !== t.text) {
+      inputs[i].value = t.text;
+    }
+  });
+}
 function updateTextFont(id, font) { const t = state.texts.find(x => x.id === id); if (t) { t.font = font; drawPreview(); } }
 function updateTextColor(id, color) { const t = state.texts.find(x => x.id === id); if (t) { t.color = color; drawPreview(); } }
 function updateTextSize(id, size) { 
@@ -396,6 +431,9 @@ function renderTextControls() {
       </div>
     </div>
   `).join('');
+  
+  // Sync the left-side preview panel with current state
+  syncDefaultTextPreview();
 }
 
 function resetPositions() {
@@ -863,6 +901,30 @@ function init() {
   }
 
   renderTextControls();
+
+  // Wire up contenteditable preview elements (left panel) to sync with state + inputs + canvas
+  const defaultHeadline = document.querySelector('.default-headline');
+  const defaultSubtext = document.querySelector('.default-subtext');
+  
+  if (defaultHeadline) {
+    defaultHeadline.addEventListener('input', function() {
+      if (state.texts.length >= 1) {
+        state.texts[0].text = this.textContent;
+        syncTextInputs();
+        drawPreview();
+      }
+    });
+  }
+  
+  if (defaultSubtext) {
+    defaultSubtext.addEventListener('input', function() {
+      if (state.texts.length >= 2) {
+        state.texts[1].text = this.textContent;
+        syncTextInputs();
+        drawPreview();
+      }
+    });
+  }
 
   const canvas = document.getElementById('tshirtCanvas');
   if (canvas) {
