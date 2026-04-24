@@ -299,14 +299,7 @@
         <small>Per shirt for 25+ qty. Pricing adjusts based on quantity.</small>
       </div>
       
-      <button class="add-to-cart-btn" onclick="addToCart({
-        id: 'church-t-shirt',
-        name: 'Custom Church T-Shirt',
-        price: 15.00,
-        qty: 1,
-        image: '../images/tshirt.jpg',
-        options: 'Custom design - price varies by quantity'
-      })" style="width:100%;margin-bottom:16px;">
+      <button class="add-to-cart-btn" id="quickAddToCartBtn" onclick="addToCart()" style="width:100%;margin-bottom:16px;">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:18px;height:18px;"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
         Add to Cart
       </button>
@@ -457,6 +450,71 @@
 
 <script src="tshirt-configurator.js"></script>
 <script>
+// addToCart - uses Snipcart JS API to add the configured t-shirt to the cart
+function addToCart() {
+  // Ensure the Snipcart button data attributes are up to date
+  if (typeof updateCartButton === 'function') {
+    updateCartButton();
+  }
+
+  // Read current configuration
+  var designName = (typeof state !== 'undefined' && state.selectedDesign && typeof designOptions !== 'undefined' && designOptions[state.selectedDesign])
+    ? designOptions[state.selectedDesign].name
+    : 'Custom Upload';
+  var colorName = (document.getElementById('selectedColorName') || {}).textContent || 'Antique Cherry Red';
+  var position = (document.getElementById('positionSelect') || {}).value || 'center';
+  var size = (document.getElementById('sizeSelect') || {}).value || 'L';
+  var quantity = parseInt((document.getElementById('quantityInput') || {}).value || '25', 10);
+  var texts = (typeof state !== 'undefined' && state.texts)
+    ? state.texts.filter(function(t){ return t.text; }).map(function(t){ return t.text; }).join(', ')
+    : '';
+  var designType = (typeof state !== 'undefined' && state.uploadedImage) ? 'Custom Upload' : 'Standard Design';
+
+  // Determine price tier
+  var price = 15.00;
+  if (quantity <= 5) price = 25.00;
+  else if (quantity <= 10) price = 22.00;
+  else if (quantity <= 24) price = 18.00;
+  else if (quantity <= 49) price = 15.00;
+  else if (quantity <= 99) price = 13.00;
+  else price = 11.00;
+
+  // Try Snipcart JS API first (v3)
+  if (window.Snipcart && Snipcart.api && Snipcart.api.cart && Snipcart.api.cart.items) {
+    Snipcart.api.cart.items.add({
+      id: 'church-t-shirt',
+      name: 'Custom Church T-Shirt',
+      price: price,
+      quantity: quantity,
+      url: '/products/church-t-shirt.html',
+      description: 'Custom designed church t-shirt',
+      customFields: [
+        { name: 'Text on Shirt', value: texts || 'None' },
+        { name: 'Design', value: designName },
+        { name: 'Shirt Color', value: colorName },
+        { name: 'Print Position', value: position },
+        { name: 'Design Type', value: designType },
+        { name: 'Size', value: size }
+      ]
+    }).then(function() {
+      console.log('Item added to cart via API');
+    }).catch(function(err) {
+      console.error('Snipcart API add failed, falling back to button click:', err);
+      // Fallback: click the hidden Snipcart button
+      var snipcartBtn = document.querySelector('.snipcart-add-item');
+      if (snipcartBtn) snipcartBtn.click();
+    });
+  } else {
+    // Fallback: programmatically click the Snipcart data-attribute button
+    var snipcartBtn = document.querySelector('.snipcart-add-item');
+    if (snipcartBtn) {
+      snipcartBtn.click();
+    } else {
+      alert('Cart is loading, please try again in a moment.');
+    }
+  }
+}
+
 // Sync default text preview with text controls
 document.addEventListener('DOMContentLoaded', function() {
   const defaultHeadline = document.querySelector('.default-headline');
