@@ -73,11 +73,87 @@
 </style>
 </head>
 <body>
-<div class="topbar"><span>&#10013; Queens, NY Based - Serving Ministries Nationwide</span></div>
-<header><div class="nav-inner">
-  <a href="../index.html" class="logo"><div class="logo-icon"><img src="../images/logo-icon.png" alt="Divine Printing Logo" /></div><div class="logo-text"><div class="brand">Divine Printing</div><div class="tagline">Crafted for the Kingdom</div></div></a>
-  <nav><a href="../index.html">Home</a><a href="../index.html#banners">Banners</a><a href="../index.html#events">Events</a><a href="../index.html#signage">Signs</a><a href="products/church-t-shirt.html">T-Shirts</a><button class="snipcart-checkout" style="background:var(--gold);color:var(--purple);border:none;padding:8px 16px;border-radius:8px;cursor:pointer;font-weight:600;margin-left:12px;">🛒 Cart (<span class="snipcart-items-count">0</span>)</button></nav>
-</div></header>
+<!-- TOP BAR -->
+<div class="topbar">
+  <span>&#10013; Queens, NY Based &mdash; Serving Ministries Nationwide</span>
+  <span>|</span>
+  <span>&#9889; Same-day production available</span>
+</div>
+
+<!-- HEADER -->
+<header>
+  <div class="nav-inner">
+    <a href="../index.html" class="logo">
+      <div class="logo-icon"><img src="../images/logo-icon.png" alt="Divine Printing Logo" /></div>
+      <div class="logo-text">
+        <div class="brand">Divine Printing</div>
+        <div class="tagline">Crafted for the Kingdom</div>
+      </div>
+    </a>
+    <nav class="desktop-nav">
+      <a href="../index.html">Home</a>
+      <a href="../index.html#banners">Banners &amp; Flags</a>
+      <a href="../index.html#events">Event Displays</a>
+      <a href="../index.html#signage">Signs</a>
+      <a href="../index.html#promo">Promo &amp; Stickers</a>
+      <a href="../index.html#print">Print</a>
+      <a href="../blog/index.html">Blog</a>
+    </nav>
+    <div class="header-actions">
+      <a href="account.html" class="header-icon" aria-label="My Account">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+          <circle cx="12" cy="7" r="4"></circle>
+        </svg>
+        <span class="icon-label">Account</span>
+      </a>
+      <button class="header-icon cart-icon snipcart-checkout" aria-label="Shopping Cart" style="background:none;border:none;cursor:pointer;position:relative;">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="9" cy="21" r="1"></circle>
+          <circle cx="20" cy="21" r="1"></circle>
+          <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
+        </svg>
+        <span class="snipcart-items-count" style="position:absolute;top:2px;right:6px;background:var(--gold);color:var(--dark);font-size:.65rem;font-weight:700;min-width:16px;height:16px;border-radius:50%;display:flex;align-items:center;justify-content:center;padding:0 4px;">0</span>
+        <span class="icon-label">Cart</span>
+      </button>
+      <button class="mobile-menu-btn" aria-label="Open Menu" onclick="toggleMobileMenu()">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="3" y1="12" x2="21" y2="12"></line>
+          <line x1="3" y1="6" x2="21" y2="6"></line>
+          <line x1="3" y1="18" x2="21" y2="18"></line>
+        </svg>
+      </button>
+    </div>
+  </div>
+  <!-- Mobile Menu -->
+  <div class="mobile-menu" id="mobile-menu">
+    <div class="mobile-menu-header">
+      <a href="../index.html" class="logo">
+        <div class="logo-icon"><img src="../images/logo-icon.png" alt="Divine Printing Logo" /></div>
+        <div class="logo-text">
+          <div class="brand">Divine Printing</div>
+        </div>
+      </a>
+      <button class="mobile-menu-close" aria-label="Close Menu" onclick="toggleMobileMenu()">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
+    </div>
+    <nav class="mobile-nav">
+      <a href="../index.html">Home</a>
+      <a href="../index.html#banners">Banners &amp; Flags</a>
+      <a href="../index.html#events">Event Displays</a>
+      <a href="../index.html#signage">Signs</a>
+      <a href="../index.html#promo">Promo &amp; Stickers</a>
+      <a href="../index.html#print">Print</a>
+      <a href="../blog/index.html">Blog</a>
+      <a href="account.html">My Account</a>
+      <button class="snipcart-checkout" style="background:none;border:none;color:#fff;font-size:1.1rem;font-weight:500;padding:14px 16px;text-align:left;width:100%;">My Cart (<span class="snipcart-items-count">0</span>)</button>
+    </nav>
+  </div>
+</header>
 
 <section class="designs-section">
   <h1>Saved Designs</h1>
@@ -121,6 +197,45 @@
 <div hidden id="snipcart" data-api-key="ZjljZmI1ODItM2VmOS00M2ZhLTg3ZGItNmUwY2NiZjViMjQ4NjM5MTE0Njk1NzE1MTQwNTE3" data-config-modal-style="side"></div>
 
 <script>
+// Mobile menu toggle
+function toggleMobileMenu() {
+  const menu = document.getElementById('mobile-menu');
+  menu.classList.toggle('active');
+  document.body.style.overflow = menu.classList.contains('active') ? 'hidden' : '';
+}
+
+// Programmatic sign-in/sign-out handler for snipcart buttons
+function initSnipcartButtons() {
+  document.querySelectorAll('.snipcart-customer-signin').forEach(function(btn) {
+    btn.addEventListener('click', function(e) {
+      e.preventDefault();
+      if (window.Snipcart && Snipcart.api && Snipcart.api.customer) {
+        Snipcart.api.customer.signin();
+      } else {
+        console.warn('Snipcart not ready yet, retrying...');
+        setTimeout(function() {
+          if (window.Snipcart && Snipcart.api && Snipcart.api.customer) {
+            Snipcart.api.customer.signin();
+          }
+        }, 1000);
+      }
+    });
+  });
+  document.querySelectorAll('.snipcart-customer-signout').forEach(function(btn) {
+    btn.addEventListener('click', function(e) {
+      e.preventDefault();
+      if (window.Snipcart && Snipcart.api && Snipcart.api.customer) {
+        Snipcart.api.customer.signout();
+      }
+    });
+  });
+}
+
+// Initialize snipcart buttons when Snipcart is ready
+document.addEventListener('snipcart.ready', function() {
+  initSnipcartButtons();
+});
+
 // Load saved designs from localStorage
 function loadSavedDesigns() {
   const container = document.getElementById('designsContainer');
