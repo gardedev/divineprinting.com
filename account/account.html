@@ -76,8 +76,8 @@
         <a href="account.html" class="active">Dashboard</a>
         <a href="orders.html">My Orders</a>
         <a href="saved-designs.html">Saved Designs</a>
-        <a href="#" class="snipcart-customer-signin">Account Settings</a>
-        <a href="#" class="snipcart-customer-signout">Sign Out</a>
+        <a href="#" class="snipcart-customer-signin" onclick="event.preventDefault()">Account Settings</a>
+        <a href="#" class="snipcart-customer-signout" onclick="event.preventDefault()">Sign Out</a>
       </nav>
     </aside>
     
@@ -123,8 +123,9 @@
   </div>
 </section>
 
-<script src="https://cdn.snipcart.com/themes/v3.0.31/default/snipcart.js"></script>
-<div hidden id="snipcart" data-api-key="ZjljZmI1ODItM2VmOS00M2ZhLTg3ZGItNmUwY2NiZjViMjQ4NjM5MTE0Njk1NzE1MTQwNTE3"></div>
+<script async src="https://cdn.snipcart.com/themes/v3.0.31/default/snipcart.js"></script>
+<script src="/snipcart-custom.js"></script>
+<div hidden id="snipcart" data-api-key="ZjljZmI1ODItM2VmOS00M2ZhLTg3ZGItNmUwY2NiZjViMjQ4NjM5MTE0Njk1NzE1MTQwNTE3" data-config-modal-style="side"></div>
 
 <script>
 // Check if user is logged in and load account data
