@@ -21,8 +21,25 @@
 .sidebar { background: #fff; border-radius: 16px; padding: 24px; box-shadow: 0 4px 24px rgba(61,26,110,.08); height: fit-content; }
 .sidebar-nav { display: flex; flex-direction: column; gap: 8px; }
 .sidebar-nav a { padding: 12px 16px; border-radius: 10px; color: var(--gray); text-decoration: none; font-weight: 500; transition: all 0.2s; }
-.sidebar-nav a:hover, .sidebar-nav button:hover { background: var(--gold-pale); color: var(--purple); }
+.sidebar-nav a:hover, .sidebar-nav .sidebar-btn:hover { background: var(--gold-pale); color: var(--purple); }
 .sidebar-nav a.active { background: var(--purple); color: #fff; }
+
+.sidebar-nav .sidebar-btn {
+  background: none;
+  border: none;
+  font-family: inherit;
+  font-size: inherit;
+  padding: 12px 16px;
+  border-radius: 10px;
+  color: var(--gray);
+  text-decoration: none;
+  font-weight: 500;
+  cursor: pointer;
+  width: 100%;
+  text-align: left;
+  box-sizing: border-box;
+  transition: all 0.2s;
+}
 
 .main-content { background: #fff; border-radius: 16px; padding: 32px; box-shadow: 0 4px 24px rgba(61,26,110,.08); }
 
@@ -165,8 +182,8 @@
         <a href="account.html">Dashboard</a>
         <a href="orders.html">My Orders</a>
         <a href="saved-designs.html" class="active">Saved Designs</a>
-        <button class="snipcart-customer-signin" style="all:unset;display:block;padding:12px 16px;border-radius:10px;color:var(--gray);font-weight:500;cursor:pointer;width:100%;box-sizing:border-box;transition:all 0.2s;">Account Settings</button>
-        <button class="snipcart-customer-signout" style="all:unset;display:block;padding:12px 16px;border-radius:10px;color:var(--gray);font-weight:500;cursor:pointer;width:100%;box-sizing:border-box;transition:all 0.2s;">Sign Out</button>
+        <button class="snipcart-customer-signin sidebar-signin-btn sidebar-btn" type="button">Sign In / My Account</button>
+        <button class="snipcart-customer-signout sidebar-signout-btn sidebar-btn" type="button" style="display:none;">Sign Out</button>
       </nav>
     </aside>
     
@@ -192,20 +209,74 @@
   </div>
 </div>
 
-<script async src="https://cdn.snipcart.com/themes/v3.0.31/default/snipcart.js"></script>
-<script src="/snipcart-custom.js"></script>
+<!-- Snipcart config div MUST be in DOM before the script loads -->
 <div hidden id="snipcart" data-api-key="ZjljZmI1ODItM2VmOS00M2ZhLTg3ZGItNmUwY2NiZjViMjQ4NjM5MTE0Njk1NzE1MTQwNTE3" data-config-modal-style="side"></div>
+<script src="https://cdn.snipcart.com/themes/v3.0.31/default/snipcart.js"></script>
+<script src="/snipcart-custom.js"></script>
 
 <script>
 // Mobile menu toggle
 function toggleMobileMenu() {
-  const menu = document.getElementById('mobile-menu');
+  var menu = document.getElementById('mobile-menu');
   menu.classList.toggle('active');
   document.body.style.overflow = menu.classList.contains('active') ? 'hidden' : '';
 }
 
-// Snipcart automatically binds to .snipcart-customer-signin and
-// .snipcart-customer-signout classes — no programmatic handler needed.
+// Fallback: programmatically open Snipcart customer sign-in
+function openSnipcartSignin() {
+  if (window.Snipcart) {
+    try {
+      Snipcart.api.customer.signin();
+    } catch(e) {
+      try { Snipcart.api.theme.cart.open(); } catch(e2) { /* noop */ }
+    }
+  }
+}
+
+function openSnipcartSignout() {
+  if (window.Snipcart) {
+    try {
+      Snipcart.api.customer.signout();
+      window.location.reload();
+    } catch(e) { /* noop */ }
+  }
+}
+
+function bindSnipcartButtons() {
+  document.querySelectorAll('.snipcart-customer-signin').forEach(function(btn) {
+    btn.addEventListener('click', function(e) {
+      e.preventDefault();
+      openSnipcartSignin();
+    });
+  });
+  document.querySelectorAll('.snipcart-customer-signout').forEach(function(btn) {
+    btn.addEventListener('click', function(e) {
+      e.preventDefault();
+      openSnipcartSignout();
+    });
+  });
+}
+
+document.addEventListener('snipcart.ready', function() {
+  bindSnipcartButtons();
+  
+  Snipcart.store.subscribe(function() {
+    var state = Snipcart.store.getState();
+    var customer = state.customer;
+    
+    if (customer && customer.status === 'SignedIn') {
+      // Show sign-out, hide sign-in in sidebar
+      document.querySelectorAll('.sidebar-signout-btn').forEach(function(el) { el.style.display = ''; });
+      document.querySelectorAll('.sidebar-signin-btn').forEach(function(el) { el.style.display = 'none'; });
+    } else {
+      // Show sign-in, hide sign-out in sidebar
+      document.querySelectorAll('.sidebar-signout-btn').forEach(function(el) { el.style.display = 'none'; });
+      document.querySelectorAll('.sidebar-signin-btn').forEach(function(el) { el.style.display = ''; });
+    }
+  });
+});
+
+setTimeout(function() { bindSnipcartButtons(); }, 5000);
 
 // Load saved designs from localStorage
 function loadSavedDesigns() {
