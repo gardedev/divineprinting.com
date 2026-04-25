@@ -21,7 +21,7 @@
 .sidebar { background: #fff; border-radius: 16px; padding: 24px; box-shadow: 0 4px 24px rgba(61,26,110,.08); height: fit-content; }
 .sidebar-nav { display: flex; flex-direction: column; gap: 8px; }
 .sidebar-nav a { padding: 12px 16px; border-radius: 10px; color: var(--gray); text-decoration: none; font-weight: 500; transition: all 0.2s; }
-.sidebar-nav a:hover { background: var(--gold-pale); color: var(--purple); }
+.sidebar-nav a:hover, .sidebar-nav button:hover { background: var(--gold-pale); color: var(--purple); }
 .sidebar-nav a.active { background: var(--purple); color: #fff; }
 
 .main-content { background: #fff; border-radius: 16px; padding: 32px; box-shadow: 0 4px 24px rgba(61,26,110,.08); }
@@ -152,8 +152,8 @@
         <a href="account.html" class="active">Dashboard</a>
         <a href="orders.html">My Orders</a>
         <a href="saved-designs.html">Saved Designs</a>
-        <a href="#" class="snipcart-customer-signin" onclick="event.preventDefault()">Account Settings</a>
-        <a href="#" class="snipcart-customer-signout" onclick="event.preventDefault()">Sign Out</a>
+        <button class="snipcart-customer-signin" style="all:unset;display:block;padding:12px 16px;border-radius:10px;color:var(--gray);font-weight:500;cursor:pointer;width:100%;box-sizing:border-box;transition:all 0.2s;">Account Settings</button>
+        <button class="snipcart-customer-signout" style="all:unset;display:block;padding:12px 16px;border-radius:10px;color:var(--gray);font-weight:500;cursor:pointer;width:100%;box-sizing:border-box;transition:all 0.2s;">Sign Out</button>
       </nav>
     </aside>
     
@@ -211,37 +211,10 @@ function toggleMobileMenu() {
   document.body.style.overflow = menu.classList.contains('active') ? 'hidden' : '';
 }
 
-// Programmatic sign-in handler for snipcart-customer-signin buttons
-function initSnipcartButtons() {
-  document.querySelectorAll('.snipcart-customer-signin').forEach(function(btn) {
-    btn.addEventListener('click', function(e) {
-      e.preventDefault();
-      if (window.Snipcart && Snipcart.api && Snipcart.api.customer) {
-        Snipcart.api.customer.signin();
-      } else {
-        console.warn('Snipcart not ready yet, retrying...');
-        setTimeout(function() {
-          if (window.Snipcart && Snipcart.api && Snipcart.api.customer) {
-            Snipcart.api.customer.signin();
-          }
-        }, 1000);
-      }
-    });
-  });
-  document.querySelectorAll('.snipcart-customer-signout').forEach(function(btn) {
-    btn.addEventListener('click', function(e) {
-      e.preventDefault();
-      if (window.Snipcart && Snipcart.api && Snipcart.api.customer) {
-        Snipcart.api.customer.signout();
-      }
-    });
-  });
-}
-
 // Check if user is logged in and load account data
 document.addEventListener('snipcart.ready', function() {
-  // Initialize sign-in buttons now that Snipcart is ready
-  initSnipcartButtons();
+  // Snipcart automatically binds to .snipcart-customer-signin and
+  // .snipcart-customer-signout classes — no programmatic handler needed.
   Snipcart.store.subscribe(function() {
     const customer = Snipcart.store.getState().customer;
     const orders = Snipcart.store.getState().orders;
