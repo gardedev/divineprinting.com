@@ -229,48 +229,20 @@ function toggleMobileMenu() {
   document.body.style.overflow = menu.classList.contains('active') ? 'hidden' : '';
 }
 
-// Fallback: programmatically open Snipcart customer sign-in
-// In case auto-binding doesn't work, we manually wire up all sign-in buttons.
-function openSnipcartSignin() {
-  if (window.Snipcart) {
-    try {
-      Snipcart.api.customer.signin();
-    } catch(e) {
-      // Fallback: try opening the cart which has sign-in inside
-      try { Snipcart.api.theme.cart.open(); } catch(e2) { /* noop */ }
-    }
-  }
-}
-
-function openSnipcartSignout() {
-  if (window.Snipcart) {
-    try {
-      Snipcart.api.customer.signout();
+// Snipcart natively binds to elements with class "snipcart-customer-signin"
+// and "snipcart-customer-signout". No manual JS wiring needed — just use the CSS classes.
+// Sign-out needs a page reload after completing, so we hook into the event.
+function setupSignoutReload() {
+  if (window.Snipcart && Snipcart.events) {
+    Snipcart.events.on('customer.signedout', function() {
       window.location.reload();
-    } catch(e) { /* noop */ }
+    });
   }
-}
-
-// Wire up sign-in/sign-out buttons manually as a safety net
-function bindSnipcartButtons() {
-  document.querySelectorAll('.snipcart-customer-signin').forEach(function(btn) {
-    btn.addEventListener('click', function(e) {
-      e.preventDefault();
-      openSnipcartSignin();
-    });
-  });
-  document.querySelectorAll('.snipcart-customer-signout').forEach(function(btn) {
-    btn.addEventListener('click', function(e) {
-      e.preventDefault();
-      openSnipcartSignout();
-    });
-  });
 }
 
 // Check if user is logged in and load account data
 document.addEventListener('snipcart.ready', function() {
-  // Bind buttons manually as safety net
-  bindSnipcartButtons();
+  setupSignoutReload();
 
   Snipcart.store.subscribe(function() {
     var state = Snipcart.store.getState();
@@ -298,11 +270,6 @@ document.addEventListener('snipcart.ready', function() {
     }
   });
 });
-
-// Fallback: if snipcart.ready hasn't fired after 5 seconds, still bind buttons
-setTimeout(function() {
-  bindSnipcartButtons();
-}, 5000);
 
 function loadOrders(orders) {
   var ordersList = document.getElementById('recentOrdersList');

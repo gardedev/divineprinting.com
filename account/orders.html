@@ -244,45 +244,20 @@ function toggleMobileMenu() {
   document.body.style.overflow = menu.classList.contains('active') ? 'hidden' : '';
 }
 
-// Fallback: programmatically open Snipcart customer sign-in
-function openSnipcartSignin() {
-  if (window.Snipcart) {
-    try {
-      Snipcart.api.customer.signin();
-    } catch(e) {
-      try { Snipcart.api.theme.cart.open(); } catch(e2) { /* noop */ }
-    }
-  }
-}
-
-function openSnipcartSignout() {
-  if (window.Snipcart) {
-    try {
-      Snipcart.api.customer.signout();
+// Snipcart natively binds to elements with class "snipcart-customer-signin"
+// and "snipcart-customer-signout". No manual JS wiring needed.
+function setupSignoutReload() {
+  if (window.Snipcart && Snipcart.events) {
+    Snipcart.events.on('customer.signedout', function() {
       window.location.reload();
-    } catch(e) { /* noop */ }
+    });
   }
-}
-
-function bindSnipcartButtons() {
-  document.querySelectorAll('.snipcart-customer-signin').forEach(function(btn) {
-    btn.addEventListener('click', function(e) {
-      e.preventDefault();
-      openSnipcartSignin();
-    });
-  });
-  document.querySelectorAll('.snipcart-customer-signout').forEach(function(btn) {
-    btn.addEventListener('click', function(e) {
-      e.preventDefault();
-      openSnipcartSignout();
-    });
-  });
 }
 
 var allOrders = [];
 
 document.addEventListener('snipcart.ready', function() {
-  bindSnipcartButtons();
+  setupSignoutReload();
 
   Snipcart.store.subscribe(function() {
     var state = Snipcart.store.getState();
@@ -316,8 +291,6 @@ document.addEventListener('snipcart.ready', function() {
     }
   });
 });
-
-setTimeout(function() { bindSnipcartButtons(); }, 5000);
 
 function renderOrders(orders) {
   const container = document.getElementById('ordersList');
