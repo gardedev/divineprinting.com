@@ -271,9 +271,19 @@ function setupSigninReload() {
   }
 }
 
-// Sign-out needs a page reload after completing
-function setupSignoutReload() {
+// Sign-in and sign-out page reload handlers
+function setupAuthReload() {
   if (window.Snipcart && Snipcart.events) {
+    // Reload after sign-in to show dashboard
+    Snipcart.events.on('customer.signedin', function() {
+      // Close cart and reload to show account dashboard
+      if (Snipcart.api && Snipcart.api.theme && Snipcart.api.theme.cart) {
+        Snipcart.api.theme.cart.close();
+      }
+      window.location.reload();
+    });
+    
+    // Reload after sign-out
     Snipcart.events.on('customer.signedout', function() {
       window.location.reload();
     });
@@ -347,7 +357,7 @@ function loadOrdersFromState() {
 document.addEventListener('snipcart.ready', function() {
   setupSigninButtons();
   setupSigninReload();
-  setupSignoutReload();
+  setupAuthReload();
 
   // Subscribe to state changes — handles initial load and any state transitions
   Snipcart.store.subscribe(function() {
