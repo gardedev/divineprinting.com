@@ -1,0 +1,11 @@
+{
+  "name": "divine-printing-account-api",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Customer-facing API for Divine Printing account dashboard",
+  "main": "index.js",
+  "dependencies": {
+    "@aws-sdk/client-dynamodb": "^3.600.0",
+    "@aws-sdk/lib-dynamodb": "^3.600.0"
+  }
+}

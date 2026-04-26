@@ -1,0 +1,12 @@
+{
+  "name": "divine-printing-auth-send-magic-link",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Generate and send email magic link for Divine Printing account sign-in",
+  "main": "index.js",
+  "dependencies": {
+    "@aws-sdk/client-dynamodb": "^3.600.0",
+    "@aws-sdk/lib-dynamodb": "^3.600.0",
+    "@aws-sdk/client-ses": "^3.600.0"
+  }
+}
