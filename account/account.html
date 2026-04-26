@@ -257,6 +257,20 @@ function setupSigninButtons() {
   });
 }
 
+// After sign-in: close cart and reload so the page picks up customer state
+function setupSigninReload() {
+  if (window.Snipcart && Snipcart.events) {
+    Snipcart.events.on('customer.signedin', function(customer) {
+      // Close the cart overlay so the user sees the account dashboard
+      if (Snipcart.api && Snipcart.api.theme && Snipcart.api.theme.cart) {
+        Snipcart.api.theme.cart.close();
+      }
+      // Reload the page to fully initialize the dashboard with customer data
+      window.location.reload();
+    });
+  }
+}
+
 // Sign-out needs a page reload after completing
 function setupSignoutReload() {
   if (window.Snipcart && Snipcart.events) {
@@ -266,36 +280,92 @@ function setupSignoutReload() {
   }
 }
 
+// Track whether we've already loaded orders to avoid duplicate fetches
+var ordersLoaded = false;
+
+// Show the logged-in dashboard UI
+function showDashboard(customer) {
+  document.getElementById('loggedInContent').style.display = 'block';
+  document.getElementById('loggedOutContent').style.display = 'none';
+  
+  // Set customer name — try billingAddress.name, then email as fallback
+  var name = (customer.billingAddress && customer.billingAddress.name) || customer.email || 'Customer';
+  document.getElementById('customerName').textContent = name;
+  
+  // Show sign-out, hide sign-in in sidebar
+  document.querySelectorAll('.sidebar-signout-btn').forEach(function(el) { el.style.display = ''; });
+  document.querySelectorAll('.sidebar-signin-btn').forEach(function(el) { el.style.display = 'none'; });
+  
+  // Fetch orders from the Snipcart customer API (not the cart state)
+  if (!ordersLoaded) {
+    ordersLoaded = true;
+    fetchCustomerOrders();
+  }
+}
+
+// Show the logged-out state
+function showLoginPrompt() {
+  document.getElementById('loggedInContent').style.display = 'none';
+  document.getElementById('loggedOutContent').style.display = 'block';
+  
+  // Show sign-in, hide sign-out in sidebar
+  document.querySelectorAll('.sidebar-signout-btn').forEach(function(el) { el.style.display = 'none'; });
+  document.querySelectorAll('.sidebar-signin-btn').forEach(function(el) { el.style.display = ''; });
+}
+
+// Fetch customer orders using Snipcart's customer API
+function fetchCustomerOrders() {
+  // Try the async customer orders API first
+  if (Snipcart.api && Snipcart.api.customer && typeof Snipcart.api.customer.orders === 'function') {
+    Snipcart.api.customer.orders()
+      .then(function(result) {
+        var orders = result.items || result || [];
+        loadOrders(Array.isArray(orders) ? orders : []);
+      })
+      .catch(function(err) {
+        console.warn('Failed to fetch orders via API:', err);
+        // Fallback: try state
+        loadOrdersFromState();
+      });
+  } else {
+    // Fallback: try to get orders from state
+    loadOrdersFromState();
+  }
+}
+
+// Fallback: try to find orders in the Snipcart store state
+function loadOrdersFromState() {
+  var state = Snipcart.store.getState();
+  // Snipcart v3 may store customer orders at different paths depending on version
+  var orders = (state.customer && state.customer.orders && state.customer.orders.items) ||
+               (state.customer && state.customer.orders) ||
+               [];
+  loadOrders(Array.isArray(orders) ? orders : []);
+}
+
 // Check if user is logged in and load account data
 document.addEventListener('snipcart.ready', function() {
   setupSigninButtons();
+  setupSigninReload();
   setupSignoutReload();
 
+  // Subscribe to state changes — handles initial load and any state transitions
   Snipcart.store.subscribe(function() {
     var state = Snipcart.store.getState();
     var customer = state.customer;
     
     if (customer && customer.status === 'SignedIn') {
-      document.getElementById('loggedInContent').style.display = 'block';
-      document.getElementById('loggedOutContent').style.display = 'none';
-      document.getElementById('customerName').textContent = (customer.billingAddress && customer.billingAddress.name) || 'Customer';
-      
-      // Show sign-out, hide sign-in in sidebar
-      document.querySelectorAll('.sidebar-signout-btn').forEach(function(el) { el.style.display = ''; });
-      document.querySelectorAll('.sidebar-signin-btn').forEach(function(el) { el.style.display = 'none'; });
-      
-      // Load orders
-      var orders = state.cart ? state.cart.orders : [];
-      loadOrders(orders);
+      showDashboard(customer);
     } else {
-      document.getElementById('loggedInContent').style.display = 'none';
-      document.getElementById('loggedOutContent').style.display = 'block';
-      
-      // Show sign-in, hide sign-out in sidebar
-      document.querySelectorAll('.sidebar-signout-btn').forEach(function(el) { el.style.display = 'none'; });
-      document.querySelectorAll('.sidebar-signin-btn').forEach(function(el) { el.style.display = ''; });
+      showLoginPrompt();
     }
   });
+  
+  // Also check immediately in case the user is already signed in
+  var state = Snipcart.store.getState();
+  if (state.customer && state.customer.status === 'SignedIn') {
+    showDashboard(state.customer);
+  }
 });
 
 function loadOrders(orders) {

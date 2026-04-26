@@ -272,6 +272,18 @@ function setupSigninButtons() {
   });
 }
 
+// After sign-in: close cart and reload so the page picks up customer state
+function setupSigninReload() {
+  if (window.Snipcart && Snipcart.events) {
+    Snipcart.events.on('customer.signedin', function(customer) {
+      if (Snipcart.api && Snipcart.api.theme && Snipcart.api.theme.cart) {
+        Snipcart.api.theme.cart.close();
+      }
+      window.location.reload();
+    });
+  }
+}
+
 function setupSignoutReload() {
   if (window.Snipcart && Snipcart.events) {
     Snipcart.events.on('customer.signedout', function() {
@@ -281,42 +293,92 @@ function setupSignoutReload() {
 }
 
 var allOrders = [];
+var ordersLoaded = false;
+
+// Show the signed-in UI and fetch orders
+function showSignedIn() {
+  document.getElementById('loggedInContent').style.display = 'block';
+  document.getElementById('loggedOutContent').style.display = 'none';
+  
+  // Show sign-out, hide sign-in in sidebar
+  document.querySelectorAll('.sidebar-signout-btn').forEach(function(el) { el.style.display = ''; });
+  document.querySelectorAll('.sidebar-signin-btn').forEach(function(el) { el.style.display = 'none'; });
+  
+  if (!ordersLoaded) {
+    ordersLoaded = true;
+    fetchCustomerOrders();
+  }
+}
+
+function showSignedOut() {
+  document.getElementById('loggedInContent').style.display = 'none';
+  document.getElementById('loggedOutContent').style.display = 'block';
+  document.getElementById('emptyState').style.display = 'none';
+  
+  // Show sign-in, hide sign-out in sidebar
+  document.querySelectorAll('.sidebar-signout-btn').forEach(function(el) { el.style.display = 'none'; });
+  document.querySelectorAll('.sidebar-signin-btn').forEach(function(el) { el.style.display = ''; });
+}
+
+// Fetch customer orders using Snipcart's customer API
+function fetchCustomerOrders() {
+  if (Snipcart.api && Snipcart.api.customer && typeof Snipcart.api.customer.orders === 'function') {
+    Snipcart.api.customer.orders()
+      .then(function(result) {
+        var orders = result.items || result || [];
+        orders = Array.isArray(orders) ? orders : [];
+        handleOrders(orders);
+      })
+      .catch(function(err) {
+        console.warn('Failed to fetch orders via API:', err);
+        loadOrdersFromState();
+      });
+  } else {
+    loadOrdersFromState();
+  }
+}
+
+function loadOrdersFromState() {
+  var state = Snipcart.store.getState();
+  var orders = (state.customer && state.customer.orders && state.customer.orders.items) ||
+               (state.customer && state.customer.orders) ||
+               [];
+  handleOrders(Array.isArray(orders) ? orders : []);
+}
+
+function handleOrders(orders) {
+  if (orders && orders.length > 0) {
+    allOrders = orders;
+    document.getElementById('emptyState').style.display = 'none';
+    document.getElementById('loggedInContent').style.display = 'block';
+    renderOrders(orders);
+  } else {
+    document.getElementById('emptyState').style.display = 'block';
+    document.getElementById('loggedInContent').style.display = 'none';
+  }
+}
 
 document.addEventListener('snipcart.ready', function() {
   setupSigninButtons();
+  setupSigninReload();
   setupSignoutReload();
 
   Snipcart.store.subscribe(function() {
     var state = Snipcart.store.getState();
     var customer = state.customer;
-    var orders = state.cart ? state.cart.orders : [];
     
     if (customer && customer.status === 'SignedIn') {
-      document.getElementById('loggedInContent').style.display = 'block';
-      document.getElementById('loggedOutContent').style.display = 'none';
-      
-      // Show sign-out, hide sign-in in sidebar
-      document.querySelectorAll('.sidebar-signout-btn').forEach(function(el) { el.style.display = ''; });
-      document.querySelectorAll('.sidebar-signin-btn').forEach(function(el) { el.style.display = 'none'; });
-      
-      if (orders && orders.length > 0) {
-        allOrders = orders;
-        document.getElementById('emptyState').style.display = 'none';
-        renderOrders(orders);
-      } else {
-        document.getElementById('emptyState').style.display = 'block';
-        document.getElementById('loggedInContent').style.display = 'none';
-      }
+      showSignedIn();
     } else {
-      document.getElementById('loggedInContent').style.display = 'none';
-      document.getElementById('loggedOutContent').style.display = 'block';
-      document.getElementById('emptyState').style.display = 'none';
-      
-      // Show sign-in, hide sign-out in sidebar
-      document.querySelectorAll('.sidebar-signout-btn').forEach(function(el) { el.style.display = 'none'; });
-      document.querySelectorAll('.sidebar-signin-btn').forEach(function(el) { el.style.display = ''; });
+      showSignedOut();
     }
   });
+  
+  // Check immediately in case the user is already signed in
+  var state = Snipcart.store.getState();
+  if (state.customer && state.customer.status === 'SignedIn') {
+    showSignedIn();
+  }
 });
 
 function renderOrders(orders) {

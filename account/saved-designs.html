@@ -250,6 +250,17 @@ function setupSigninButtons() {
   });
 }
 
+function setupSigninReload() {
+  if (window.Snipcart && Snipcart.events) {
+    Snipcart.events.on('customer.signedin', function(customer) {
+      if (Snipcart.api && Snipcart.api.theme && Snipcart.api.theme.cart) {
+        Snipcart.api.theme.cart.close();
+      }
+      window.location.reload();
+    });
+  }
+}
+
 function setupSignoutReload() {
   if (window.Snipcart && Snipcart.events) {
     Snipcart.events.on('customer.signedout', function() {
@@ -260,6 +271,7 @@ function setupSignoutReload() {
 
 document.addEventListener('snipcart.ready', function() {
   setupSigninButtons();
+  setupSigninReload();
   setupSignoutReload();
 
   Snipcart.store.subscribe(function() {
