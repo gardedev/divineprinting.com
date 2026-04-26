@@ -64,7 +64,7 @@ Resources:
                   - !GetAtt CustomersTable.Arn
                   - !GetAtt OrdersTable.Arn
 
-  # Lambda Functions
+  # Lambda Functions using AWS SDK v2 (built into Node.js 18.x)
   WebhookFunction:
     Type: AWS::Lambda::Function
     Properties:
@@ -72,17 +72,16 @@ Resources:
       Runtime: nodejs18.x
       Handler: index.handler
       Role: !GetAtt LambdaExecutionRole.Arn
+      Timeout: 30
       Environment:
         Variables:
           CUSTOMERS_TABLE: !Ref CustomersTable
           ORDERS_TABLE: !Ref OrdersTable
       Code:
         ZipFile: |
-          const { DynamoDBClient } = require('@aws-sdk/client-dynamodb');
-          const { DynamoDBDocumentClient, PutCommand } = require('@aws-sdk/lib-dynamodb');
+          const AWS = require('aws-sdk');
           const crypto = require('crypto');
-          const client = new DynamoDBClient({ region: process.env.AWS_REGION || 'us-east-1' });
-          const docClient = DynamoDBDocumentClient.from(client);
+          const dynamodb = new AWS.DynamoDB.DocumentClient();
           const CUSTOMERS_TABLE = process.env.CUSTOMERS_TABLE;
           const ORDERS_TABLE = process.env.ORDERS_TABLE;
           exports.handler = async (event) => {
@@ -110,10 +109,7 @@ Resources:
               if (!order.customerId) {
                 customerItem.createdAt = new Date().toISOString();
               }
-              await docClient.send(new PutCommand({
-                TableName: CUSTOMERS_TABLE,
-                Item: customerItem,
-              }));
+              await dynamodb.put({ TableName: CUSTOMERS_TABLE, Item: customerItem }).promise();
               const orderItem = {
                 email: email,
                 orderId: order.token,
@@ -130,10 +126,7 @@ Resources:
                 shippingAddress: order.shippingAddress,
                 billingAddress: order.billingAddress,
               };
-              await docClient.send(new PutCommand({
-                TableName: ORDERS_TABLE,
-                Item: orderItem,
-              }));
+              await dynamodb.put({ TableName: ORDERS_TABLE, Item: orderItem }).promise();
               return {
                 statusCode: 200,
                 headers: { 'Access-Control-Allow-Origin': '*' },
@@ -152,17 +145,16 @@ Resources:
       Runtime: nodejs18.x
       Handler: index.handler
       Role: !GetAtt LambdaExecutionRole.Arn
+      Timeout: 30
       Environment:
         Variables:
           CUSTOMERS_TABLE: !Ref CustomersTable
           JWT_SECRET: !Ref JwtSecret
       Code:
         ZipFile: |
-          const { DynamoDBClient } = require('@aws-sdk/client-dynamodb');
-          const { DynamoDBDocumentClient, GetCommand, PutCommand } = require('@aws-sdk/lib-dynamodb');
+          const AWS = require('aws-sdk');
           const crypto = require('crypto');
-          const client = new DynamoDBClient({ region: process.env.AWS_REGION || 'us-east-1' });
-          const docClient = DynamoDBDocumentClient.from(client);
+          const dynamodb = new AWS.DynamoDB.DocumentClient();
           const CUSTOMERS_TABLE = process.env.CUSTOMERS_TABLE;
           const JWT_SECRET = process.env.JWT_SECRET;
           function hashPassword(password) {
@@ -196,10 +188,7 @@ Resources:
                 if (!email || !password) {
                   return { statusCode: 400, headers, body: JSON.stringify({ error: 'Email and password required' }) };
                 }
-                const existing = await docClient.send(new GetCommand({
-                  TableName: CUSTOMERS_TABLE,
-                  Key: { email: email.toLowerCase() },
-                }));
+                const existing = await dynamodb.get({ TableName: CUSTOMERS_TABLE, Key: { email: email.toLowerCase() } }).promise();
                 if (existing.Item && existing.Item.passwordHash) {
                   return { statusCode: 409, headers, body: JSON.stringify({ error: 'Account already exists' }) };
                 }
@@ -211,18 +200,12 @@ Resources:
                   createdAt: new Date().toISOString(),
                   updatedAt: new Date().toISOString(),
                 };
-                await docClient.send(new PutCommand({
-                  TableName: CUSTOMERS_TABLE,
-                  Item: customer,
-                }));
+                await dynamodb.put({ TableName: CUSTOMERS_TABLE, Item: customer }).promise();
                 return { statusCode: 201, headers, body: JSON.stringify({ success: true, token: generateToken(email) }) };
               }
               if (path.includes('/login')) {
                 const { email, password } = body;
-                const result = await docClient.send(new GetCommand({
-                  TableName: CUSTOMERS_TABLE,
-                  Key: { email: email.toLowerCase() },
-                }));
+                const result = await dynamodb.get({ TableName: CUSTOMERS_TABLE, Key: { email: email.toLowerCase() } }).promise();
                 const customer = result.Item;
                 if (!customer || customer.passwordHash !== hashPassword(password)) {
                   return { statusCode: 401, headers, body: JSON.stringify({ error: 'Invalid credentials' }) };
@@ -235,10 +218,7 @@ Resources:
                 if (!payload) {
                   return { statusCode: 401, headers, body: JSON.stringify({ error: 'Invalid token' }) };
                 }
-                const result = await docClient.send(new GetCommand({
-                  TableName: CUSTOMERS_TABLE,
-                  Key: { email: payload.email },
-                }));
+                const result = await dynamodb.get({ TableName: CUSTOMERS_TABLE, Key: { email: payload.email } }).promise();
                 if (!result.Item) {
                   return { statusCode: 404, headers, body: JSON.stringify({ error: 'Customer not found' }) };
                 }
@@ -258,15 +238,14 @@ Resources:
       Runtime: nodejs18.x
       Handler: index.handler
       Role: !GetAtt LambdaExecutionRole.Arn
+      Timeout: 30
       Environment:
         Variables:
           ORDERS_TABLE: !Ref OrdersTable
       Code:
         ZipFile: |
-          const { DynamoDBClient } = require('@aws-sdk/client-dynamodb');
-          const { DynamoDBDocumentClient, QueryCommand } = require('@aws-sdk/lib-dynamodb');
-          const client = new DynamoDBClient({ region: process.env.AWS_REGION || 'us-east-1' });
-          const docClient = DynamoDBDocumentClient.from(client);
+          const AWS = require('aws-sdk');
+          const dynamodb = new AWS.DynamoDB.DocumentClient();
           const ORDERS_TABLE = process.env.ORDERS_TABLE;
           exports.handler = async (event) => {
             const headers = {
@@ -282,12 +261,12 @@ Resources:
               if (!email) {
                 return { statusCode: 400, headers, body: JSON.stringify({ error: 'Email required' }) };
               }
-              const result = await docClient.send(new QueryCommand({
+              const result = await dynamodb.query({
                 TableName: ORDERS_TABLE,
                 KeyConditionExpression: 'email = :email',
                 ExpressionAttributeValues: { ':email': email },
                 ScanIndexForward: false,
-              }));
+              }).promise();
               return { statusCode: 200, headers, body: JSON.stringify({ orders: result.Items || [], count: result.Count || 0 }) };
             } catch (error) {
               console.error('Orders error:', error);
