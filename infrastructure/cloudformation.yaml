@@ -1,0 +1,393 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Divine Printing Custom Account System
+
+Parameters:
+  JwtSecret:
+    Type: String
+    Description: Secret key for JWT tokens
+    NoEcho: true
+
+Resources:
+  # DynamoDB Tables
+  CustomersTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: divine-printing-customers
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: email
+          AttributeType: S
+      KeySchema:
+        - AttributeName: email
+          KeyType: HASH
+
+  OrdersTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: divine-printing-orders
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: email
+          AttributeType: S
+        - AttributeName: orderId
+          AttributeType: S
+      KeySchema:
+        - AttributeName: email
+          KeyType: HASH
+        - AttributeName: orderId
+          KeyType: RANGE
+
+  # IAM Role for Lambda
+  LambdaExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: DynamoDBAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - dynamodb:GetItem
+                  - dynamodb:PutItem
+                  - dynamodb:Query
+                Resource:
+                  - !GetAtt CustomersTable.Arn
+                  - !GetAtt OrdersTable.Arn
+
+  # Lambda Functions
+  WebhookFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: divine-printing-webhook
+      Runtime: nodejs18.x
+      Handler: index.handler
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Environment:
+        Variables:
+          CUSTOMERS_TABLE: !Ref CustomersTable
+          ORDERS_TABLE: !Ref OrdersTable
+      Code:
+        ZipFile: |
+          const { DynamoDBClient } = require('@aws-sdk/client-dynamodb');
+          const { DynamoDBDocumentClient, PutCommand } = require('@aws-sdk/lib-dynamodb');
+          const crypto = require('crypto');
+          const client = new DynamoDBClient({ region: process.env.AWS_REGION || 'us-east-1' });
+          const docClient = DynamoDBDocumentClient.from(client);
+          const CUSTOMERS_TABLE = process.env.CUSTOMERS_TABLE;
+          const ORDERS_TABLE = process.env.ORDERS_TABLE;
+          exports.handler = async (event) => {
+            if (event.httpMethod !== 'POST') {
+              return { statusCode: 405, body: JSON.stringify({ error: 'Method not allowed' }) };
+            }
+            try {
+              const body = JSON.parse(event.body);
+              const { eventName, content } = body;
+              if (eventName !== 'order.completed') {
+                return { statusCode: 200, body: JSON.stringify({ message: 'Event ignored' }) };
+              }
+              const order = content;
+              const email = order.email?.toLowerCase();
+              if (!email) {
+                return { statusCode: 400, body: JSON.stringify({ error: 'No email in order' }) };
+              }
+              const customerName = order.billingAddress?.name || order.shippingAddress?.name || 'Customer';
+              const customerItem = {
+                email: email,
+                customerId: order.customerId || crypto.randomUUID(),
+                name: customerName,
+                updatedAt: new Date().toISOString(),
+              };
+              if (!order.customerId) {
+                customerItem.createdAt = new Date().toISOString();
+              }
+              await docClient.send(new PutCommand({
+                TableName: CUSTOMERS_TABLE,
+                Item: customerItem,
+              }));
+              const orderItem = {
+                email: email,
+                orderId: order.token,
+                invoiceNumber: order.invoiceNumber,
+                total: order.total,
+                items: order.items.map(item => ({
+                  name: item.name,
+                  quantity: item.quantity,
+                  price: item.price,
+                  customFields: item.customFields || [],
+                })),
+                status: order.status,
+                createdAt: order.creationDate || new Date().toISOString(),
+                shippingAddress: order.shippingAddress,
+                billingAddress: order.billingAddress,
+              };
+              await docClient.send(new PutCommand({
+                TableName: ORDERS_TABLE,
+                Item: orderItem,
+              }));
+              return {
+                statusCode: 200,
+                headers: { 'Access-Control-Allow-Origin': '*' },
+                body: JSON.stringify({ success: true, orderId: order.token }),
+              };
+            } catch (error) {
+              console.error('Error:', error);
+              return { statusCode: 500, body: JSON.stringify({ error: 'Server error' }) };
+            }
+          };
+
+  AuthFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: divine-printing-auth
+      Runtime: nodejs18.x
+      Handler: index.handler
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Environment:
+        Variables:
+          CUSTOMERS_TABLE: !Ref CustomersTable
+          JWT_SECRET: !Ref JwtSecret
+      Code:
+        ZipFile: |
+          const { DynamoDBClient } = require('@aws-sdk/client-dynamodb');
+          const { DynamoDBDocumentClient, GetCommand, PutCommand } = require('@aws-sdk/lib-dynamodb');
+          const crypto = require('crypto');
+          const client = new DynamoDBClient({ region: process.env.AWS_REGION || 'us-east-1' });
+          const docClient = DynamoDBDocumentClient.from(client);
+          const CUSTOMERS_TABLE = process.env.CUSTOMERS_TABLE;
+          const JWT_SECRET = process.env.JWT_SECRET;
+          function hashPassword(password) {
+            return crypto.createHmac('sha256', JWT_SECRET).update(password).digest('hex');
+          }
+          function generateToken(email) {
+            const payload = { email, exp: Date.now() + (7 * 24 * 60 * 60 * 1000) };
+            return Buffer.from(JSON.stringify(payload)).toString('base64');
+          }
+          function verifyToken(token) {
+            try {
+              const payload = JSON.parse(Buffer.from(token, 'base64').toString());
+              if (payload.exp < Date.now()) return null;
+              return payload;
+            } catch { return null; }
+          }
+          exports.handler = async (event) => {
+            const headers = {
+              'Access-Control-Allow-Origin': '*',
+              'Access-Control-Allow-Headers': 'Content-Type',
+              'Access-Control-Allow-Methods': 'POST, OPTIONS',
+            };
+            if (event.httpMethod === 'OPTIONS') {
+              return { statusCode: 200, headers, body: '' };
+            }
+            const path = event.path || event.rawPath || '';
+            const body = JSON.parse(event.body || '{}');
+            try {
+              if (path.includes('/register')) {
+                const { email, password, name } = body;
+                if (!email || !password) {
+                  return { statusCode: 400, headers, body: JSON.stringify({ error: 'Email and password required' }) };
+                }
+                const existing = await docClient.send(new GetCommand({
+                  TableName: CUSTOMERS_TABLE,
+                  Key: { email: email.toLowerCase() },
+                }));
+                if (existing.Item && existing.Item.passwordHash) {
+                  return { statusCode: 409, headers, body: JSON.stringify({ error: 'Account already exists' }) };
+                }
+                const customer = {
+                  email: email.toLowerCase(),
+                  customerId: crypto.randomUUID(),
+                  name: name || 'Customer',
+                  passwordHash: hashPassword(password),
+                  createdAt: new Date().toISOString(),
+                  updatedAt: new Date().toISOString(),
+                };
+                await docClient.send(new PutCommand({
+                  TableName: CUSTOMERS_TABLE,
+                  Item: customer,
+                }));
+                return { statusCode: 201, headers, body: JSON.stringify({ success: true, token: generateToken(email) }) };
+              }
+              if (path.includes('/login')) {
+                const { email, password } = body;
+                const result = await docClient.send(new GetCommand({
+                  TableName: CUSTOMERS_TABLE,
+                  Key: { email: email.toLowerCase() },
+                }));
+                const customer = result.Item;
+                if (!customer || customer.passwordHash !== hashPassword(password)) {
+                  return { statusCode: 401, headers, body: JSON.stringify({ error: 'Invalid credentials' }) };
+                }
+                return { statusCode: 200, headers, body: JSON.stringify({ success: true, token: generateToken(email), customer: { email: customer.email, name: customer.name } }) };
+              }
+              if (path.includes('/verify')) {
+                const { token } = body;
+                const payload = verifyToken(token);
+                if (!payload) {
+                  return { statusCode: 401, headers, body: JSON.stringify({ error: 'Invalid token' }) };
+                }
+                const result = await docClient.send(new GetCommand({
+                  TableName: CUSTOMERS_TABLE,
+                  Key: { email: payload.email },
+                }));
+                if (!result.Item) {
+                  return { statusCode: 404, headers, body: JSON.stringify({ error: 'Customer not found' }) };
+                }
+                return { statusCode: 200, headers, body: JSON.stringify({ valid: true, customer: { email: result.Item.email, name: result.Item.name } }) };
+              }
+              return { statusCode: 404, headers, body: JSON.stringify({ error: 'Not found' }) };
+            } catch (error) {
+              console.error('Auth error:', error);
+              return { statusCode: 500, headers, body: JSON.stringify({ error: 'Server error' }) };
+            }
+          };
+
+  OrdersFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: divine-printing-orders
+      Runtime: nodejs18.x
+      Handler: index.handler
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Environment:
+        Variables:
+          ORDERS_TABLE: !Ref OrdersTable
+      Code:
+        ZipFile: |
+          const { DynamoDBClient } = require('@aws-sdk/client-dynamodb');
+          const { DynamoDBDocumentClient, QueryCommand } = require('@aws-sdk/lib-dynamodb');
+          const client = new DynamoDBClient({ region: process.env.AWS_REGION || 'us-east-1' });
+          const docClient = DynamoDBDocumentClient.from(client);
+          const ORDERS_TABLE = process.env.ORDERS_TABLE;
+          exports.handler = async (event) => {
+            const headers = {
+              'Access-Control-Allow-Origin': '*',
+              'Access-Control-Allow-Headers': 'Content-Type,Authorization',
+              'Access-Control-Allow-Methods': 'GET, OPTIONS',
+            };
+            if (event.httpMethod === 'OPTIONS') {
+              return { statusCode: 200, headers, body: '' };
+            }
+            try {
+              const email = event.queryStringParameters?.email?.toLowerCase();
+              if (!email) {
+                return { statusCode: 400, headers, body: JSON.stringify({ error: 'Email required' }) };
+              }
+              const result = await docClient.send(new QueryCommand({
+                TableName: ORDERS_TABLE,
+                KeyConditionExpression: 'email = :email',
+                ExpressionAttributeValues: { ':email': email },
+                ScanIndexForward: false,
+              }));
+              return { statusCode: 200, headers, body: JSON.stringify({ orders: result.Items || [], count: result.Count || 0 }) };
+            } catch (error) {
+              console.error('Orders error:', error);
+              return { statusCode: 500, headers, body: JSON.stringify({ error: 'Server error' }) };
+            }
+          };
+
+  # API Gateway
+  ApiGateway:
+    Type: AWS::ApiGatewayV2::Api
+    Properties:
+      Name: divine-printing-api
+      ProtocolType: HTTP
+      Target: !GetAtt WebhookFunction.Arn
+      CorsConfiguration:
+        AllowOrigins:
+          - '*'
+        AllowMethods:
+          - GET
+          - POST
+          - OPTIONS
+        AllowHeaders:
+          - Content-Type
+          - Authorization
+
+  # API Gateway Routes
+  WebhookRoute:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId: !Ref ApiGateway
+      RouteKey: POST /webhook
+      Target: !Sub integrations/${WebhookIntegration}
+
+  WebhookIntegration:
+    Type: AWS::ApiGatewayV2::Integration
+    Properties:
+      ApiId: !Ref ApiGateway
+      IntegrationType: AWS_PROXY
+      IntegrationUri: !GetAtt WebhookFunction.Arn
+      PayloadFormatVersion: '2.0'
+
+  AuthRoute:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId: !Ref ApiGateway
+      RouteKey: POST /auth/{proxy+}
+      Target: !Sub integrations/${AuthIntegration}
+
+  AuthIntegration:
+    Type: AWS::ApiGatewayV2::Integration
+    Properties:
+      ApiId: !Ref ApiGateway
+      IntegrationType: AWS_PROXY
+      IntegrationUri: !GetAtt AuthFunction.Arn
+      PayloadFormatVersion: '2.0'
+
+  OrdersRoute:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId: !Ref ApiGateway
+      RouteKey: GET /orders
+      Target: !Sub integrations/${OrdersIntegration}
+
+  OrdersIntegration:
+    Type: AWS::ApiGatewayV2::Integration
+    Properties:
+      ApiId: !Ref ApiGateway
+      IntegrationType: AWS_PROXY
+      IntegrationUri: !GetAtt OrdersFunction.Arn
+      PayloadFormatVersion: '2.0'
+
+  # Lambda Permissions
+  WebhookPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref WebhookFunction
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${ApiGateway}/*
+
+  AuthPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref AuthFunction
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${ApiGateway}/*
+
+  OrdersPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref OrdersFunction
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${ApiGateway}/*
+
+Outputs:
+  ApiEndpoint:
+    Description: API Gateway endpoint URL
+    Value: !Sub https://${ApiGateway}.execute-api.${AWS::Region}.amazonaws.com
+  WebhookUrl:
+    Description: Webhook URL for Snipcart
+    Value: !Sub https://${ApiGateway}.execute-api.${AWS::Region}.amazonaws.com/webhook
