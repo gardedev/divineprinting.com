@@ -222,8 +222,34 @@ function toggleMobileMenu() {
   document.body.style.overflow = menu.classList.contains('active') ? 'hidden' : '';
 }
 
-// Snipcart natively binds to elements with class "snipcart-customer-signin"
-// and "snipcart-customer-signout". No manual JS wiring needed.
+// Snipcart sign-in workaround: open cart and show customer sign-in
+// The snipcart-customer-signin class doesn't always work reliably, so we add manual handlers
+function setupSigninButtons() {
+  // Sign in: open cart which shows sign-in option
+  document.querySelectorAll('.snipcart-customer-signin').forEach(function(btn) {
+    btn.addEventListener('click', function(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      if (window.Snipcart && Snipcart.api && Snipcart.api.theme) {
+        Snipcart.api.theme.cart.open();
+      } else {
+        alert('Please add an item to your cart first, then you can sign in during checkout.');
+      }
+    });
+  });
+
+  // Sign out
+  document.querySelectorAll('.snipcart-customer-signout').forEach(function(btn) {
+    btn.addEventListener('click', function(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      if (window.Snipcart && Snipcart.api && Snipcart.api.customer && Snipcart.api.customer.signout) {
+        Snipcart.api.customer.signout();
+      }
+    });
+  });
+}
+
 function setupSignoutReload() {
   if (window.Snipcart && Snipcart.events) {
     Snipcart.events.on('customer.signedout', function() {
@@ -233,6 +259,7 @@ function setupSignoutReload() {
 }
 
 document.addEventListener('snipcart.ready', function() {
+  setupSigninButtons();
   setupSignoutReload();
 
   Snipcart.store.subscribe(function() {
