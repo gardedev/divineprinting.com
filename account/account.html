@@ -44,65 +44,47 @@
 
 .recent-orders h3 { font-family: 'Cinzel', serif; color: var(--purple); margin-bottom: 16px; }
 .order-list { display: flex; flex-direction: column; gap: 12px; }
-.order-item { display: flex; justify-content: space-between; align-items: center; padding: 16px; border: 2px solid #e8e2f5; border-radius: 12px; transition: all 0.2s; }
-.order-item:hover { border-color: var(--gold); background: var(--gold-pale); }
-.order-info h4 { color: var(--purple); margin-bottom: 4px; }
-.order-info p { color: var(--gray); font-size: 0.85rem; }
-.order-status { padding: 6px 12px; border-radius: 20px; font-size: 0.8rem; font-weight: 600; }
-.status-processing { background: #fff3e0; color: #e65100; }
-.status-shipped { background: #e8f5e9; color: #2e7d32; }
-.status-delivered { background: #e3f2fd; color: #1565c0; }
+.order-card { padding: 16px; border: 2px solid #e8e2f5; border-radius: 12px; transition: all 0.2s; }
+.order-card:hover { border-color: var(--gold); background: var(--gold-pale); }
+.order-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+.order-id { font-weight: 600; color: var(--purple); }
+.order-status { padding: 4px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; }
+.order-status.processing { background: #fff3e0; color: #e65100; }
+.order-status.shipped { background: #e8f5e9; color: #2e7d32; }
+.order-status.delivered { background: #e3f2fd; color: #1565c0; }
+.order-status.completed { background: #e3f2fd; color: #1565c0; }
+.order-date { color: var(--gray); font-size: 0.85rem; margin-bottom: 4px; }
+.order-items { color: var(--gray); font-size: 0.85rem; margin-bottom: 4px; }
 .order-total { font-weight: 700; color: var(--purple); font-size: 1.1rem; }
 
-/* Login / Magic Link Form */
-.login-prompt { text-align: center; padding: 64px 32px; }
+/* Login / Register Form */
+.login-prompt { text-align: center; padding: 48px 32px; }
 .login-prompt h2 { font-family: 'Cinzel', serif; color: var(--purple); margin-bottom: 16px; }
 .login-prompt p { color: var(--gray); margin-bottom: 24px; }
 
-.magic-link-form { max-width: 400px; margin: 0 auto; }
-.magic-link-form .form-group { margin-bottom: 16px; text-align: left; }
-.magic-link-form label { display: block; color: var(--purple); font-weight: 600; margin-bottom: 6px; }
-.magic-link-form input[type="email"] {
+.auth-tabs { display: flex; gap: 16px; justify-content: center; margin-bottom: 24px; }
+.auth-tab { background: none; border: none; color: var(--gray); font-size: 1rem; font-weight: 600; cursor: pointer; padding: 8px 16px; border-bottom: 2px solid transparent; }
+.auth-tab.active { color: var(--purple); border-bottom-color: var(--purple); }
+
+.auth-form { max-width: 400px; margin: 0 auto; text-align: left; }
+.auth-form .form-group { margin-bottom: 16px; }
+.auth-form label { display: block; color: var(--purple); font-weight: 600; margin-bottom: 6px; }
+.auth-form input {
   width: 100%; padding: 14px 16px; border: 2px solid #e8e2f5; border-radius: 12px;
   font-size: 1rem; box-sizing: border-box; transition: border-color 0.2s;
 }
-.magic-link-form input[type="email"]:focus { outline: none; border-color: var(--gold); }
-.btn-magic-link {
+.auth-form input:focus { outline: none; border-color: var(--gold); }
+.btn-primary {
   background: linear-gradient(135deg, var(--purple) 0%, #5a2d8a 100%); color: #fff;
   border: none; padding: 16px 32px; border-radius: 12px; font-size: 1rem;
   font-weight: 600; cursor: pointer; width: 100%; transition: opacity 0.2s;
 }
-.btn-magic-link:disabled { opacity: 0.6; cursor: not-allowed; }
-.btn-magic-link:hover:not(:disabled) { opacity: 0.9; }
+.btn-primary:hover { opacity: 0.9; }
 
-.auth-message {
-  margin-top: 16px; padding: 12px 16px; border-radius: 10px; font-size: 0.9rem;
-  display: none;
+.auth-error {
+  color: #c62828; font-size: 0.9rem; margin-top: 12px; padding: 12px; background: #ffebee; border-radius: 8px; display: none;
 }
-.auth-message.success { display: block; background: #e8f5e9; color: #2e7d32; }
-.auth-message.error { display: block; background: #ffebee; color: #c62828; }
-
-.auth-divider { margin: 24px 0; color: var(--gray); font-size: 0.9rem; }
-.auth-divider span { background: #fff; padding: 0 12px; position: relative; z-index: 1; }
-.auth-divider::before {
-  content: ''; display: block; border-top: 1px solid #e8e2f5;
-  position: relative; top: 0.6em; z-index: 0;
-}
-
-.btn-snipcart-alt {
-  background: none; border: 2px solid var(--purple); color: var(--purple);
-  padding: 12px 24px; border-radius: 12px; font-size: 0.95rem;
-  font-weight: 600; cursor: pointer; transition: all 0.2s;
-}
-.btn-snipcart-alt:hover { background: var(--gold-pale); }
-
-.loading-spinner {
-  display: inline-block; width: 20px; height: 20px;
-  border: 3px solid rgba(255,255,255,.3); border-top-color: #fff;
-  border-radius: 50%; animation: spin 0.8s linear infinite;
-  vertical-align: middle; margin-right: 8px;
-}
-@keyframes spin { to { transform: rotate(360deg); } }
+.auth-error.visible { display: block; }
 
 @media (max-width: 900px) {
   .account-grid { grid-template-columns: 1fr; }
@@ -204,12 +186,12 @@
         <a href="account.html" class="active">Dashboard</a>
         <a href="orders.html">My Orders</a>
         <a href="saved-designs.html">Saved Designs</a>
-        <button id="sidebarSignOut" class="sidebar-btn" type="button" style="display:none;">Sign Out</button>
+        <button id="logoutBtn" class="sidebar-btn" type="button" style="display:none;">Sign Out</button>
       </nav>
     </aside>
     
     <main class="main-content">
-      <!-- ============ LOGGED IN DASHBOARD ============ -->
+      <!-- LOGGED IN DASHBOARD -->
       <div id="loggedInContent" style="display: none;">
         <div class="welcome-card">
           <h2>Welcome back, <span id="customerName">Customer</span>!</h2>
@@ -234,280 +216,67 @@
         <div class="recent-orders">
           <h3>Recent Orders</h3>
           <div id="recentOrdersList" class="order-list">
-            <p style="text-align:center;color:var(--gray);padding:24px;">Loading orders…</p>
+            <p style="text-align:center;color:var(--gray);padding:24px;">Loading orders...</p>
           </div>
-          <p style="text-align: center; margin-top: 16px;"><a href="orders.html" style="color: var(--purple); font-weight: 600;">View All Orders →</a></p>
+          <p style="text-align: center; margin-top: 16px;"><a href="orders.html" style="color: var(--purple); font-weight: 600;">View All Orders &rarr;</a></p>
         </div>
       </div>
       
-      <!-- ============ SIGN-IN FORM (Magic Link) ============ -->
+      <!-- LOGIN / REGISTER FORM -->
       <div id="loggedOutContent" class="login-prompt">
         <h2>Sign In to Your Account</h2>
-        <p>Enter your email address and we'll send you a secure sign-in link. No password needed!</p>
+        <p>Access your order history and saved designs</p>
         
-        <div class="magic-link-form">
-          <form id="magicLinkForm" onsubmit="return handleMagicLink(event);">
+        <div class="auth-tabs">
+          <button class="auth-tab active" id="loginTabBtn" onclick="showTab('login')">Sign In</button>
+          <button class="auth-tab" id="registerTabBtn" onclick="showTab('register')">Create Account</button>
+        </div>
+        
+        <!-- Login Form -->
+        <div id="loginTab" class="auth-form">
+          <form id="loginForm">
             <div class="form-group">
-              <label for="signInEmail">Email Address</label>
-              <input type="email" id="signInEmail" placeholder="you@yourchurch.org" required />
+              <label for="loginEmail">Email Address</label>
+              <input type="email" id="loginEmail" placeholder="you@yourchurch.org" required />
             </div>
-            <button type="submit" id="magicLinkBtn" class="btn-magic-link">
-              ✉️ Send Sign-In Link
-            </button>
+            <div class="form-group">
+              <label for="loginPassword">Password</label>
+              <input type="password" id="loginPassword" placeholder="Your password" required />
+            </div>
+            <button type="submit" class="btn-primary">Sign In</button>
+            <div id="loginError" class="auth-error"></div>
           </form>
-          <div id="authMessage" class="auth-message"></div>
-          
-          <div class="auth-divider"><span>or</span></div>
-          <button class="btn-snipcart-alt" onclick="openSnipcartSignIn()">
-            Sign in via Snipcart Checkout
-          </button>
+        </div>
+        
+        <!-- Register Form -->
+        <div id="registerTab" class="auth-form" style="display: none;">
+          <form id="registerForm">
+            <div class="form-group">
+              <label for="registerName">Full Name</label>
+              <input type="text" id="registerName" placeholder="John Smith" required />
+            </div>
+            <div class="form-group">
+              <label for="registerEmail">Email Address</label>
+              <input type="email" id="registerEmail" placeholder="you@yourchurch.org" required />
+            </div>
+            <div class="form-group">
+              <label for="registerPassword">Password</label>
+              <input type="password" id="registerPassword" placeholder="Create a password" required />
+            </div>
+            <button type="submit" class="btn-primary">Create Account</button>
+            <div id="registerError" class="auth-error"></div>
+          </form>
         </div>
       </div>
     </main>
   </div>
 </section>
 
-<!-- Snipcart config div MUST be in DOM before the script loads -->
+<!-- Snipcart -->
 <div hidden id="snipcart" data-api-key="ZjljZmI1ODItM2VmOS00M2ZhLTg3ZGItNmUwY2NiZjViMjQ4NjM5MTE0Njk1NzE1MTQwNTE3" data-config-modal-style="side"></div>
 <script src="https://cdn.snipcart.com/themes/v3.0.31/default/snipcart.js"></script>
 <script src="/snipcart-custom.js"></script>
-<script src="/js/account-auth.js"></script>
-
-<script>
-// =========================================================================
-// CONFIG — replace with your actual API Gateway URL after Terraform deploy
-// =========================================================================
-var API_BASE_URL = ''; // e.g. 'https://xxxxx.execute-api.us-east-1.amazonaws.com'
-
-// Mobile menu toggle
-function toggleMobileMenu() {
-  var menu = document.getElementById('mobile-menu');
-  menu.classList.toggle('active');
-  document.body.style.overflow = menu.classList.contains('active') ? 'hidden' : '';
-}
-
-// Open Snipcart's built-in sign-in as fallback
-function openSnipcartSignIn() {
-  if (window.Snipcart && Snipcart.api && Snipcart.api.theme) {
-    Snipcart.api.theme.cart.open();
-  } else {
-    alert('Please add an item to your cart first, then you can sign in during checkout.');
-  }
-}
-
-// =========================================================================
-// Magic Link Flow
-// =========================================================================
-
-function handleMagicLink(e) {
-  e.preventDefault();
-  var email = document.getElementById('signInEmail').value.trim();
-  var btn = document.getElementById('magicLinkBtn');
-  var msg = document.getElementById('authMessage');
-
-  if (!email) return false;
-
-  btn.disabled = true;
-  btn.innerHTML = '<span class="loading-spinner"></span> Sending…';
-  msg.className = 'auth-message';
-  msg.style.display = 'none';
-
-  DivinePrintingAuth.sendMagicLink(email)
-    .then(function (data) {
-      msg.className = 'auth-message success';
-      msg.textContent = '✉️ Check your inbox! We sent a sign-in link to ' + email;
-      btn.innerHTML = '✉️ Link Sent!';
-    })
-    .catch(function (err) {
-      msg.className = 'auth-message error';
-      msg.textContent = 'Something went wrong. Please try again.';
-      btn.disabled = false;
-      btn.innerHTML = '✉️ Send Sign-In Link';
-    });
-
-  return false;
-}
-
-// Listen for auth errors (e.g. expired magic link tokens)
-window.addEventListener('dp-auth-error', function (e) {
-  var msg = document.getElementById('authMessage');
-  msg.className = 'auth-message error';
-  msg.textContent = e.detail.message;
-});
-
-// =========================================================================
-// Dashboard Rendering
-// =========================================================================
-
-function showDashboard(customer) {
-  document.getElementById('loggedInContent').style.display = 'block';
-  document.getElementById('loggedOutContent').style.display = 'none';
-  document.getElementById('sidebarSignOut').style.display = '';
-
-  // Set name
-  document.getElementById('customerName').textContent = customer.name || customer.email || 'Customer';
-
-  // Load saved designs count
-  var savedDesigns = JSON.parse(localStorage.getItem('divinePrinting_savedDesigns') || '[]');
-  document.getElementById('savedDesigns').textContent = savedDesigns.length;
-
-  // Fetch orders from our API
-  loadDashboardOrders();
-}
-
-function showLoginPrompt() {
-  document.getElementById('loggedInContent').style.display = 'none';
-  document.getElementById('loggedOutContent').style.display = 'block';
-  document.getElementById('sidebarSignOut').style.display = 'none';
-}
-
-function loadDashboardOrders() {
-  // Try our custom API first
-  if (API_BASE_URL && DivinePrintingAuth.isSignedIn()) {
-    DivinePrintingAuth.fetchOrders()
-      .then(function (data) {
-        renderDashboardOrders(data.orders || [], data.summary || {});
-      })
-      .catch(function (err) {
-        console.warn('API fetch failed, falling back to Snipcart:', err);
-        loadSnipcartOrders();
-      });
-  } else {
-    loadSnipcartOrders();
-  }
-}
-
-function loadSnipcartOrders() {
-  // Fallback: use Snipcart customer orders API
-  if (window.Snipcart && Snipcart.api && Snipcart.api.customer && typeof Snipcart.api.customer.orders === 'function') {
-    Snipcart.api.customer.orders()
-      .then(function (result) {
-        var orders = result.items || result || [];
-        orders = Array.isArray(orders) ? orders : [];
-        renderSnipcartOrders(orders);
-      })
-      .catch(function () { renderDashboardOrders([], {}); });
-  } else {
-    renderDashboardOrders([], {});
-  }
-}
-
-function renderDashboardOrders(orders, summary) {
-  document.getElementById('totalOrders').textContent = summary.totalOrders || orders.length || 0;
-  document.getElementById('totalSpent').textContent = '$' + ((summary.totalSpent || 0).toFixed(2));
-
-  var container = document.getElementById('recentOrdersList');
-
-  if (!orders.length) {
-    container.innerHTML = '<p style="text-align:center;color:var(--gray);padding:32px;">No orders yet. <a href="../index.html" style="color:var(--purple);">Start shopping!</a></p>';
-    return;
-  }
-
-  // Show last 3 orders
-  var recent = orders.slice(0, 3);
-  container.innerHTML = recent.map(function (order) {
-    var itemCount = (order.items || []).length;
-    var date = order.createdAt ? new Date(order.createdAt).toLocaleDateString() : '';
-    var statusClass = 'status-' + (order.status || 'processing').toLowerCase();
-    return '<div class="order-item">' +
-      '<div class="order-info">' +
-        '<h4>Order #' + (order.orderId || '') + '</h4>' +
-        '<p>' + date + ' &bull; ' + itemCount + ' item(s)</p>' +
-      '</div>' +
-      '<span class="order-status ' + statusClass + '">' + (order.status || 'Processing') + '</span>' +
-      '<div class="order-total">$' + ((order.total || 0).toFixed(2)) + '</div>' +
-    '</div>';
-  }).join('');
-}
-
-// Render from Snipcart data (fallback format)
-function renderSnipcartOrders(orders) {
-  var totalSpent = 0;
-  orders.forEach(function (o) { totalSpent += o.total || 0; });
-
-  document.getElementById('totalOrders').textContent = orders.length;
-  document.getElementById('totalSpent').textContent = '$' + totalSpent.toFixed(2);
-
-  var container = document.getElementById('recentOrdersList');
-  if (!orders.length) {
-    container.innerHTML = '<p style="text-align:center;color:var(--gray);padding:32px;">No orders yet. <a href="../index.html" style="color:var(--purple);">Start shopping!</a></p>';
-    return;
-  }
-
-  var recent = orders.slice(0, 3);
-  container.innerHTML = recent.map(function (order) {
-    return '<div class="order-item">' +
-      '<div class="order-info">' +
-        '<h4>Order #' + (order.token || order.invoiceNumber || '') + '</h4>' +
-        '<p>' + new Date(order.creationDate || order.completionDate).toLocaleDateString() + ' &bull; ' + (order.items || []).length + ' item(s)</p>' +
-      '</div>' +
-      '<span class="order-status status-' + (order.status || 'processing').toLowerCase() + '">' + (order.status || 'Processing') + '</span>' +
-      '<div class="order-total">$' + ((order.total || 0).toFixed(2)) + '</div>' +
-    '</div>';
-  }).join('');
-}
-
-// =========================================================================
-// Sign Out Handler
-// =========================================================================
-
-document.getElementById('sidebarSignOut').addEventListener('click', function () {
-  // Sign out from our auth
-  DivinePrintingAuth.signOut();
-
-  // Also sign out from Snipcart if signed in
-  if (window.Snipcart && Snipcart.api && Snipcart.api.customer && Snipcart.api.customer.signout) {
-    try { Snipcart.api.customer.signout(); } catch (e) {}
-  }
-
-  window.location.reload();
-});
-
-// =========================================================================
-// Init
-// =========================================================================
-
-(function () {
-  // Initialize auth library
-  DivinePrintingAuth.init(API_BASE_URL);
-
-  // Check our custom auth first
-  if (DivinePrintingAuth.isSignedIn()) {
-    showDashboard(DivinePrintingAuth.getCustomer());
-    return;
-  }
-
-  // Fallback: check Snipcart auth
-  document.addEventListener('snipcart.ready', function () {
-    // Listen for Snipcart sign-in events
-    Snipcart.events.on('customer.signedin', function () {
-      if (Snipcart.api && Snipcart.api.theme && Snipcart.api.theme.cart) {
-        Snipcart.api.theme.cart.close();
-      }
-      var state = Snipcart.store.getState();
-      var customer = state.customer || {};
-      showDashboard({
-        name: (customer.billingAddress && customer.billingAddress.name) || customer.email || 'Customer',
-        email: customer.email || '',
-      });
-    });
-
-    Snipcart.events.on('customer.signedout', function () {
-      DivinePrintingAuth.signOut();
-      window.location.reload();
-    });
-
-    // Check if already signed in via Snipcart
-    var state = Snipcart.store.getState();
-    if (state.customer && state.customer.status === 'SignedIn') {
-      showDashboard({
-        name: (state.customer.billingAddress && state.customer.billingAddress.name) || state.customer.email || 'Customer',
-        email: state.customer.email || '',
-      });
-    }
-  });
-})();
-</script>
+<script src="/js/account-api.js"></script>
 
 </body>
 </html>
