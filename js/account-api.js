@@ -147,9 +147,11 @@ document.addEventListener('DOMContentLoaded', () => {
           window.location.reload();
         } else {
           errorEl.textContent = result.error || 'Login failed';
+          errorEl.classList.add('visible');
         }
       } catch (error) {
         errorEl.textContent = 'Network error. Please try again.';
+        errorEl.classList.add('visible');
       }
     });
   }
@@ -172,9 +174,11 @@ document.addEventListener('DOMContentLoaded', () => {
           window.location.reload();
         } else {
           errorEl.textContent = result.error || 'Registration failed';
+          errorEl.classList.add('visible');
         }
       } catch (error) {
         errorEl.textContent = 'Network error. Please try again.';
+        errorEl.classList.add('visible');
       }
     });
   }
@@ -206,4 +210,24 @@ document.addEventListener('DOMContentLoaded', () => {
       loginTab.style.display = 'block';
     });
   }
+  
+  // Global tab switching function for onclick handlers
+  window.showTab = function(tabName) {
+    const loginTab = document.getElementById('loginTab');
+    const registerTab = document.getElementById('registerTab');
+    const loginTabBtn = document.getElementById('loginTabBtn');
+    const registerTabBtn = document.getElementById('registerTabBtn');
+    
+    if (tabName === 'login') {
+      loginTab.style.display = 'block';
+      registerTab.style.display = 'none';
+      loginTabBtn.classList.add('active');
+      registerTabBtn.classList.remove('active');
+    } else {
+      loginTab.style.display = 'none';
+      registerTab.style.display = 'block';
+      loginTabBtn.classList.remove('active');
+      registerTabBtn.classList.add('active');
+    }
+  };
 });
