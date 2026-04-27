@@ -177,10 +177,10 @@ Resources:
               'Access-Control-Allow-Headers': 'Content-Type',
               'Access-Control-Allow-Methods': 'POST, OPTIONS',
             };
-            if (event.httpMethod === 'OPTIONS') {
+            if (event.httpMethod === 'OPTIONS' || event.requestContext?.http?.method === 'OPTIONS') {
               return { statusCode: 200, headers, body: '' };
             }
-            const path = event.path || event.rawPath || '';
+            const path = event.rawPath || event.path || event.routeKey || '';
             const body = JSON.parse(event.body || '{}');
             try {
               if (path.includes('/register')) {
