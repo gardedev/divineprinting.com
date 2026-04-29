@@ -1,8 +1,8 @@
 // Divine Printing Cognito Authentication
 const COGNITO_DOMAIN = 'https://divine-printing-auth.auth.us-east-2.amazoncognito.com';
-const CLIENT_ID = 'YOUR_CLIENT_ID'; // Will be updated after deployment
+const CLIENT_ID = '24qulehkkt749m51ped020kf70';
 const REDIRECT_URI = window.location.origin + '/account/account.html';
-const API_BASE = 'YOUR_API_ENDPOINT'; // Will be updated after deployment
+const API_BASE = 'https://x1iki4dopd.execute-api.us-east-2.amazonaws.com';
 
 // Parse JWT token from URL hash (after Cognito redirect)
 function parseTokenFromUrl() {
