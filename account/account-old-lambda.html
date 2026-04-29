@@ -57,25 +57,35 @@
 .order-items { color: var(--gray); font-size: 0.85rem; margin-bottom: 4px; }
 .order-total { font-weight: 700; color: var(--purple); font-size: 1.1rem; }
 
-/* Login Prompt */
+/* Login / Register Form */
 .login-prompt { text-align: center; padding: 48px 32px; }
 .login-prompt h2 { font-family: 'Cinzel', serif; color: var(--purple); margin-bottom: 16px; }
-.login-prompt p { color: var(--gray); margin-bottom: 32px; max-width: 400px; margin-left: auto; margin-right: auto; }
+.login-prompt p { color: var(--gray); margin-bottom: 24px; }
 
-.auth-buttons { display: flex; flex-direction: column; gap: 16px; max-width: 300px; margin: 0 auto; }
+.auth-tabs { display: flex; gap: 16px; justify-content: center; margin-bottom: 24px; }
+.auth-tab { background: none; border: none; color: var(--gray); font-size: 1rem; font-weight: 600; cursor: pointer; padding: 8px 16px; border-bottom: 2px solid transparent; }
+.auth-tab.active { color: var(--purple); border-bottom-color: var(--purple); }
+
+.auth-form { max-width: 400px; margin: 0 auto; text-align: left; }
+.auth-form .form-group { margin-bottom: 16px; }
+.auth-form label { display: block; color: var(--purple); font-weight: 600; margin-bottom: 6px; }
+.auth-form input {
+  width: 100%; padding: 14px 16px; border: 2px solid #e8e2f5; border-radius: 12px;
+  font-size: 1rem; box-sizing: border-box; transition: border-color 0.2s;
+  color: #1a0d30; background: #fff;
+}
+.auth-form input:focus { outline: none; border-color: var(--gold); }
 .btn-primary {
   background: linear-gradient(135deg, var(--purple) 0%, #5a2d8a 100%); color: #fff;
   border: none; padding: 16px 32px; border-radius: 12px; font-size: 1rem;
-  font-weight: 600; cursor: pointer; transition: opacity 0.2s;
+  font-weight: 600; cursor: pointer; width: 100%; transition: opacity 0.2s;
 }
 .btn-primary:hover { opacity: 0.9; }
 
-.btn-secondary {
-  background: #fff; color: var(--purple); border: 2px solid var(--purple);
-  padding: 14px 32px; border-radius: 12px; font-size: 1rem;
-  font-weight: 600; cursor: pointer; transition: all 0.2s;
+.auth-error {
+  color: #c62828; font-size: 0.9rem; margin-top: 12px; padding: 12px; background: #ffebee; border-radius: 8px; display: none;
 }
-.btn-secondary:hover { background: var(--gold-pale); }
+.auth-error.visible { display: block; }
 
 @media (max-width: 900px) {
   .account-grid { grid-template-columns: 1fr; }
@@ -137,6 +147,34 @@
       </button>
     </div>
   </div>
+  <!-- Mobile Menu -->
+  <div class="mobile-menu" id="mobile-menu">
+    <div class="mobile-menu-header">
+      <a href="../index.html" class="logo">
+        <div class="logo-icon"><img src="../images/logo-icon.png" alt="Divine Printing Logo" /></div>
+        <div class="logo-text">
+          <div class="brand">Divine Printing</div>
+        </div>
+      </a>
+      <button class="mobile-menu-close" aria-label="Close Menu" onclick="toggleMobileMenu()">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
+    </div>
+    <nav class="mobile-nav">
+      <a href="../index.html">Home</a>
+      <a href="../index.html#banners">Banners &amp; Flags</a>
+      <a href="../index.html#events">Event Displays</a>
+      <a href="../index.html#signage">Signs</a>
+      <a href="../index.html#promo">Promo &amp; Stickers</a>
+      <a href="../index.html#print">Print</a>
+      <a href="../blog/index.html">Blog</a>
+      <a href="account.html">My Account</a>
+      <button class="snipcart-checkout" style="background:none;border:none;color:#fff;font-size:1.1rem;font-weight:500;padding:14px 16px;text-align:left;width:100%;">My Cart (<span class="snipcart-items-count">0</span>)</button>
+    </nav>
+  </div>
 </header>
 
 <section class="account-section">
@@ -185,14 +223,50 @@
         </div>
       </div>
       
-      <!-- LOGIN PROMPT -->
+      <!-- LOGIN / REGISTER FORM -->
       <div id="loggedOutContent" class="login-prompt">
         <h2>Sign In to Your Account</h2>
-        <p>Access your order history, track shipments, and manage your saved designs. Secure login powered by AWS Cognito.</p>
+        <p>Access your order history and saved designs</p>
         
-        <div class="auth-buttons">
-          <button id="loginBtn" class="btn-primary">Sign In</button>
-          <button id="signupBtn" class="btn-secondary">Create Account</button>
+        <div class="auth-tabs">
+          <button class="auth-tab active" id="loginTabBtn" onclick="showTab('login')">Sign In</button>
+          <button class="auth-tab" id="registerTabBtn" onclick="showTab('register')">Create Account</button>
+        </div>
+        
+        <!-- Login Form -->
+        <div id="loginTab" class="auth-form">
+          <form id="loginForm">
+            <div class="form-group">
+              <label for="loginEmail">Email Address</label>
+              <input type="email" id="loginEmail" placeholder="you@yourchurch.org" required />
+            </div>
+            <div class="form-group">
+              <label for="loginPassword">Password</label>
+              <input type="password" id="loginPassword" placeholder="Your password" required />
+            </div>
+            <button type="submit" class="btn-primary">Sign In</button>
+            <div id="loginError" class="auth-error"></div>
+          </form>
+        </div>
+        
+        <!-- Register Form -->
+        <div id="registerTab" class="auth-form" style="display: none;">
+          <form id="registerForm">
+            <div class="form-group">
+              <label for="registerName">Full Name</label>
+              <input type="text" id="registerName" placeholder="John Smith" required />
+            </div>
+            <div class="form-group">
+              <label for="registerEmail">Email Address</label>
+              <input type="email" id="registerEmail" placeholder="you@yourchurch.org" required />
+            </div>
+            <div class="form-group">
+              <label for="registerPassword">Password</label>
+              <input type="password" id="registerPassword" placeholder="Create a password" required />
+            </div>
+            <button type="submit" class="btn-primary">Create Account</button>
+            <div id="registerError" class="auth-error"></div>
+          </form>
         </div>
       </div>
     </main>
@@ -203,7 +277,7 @@
 <div hidden id="snipcart" data-api-key="ZjljZmI1ODItM2VmOS00M2ZhLTg3ZGItNmUwY2NiZjViMjQ4NjM5MTE0Njk1NzE1MTQwNTE3" data-config-modal-style="side"></div>
 <script src="https://cdn.snipcart.com/themes/v3.0.31/default/snipcart.js"></script>
 <script src="/snipcart-custom.js"></script>
-<script src="/js/cognito-auth.js"></script>
+<script src="/js/account-api.js"></script>
 
 </body>
 </html>
