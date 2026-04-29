@@ -1,0 +1,462 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Divine Printing Cognito Authentication with Saved Designs
+
+Resources:
+  # Cognito User Pool
+  UserPool:
+    Type: AWS::Cognito::UserPool
+    Properties:
+      UserPoolName: divine-printing-users
+      AutoVerifiedAttributes:
+        - email
+      Policies:
+        PasswordPolicy:
+          MinimumLength: 8
+          RequireUppercase: true
+          RequireLowercase: true
+          RequireNumbers: true
+          RequireSymbols: false
+      Schema:
+        - AttributeDataType: String
+          Name: name
+          Required: true
+          Mutable: true
+      EmailConfiguration:
+        EmailSendingAccount: COGNITO_DEFAULT
+
+  # Cognito User Pool Client
+  UserPoolClient:
+    Type: AWS::Cognito::UserPoolClient
+    Properties:
+      ClientName: divine-printing-web
+      UserPoolId: !Ref UserPool
+      GenerateSecret: false
+      ExplicitAuthFlows:
+        - ALLOW_USER_SRP_AUTH
+        - ALLOW_REFRESH_TOKEN_AUTH
+        - ALLOW_USER_PASSWORD_AUTH
+      SupportedIdentityProviders:
+        - COGNITO
+      CallbackURLs:
+        - https://divineprinting.com/account/account.html
+        - https://www.divineprinting.com/account/account.html
+        - http://localhost:3000/account/account.html
+      LogoutURLs:
+        - https://divineprinting.com/account/account.html
+        - https://www.divineprinting.com/account/account.html
+        - http://localhost:3000/account/account.html
+      AllowedOAuthFlows:
+        - code
+        - implicit
+      AllowedOAuthScopes:
+        - email
+        - openid
+        - profile
+      AllowedOAuthFlowsUserPoolClient: true
+
+  # Cognito Domain for hosted UI
+  UserPoolDomain:
+    Type: AWS::Cognito::UserPoolDomain
+    Properties:
+      Domain: divine-printing-auth
+      UserPoolId: !Ref UserPool
+
+  # DynamoDB Tables
+  CustomersTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: divine-printing-customers
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: email
+          AttributeType: S
+      KeySchema:
+        - AttributeName: email
+          KeyType: HASH
+
+  OrdersTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: divine-printing-orders
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: email
+          AttributeType: S
+        - AttributeName: orderId
+          AttributeType: S
+      KeySchema:
+        - AttributeName: email
+          KeyType: HASH
+        - AttributeName: orderId
+          KeyType: RANGE
+
+  # Saved Designs Table
+  DesignsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: divine-printing-designs
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: email
+          AttributeType: S
+        - AttributeName: designId
+          AttributeType: S
+      KeySchema:
+        - AttributeName: email
+          KeyType: HASH
+        - AttributeName: designId
+          KeyType: RANGE
+
+  # IAM Role for Lambda
+  LambdaExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: DynamoDBAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - dynamodb:GetItem
+                  - dynamodb:PutItem
+                  - dynamodb:DeleteItem
+                  - dynamodb:Query
+                Resource:
+                  - !GetAtt CustomersTable.Arn
+                  - !GetAtt OrdersTable.Arn
+                  - !GetAtt DesignsTable.Arn
+
+  # Webhook Lambda
+  WebhookFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: divine-printing-webhook
+      Runtime: nodejs18.x
+      Handler: index.handler
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Timeout: 30
+      Environment:
+        Variables:
+          CUSTOMERS_TABLE: !Ref CustomersTable
+          ORDERS_TABLE: !Ref OrdersTable
+      Code:
+        ZipFile: |
+          const AWS = require('aws-sdk');
+          const crypto = require('crypto');
+          const dynamodb = new AWS.DynamoDB.DocumentClient();
+          const CUSTOMERS_TABLE = process.env.CUSTOMERS_TABLE;
+          const ORDERS_TABLE = process.env.ORDERS_TABLE;
+          exports.handler = async (event) => {
+            if (event.httpMethod !== 'POST') {
+              return { statusCode: 405, body: JSON.stringify({ error: 'Method not allowed' }) };
+            }
+            try {
+              const body = JSON.parse(event.body);
+              const { eventName, content } = body;
+              if (eventName !== 'order.completed') {
+                return { statusCode: 200, body: JSON.stringify({ message: 'Event ignored' }) };
+              }
+              const order = content;
+              const email = order.email?.toLowerCase();
+              if (!email) {
+                return { statusCode: 400, body: JSON.stringify({ error: 'No email in order' }) };
+              }
+              const customerName = order.billingAddress?.name || order.shippingAddress?.name || 'Customer';
+              const customerItem = {
+                email: email,
+                customerId: order.customerId || crypto.randomUUID(),
+                name: customerName,
+                updatedAt: new Date().toISOString(),
+              };
+              if (!order.customerId) {
+                customerItem.createdAt = new Date().toISOString();
+              }
+              await dynamodb.put({ TableName: CUSTOMERS_TABLE, Item: customerItem }).promise();
+              const orderItem = {
+                email: email,
+                orderId: order.token,
+                invoiceNumber: order.invoiceNumber,
+                total: order.total,
+                items: order.items.map(item => ({
+                  name: item.name,
+                  quantity: item.quantity,
+                  price: item.price,
+                  customFields: item.customFields || [],
+                })),
+                status: order.status,
+                createdAt: order.creationDate || new Date().toISOString(),
+                shippingAddress: order.shippingAddress,
+                billingAddress: order.billingAddress,
+              };
+              await dynamodb.put({ TableName: ORDERS_TABLE, Item: orderItem }).promise();
+              return {
+                statusCode: 200,
+                headers: { 'Access-Control-Allow-Origin': '*' },
+                body: JSON.stringify({ success: true, orderId: order.token }),
+              };
+            } catch (error) {
+              console.error('Error:', error);
+              return { statusCode: 500, body: JSON.stringify({ error: 'Server error' }) };
+            }
+          };
+
+  # Orders Lambda
+  OrdersFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: divine-printing-orders
+      Runtime: nodejs18.x
+      Handler: index.handler
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Timeout: 30
+      Environment:
+        Variables:
+          ORDERS_TABLE: !Ref OrdersTable
+      Code:
+        ZipFile: |
+          const AWS = require('aws-sdk');
+          const dynamodb = new AWS.DynamoDB.DocumentClient();
+          const ORDERS_TABLE = process.env.ORDERS_TABLE;
+          exports.handler = async (event) => {
+            const headers = {
+              'Access-Control-Allow-Origin': '*',
+              'Access-Control-Allow-Headers': 'Content-Type,Authorization',
+              'Access-Control-Allow-Methods': 'GET, OPTIONS',
+            };
+            if (event.httpMethod === 'OPTIONS') {
+              return { statusCode: 200, headers, body: '' };
+            }
+            try {
+              const email = event.requestContext?.authorizer?.claims?.email?.toLowerCase();
+              if (!email) {
+                return { statusCode: 401, headers, body: JSON.stringify({ error: 'Unauthorized' }) };
+              }
+              const result = await dynamodb.query({
+                TableName: ORDERS_TABLE,
+                KeyConditionExpression: 'email = :email',
+                ExpressionAttributeValues: { ':email': email },
+                ScanIndexForward: false,
+              }).promise();
+              return { statusCode: 200, headers, body: JSON.stringify({ orders: result.Items || [], count: result.Count || 0 }) };
+            } catch (error) {
+              console.error('Orders error:', error);
+              return { statusCode: 500, headers, body: JSON.stringify({ error: 'Server error' }) };
+            }
+          };
+
+  # Designs Lambda
+  DesignsFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: divine-printing-designs
+      Runtime: nodejs18.x
+      Handler: index.handler
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Timeout: 30
+      Environment:
+        Variables:
+          DESIGNS_TABLE: !Ref DesignsTable
+      Code:
+        ZipFile: |
+          const AWS = require('aws-sdk');
+          const dynamodb = new AWS.DynamoDB.DocumentClient();
+          const DESIGNS_TABLE = process.env.DESIGNS_TABLE;
+          exports.handler = async (event) => {
+            const headers = {
+              'Access-Control-Allow-Origin': '*',
+              'Access-Control-Allow-Headers': 'Content-Type,Authorization',
+              'Access-Control-Allow-Methods': 'GET,POST,DELETE,OPTIONS',
+            };
+            if (event.httpMethod === 'OPTIONS') {
+              return { statusCode: 200, headers, body: '' };
+            }
+            try {
+              const email = event.requestContext?.authorizer?.claims?.email?.toLowerCase();
+              if (!email) {
+                return { statusCode: 401, headers, body: JSON.stringify({ error: 'Unauthorized' }) };
+              }
+              
+              // GET - List designs
+              if (event.httpMethod === 'GET') {
+                const result = await dynamodb.query({
+                  TableName: DESIGNS_TABLE,
+                  KeyConditionExpression: 'email = :email',
+                  ExpressionAttributeValues: { ':email': email },
+                  ScanIndexForward: false,
+                }).promise();
+                return { statusCode: 200, headers, body: JSON.stringify({ designs: result.Items || [], count: result.Count || 0 }) };
+              }
+              
+              // POST - Save design
+              if (event.httpMethod === 'POST') {
+                const body = JSON.parse(event.body || '{}');
+                const design = {
+                  email: email,
+                  designId: body.designId || Date.now().toString(),
+                  name: body.name || 'Untitled Design',
+                  productType: body.productType,
+                  config: body.config,
+                  previewUrl: body.previewUrl,
+                  createdAt: new Date().toISOString(),
+                  updatedAt: new Date().toISOString(),
+                };
+                await dynamodb.put({ TableName: DESIGNS_TABLE, Item: design }).promise();
+                return { statusCode: 201, headers, body: JSON.stringify({ success: true, design }) };
+              }
+              
+              // DELETE - Remove design
+              if (event.httpMethod === 'DELETE') {
+                const designId = event.queryStringParameters?.designId;
+                if (!designId) {
+                  return { statusCode: 400, headers, body: JSON.stringify({ error: 'designId required' }) };
+                }
+                await dynamodb.delete({
+                  TableName: DESIGNS_TABLE,
+                  Key: { email, designId }
+                }).promise();
+                return { statusCode: 200, headers, body: JSON.stringify({ success: true }) };
+              }
+              
+              return { statusCode: 405, headers, body: JSON.stringify({ error: 'Method not allowed' }) };
+            } catch (error) {
+              console.error('Designs error:', error);
+              return { statusCode: 500, headers, body: JSON.stringify({ error: 'Server error' }) };
+            }
+          };
+
+  # API Gateway
+  ApiGateway:
+    Type: AWS::ApiGatewayV2::Api
+    Properties:
+      Name: divine-printing-api
+      ProtocolType: HTTP
+      Target: !GetAtt WebhookFunction.Arn
+      CorsConfiguration:
+        AllowOrigins:
+          - '*'
+        AllowMethods:
+          - GET
+          - POST
+          - DELETE
+          - OPTIONS
+        AllowHeaders:
+          - Content-Type
+          - Authorization
+
+  # Cognito Authorizer
+  CognitoAuthorizer:
+    Type: AWS::ApiGatewayV2::Authorizer
+    Properties:
+      ApiId: !Ref ApiGateway
+      AuthorizerType: JWT
+      IdentitySource:
+        - '$request.header.Authorization'
+      JwtConfiguration:
+        Audience:
+          - !Ref UserPoolClient
+        Issuer: !Sub https://cognito-idp.${AWS::Region}.amazonaws.com/${UserPool}
+      Name: divine-printing-cognito
+
+  # Webhook Route (no auth)
+  WebhookRoute:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId: !Ref ApiGateway
+      RouteKey: POST /webhook
+      Target: !Sub integrations/${WebhookIntegration}
+
+  WebhookIntegration:
+    Type: AWS::ApiGatewayV2::Integration
+    Properties:
+      ApiId: !Ref ApiGateway
+      IntegrationType: AWS_PROXY
+      IntegrationUri: !GetAtt WebhookFunction.Arn
+      PayloadFormatVersion: '2.0'
+
+  # Orders Route (with Cognito auth)
+  OrdersRoute:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId: !Ref ApiGateway
+      RouteKey: GET /orders
+      AuthorizationType: JWT
+      AuthorizerId: !Ref CognitoAuthorizer
+      Target: !Sub integrations/${OrdersIntegration}
+
+  OrdersIntegration:
+    Type: AWS::ApiGatewayV2::Integration
+    Properties:
+      ApiId: !Ref ApiGateway
+      IntegrationType: AWS_PROXY
+      IntegrationUri: !GetAtt OrdersFunction.Arn
+      PayloadFormatVersion: '2.0'
+
+  # Designs Route (with Cognito auth)
+  DesignsRoute:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId: !Ref ApiGateway
+      RouteKey: ANY /designs
+      AuthorizationType: JWT
+      AuthorizerId: !Ref CognitoAuthorizer
+      Target: !Sub integrations/${DesignsIntegration}
+
+  DesignsIntegration:
+    Type: AWS::ApiGatewayV2::Integration
+    Properties:
+      ApiId: !Ref ApiGateway
+      IntegrationType: AWS_PROXY
+      IntegrationUri: !GetAtt DesignsFunction.Arn
+      PayloadFormatVersion: '2.0'
+
+  # Lambda Permissions
+  WebhookPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref WebhookFunction
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${ApiGateway}/*
+
+  OrdersPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref OrdersFunction
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${ApiGateway}/*
+
+  DesignsPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref DesignsFunction
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${ApiGateway}/*
+
+Outputs:
+  UserPoolId:
+    Description: Cognito User Pool ID
+    Value: !Ref UserPool
+  UserPoolClientId:
+    Description: Cognito App Client ID
+    Value: !Ref UserPoolClient
+  CognitoDomain:
+    Description: Cognito Hosted UI Domain
+    Value: !Sub https://divine-printing-auth.auth.${AWS::Region}.amazoncognito.com
+  ApiEndpoint:
+    Description: API Gateway endpoint URL
+    Value: !Sub https://${ApiGateway}.execute-api.${AWS::Region}.amazonaws.com
+  WebhookUrl:
+    Description: Webhook URL for Snipcart
+    Value: !Sub https://${ApiGateway}.execute-api.${AWS::Region}.amazonaws.com/webhook
