@@ -1,22 +1,52 @@
 // Divine Printing Cognito Authentication
-const COGNITO_DOMAIN = 'https://divine-printing-auth.auth.us-east-1.amazoncognito.com';
+const COGNITO_DOMAIN = 'https://login.divineprinting.com';
 const CLIENT_ID = '73v7c7cbc0c0mm08kfdfv4casj';
 const REDIRECT_URI = window.location.origin + '/account/account.html';
 const API_BASE = 'https://u7klzkkpbc.execute-api.us-east-1.amazonaws.com';
 
-// Parse JWT token from URL hash (after Cognito redirect)
-function parseTokenFromUrl() {
-  const hash = window.location.hash.substring(1);
-  const params = new URLSearchParams(hash);
-  const idToken = params.get('id_token');
-  const accessToken = params.get('access_token');
+// Exchange authorization code for tokens
+async function exchangeCodeForTokens(code) {
+  const tokenUrl = `${COGNITO_DOMAIN}/oauth2/token`;
+  const params = new URLSearchParams({
+    grant_type: 'authorization_code',
+    client_id: CLIENT_ID,
+    code: code,
+    redirect_uri: REDIRECT_URI
+  });
+
+  try {
+    const response = await fetch(tokenUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded'
+      },
+      body: params
+    });
+
+    if (!response.ok) {
+      throw new Error('Token exchange failed');
+    }
+
+    const tokens = await response.json();
+    localStorage.setItem('dp_access_token', tokens.access_token);
+    localStorage.setItem('dp_id_token', tokens.id_token);
+    localStorage.setItem('dp_refresh_token', tokens.refresh_token);
+    return tokens;
+  } catch (error) {
+    console.error('Error exchanging code for tokens:', error);
+    return null;
+  }
+}
+
+// Parse authorization code from URL
+function parseCodeFromUrl() {
+  const params = new URLSearchParams(window.location.search);
+  const code = params.get('code');
   
-  if (idToken) {
-    localStorage.setItem('dp_id_token', idToken);
-    localStorage.setItem('dp_access_token', accessToken);
+  if (code) {
     // Clean URL
     window.history.replaceState({}, document.title, window.location.pathname);
-    return idToken;
+    return code;
   }
   return null;
 }
@@ -63,13 +93,13 @@ function getCurrentUser() {
 
 // Redirect to Cognito hosted UI for login
 function login() {
-  const loginUrl = `${COGNITO_DOMAIN}/login?client_id=${CLIENT_ID}&response_type=token&scope=email+openid+profile&redirect_uri=${encodeURIComponent(REDIRECT_URI)}`;
+  const loginUrl = `${COGNITO_DOMAIN}/login?response_type=code&client_id=${CLIENT_ID}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&scope=email+openid+profile`;
   window.location.href = loginUrl;
 }
 
 // Redirect to Cognito hosted UI for signup
 function signup() {
-  const signupUrl = `${COGNITO_DOMAIN}/signup?client_id=${CLIENT_ID}&response_type=token&scope=email+openid+profile&redirect_uri=${encodeURIComponent(REDIRECT_URI)}`;
+  const signupUrl = `${COGNITO_DOMAIN}/signup?response_type=code&client_id=${CLIENT_ID}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&scope=email+openid+profile`;
   window.location.href = signupUrl;
 }
 
@@ -77,6 +107,7 @@ function signup() {
 function logout() {
   localStorage.removeItem('dp_id_token');
   localStorage.removeItem('dp_access_token');
+  localStorage.removeItem('dp_refresh_token');
   const logoutUrl = `${COGNITO_DOMAIN}/logout?client_id=${CLIENT_ID}&logout_uri=${encodeURIComponent(REDIRECT_URI)}`;
   window.location.href = logoutUrl;
 }
@@ -105,11 +136,20 @@ async function fetchOrders() {
 }
 
 // Initialize auth on page load
-function initAuth() {
-  // Check for token in URL (Cognito redirect)
-  parseTokenFromUrl();
+async function initAuth() {
+  // Check for authorization code in URL (Cognito redirect)
+  const code = parseCodeFromUrl();
   
-  // Check if user is logged in
+  if (code) {
+    // Exchange code for tokens
+    const tokens = await exchangeCodeForTokens(code);
+    if (tokens) {
+      showDashboard(getCurrentUser());
+      return;
+    }
+  }
+  
+  // Check if user is already logged in
   const user = getCurrentUser();
   
   if (user) {
