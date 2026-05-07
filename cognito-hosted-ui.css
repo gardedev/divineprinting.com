@@ -1,0 +1,164 @@
+/* Divine Printing Cognito Hosted UI Custom CSS */
+/* Primary Colors: Purple #3d1a6e, Gold #c9a227 */
+
+/* Main background */
+.background-customizable {
+  background-color: #f5efe0 !important;
+}
+
+/* Banner/logo area */
+.banner-customizable {
+  background-color: #3d1a6e !important;
+  padding: 20px !important;
+}
+
+/* Logo image */
+.logo-customizable {
+  max-height: 80px !important;
+}
+
+/* Form container */
+.form-control {
+  background-color: #ffffff !important;
+  border: 2px solid #e8e2f5 !important;
+  border-radius: 12px !important;
+  padding: 14px 16px !important;
+  font-size: 16px !important;
+  color: #1a0d30 !important;
+}
+
+.form-control:focus {
+  border-color: #c9a227 !important;
+  box-shadow: 0 0 0 3px rgba(201, 162, 39, 0.2) !important;
+}
+
+/* Labels */
+label {
+  color: #3d1a6e !important;
+  font-weight: 600 !important;
+  font-size: 14px !important;
+}
+
+/* Primary button (Sign In, Create Account) */
+.btn-primary {
+  background: linear-gradient(135deg, #3d1a6e 0%, #5a2d8a 100%) !important;
+  border: none !important;
+  border-radius: 12px !important;
+  padding: 16px 32px !important;
+  font-size: 16px !important;
+  font-weight: 600 !important;
+  color: #ffffff !important;
+  width: 100% !important;
+  transition: opacity 0.2s !important;
+}
+
+.btn-primary:hover {
+  opacity: 0.9 !important;
+}
+
+/* Secondary button */
+.btn-secondary {
+  background: #ffffff !important;
+  border: 2px solid #3d1a6e !important;
+  border-radius: 12px !important;
+  padding: 14px 32px !important;
+  font-size: 16px !important;
+  font-weight: 600 !important;
+  color: #3d1a6e !important;
+}
+
+.btn-secondary:hover {
+  background: #f5efe0 !important;
+}
+
+/* Links */
+a {
+  color: #3d1a6e !important;
+  text-decoration: none !important;
+}
+
+a:hover {
+  color: #c9a227 !important;
+  text-decoration: underline !important;
+}
+
+/* Error messages */
+.text-error {
+  color: #c62828 !important;
+  background: #ffebee !important;
+  padding: 12px !important;
+  border-radius: 8px !important;
+  font-size: 14px !important;
+}
+
+/* Success messages */
+.text-success {
+  color: #2e7d32 !important;
+  background: #e8f5e9 !important;
+  padding: 12px !important;
+  border-radius: 8px !important;
+  font-size: 14px !important;
+}
+
+/* Input fields */
+input[type="text"],
+input[type="email"],
+input[type="password"] {
+  border-radius: 12px !important;
+  border: 2px solid #e8e2f5 !important;
+  padding: 14px 16px !important;
+  font-size: 16px !important;
+}
+
+input[type="text"]:focus,
+input[type="email"]:focus,
+input[type="password"]:focus {
+  border-color: #c9a227 !important;
+  outline: none !important;
+}
+
+/* Page title */
+.pagetitle {
+  color: #3d1a6e !important;
+  font-size: 24px !important;
+  font-weight: 700 !important;
+  margin-bottom: 20px !important;
+}
+
+/* Subtitle text */
+.textDescription-customizable {
+  color: #6b5b7a !important;
+  font-size: 14px !important;
+}
+
+/* Forgot password link */
+.forgotPassword-customizable {
+  color: #3d1a6e !important;
+  font-size: 14px !important;
+}
+
+.forgotPassword-customizable:hover {
+  color: #c9a227 !important;
+}
+
+/* Sign up link */
+.signUpLink-customizable {
+  color: #3d1a6e !important;
+  font-weight: 600 !important;
+}
+
+.signUpLink-customizable:hover {
+  color: #c9a227 !important;
+}
+
+/* Social login buttons (if enabled) */
+.socialButton-customizable {
+  border-radius: 12px !important;
+  border: 2px solid #e8e2f5 !important;
+  background: #ffffff !important;
+}
+
+.socialButton-customizable:hover {
+  background: #f5efe0 !important;
+  border-color: #c9a227 !important;
+}
