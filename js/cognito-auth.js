@@ -99,7 +99,8 @@ function login() {
 
 // Redirect to Cognito hosted UI for signup
 function signup() {
-  const signupUrl = `${COGNITO_DOMAIN}/signup?response_type=code&client_id=${CLIENT_ID}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&scope=email+openid+profile`;
+  // Use login page with signup action - more reliable than /signup endpoint
+  const signupUrl = `${COGNITO_DOMAIN}/login?response_type=code&client_id=${CLIENT_ID}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&scope=email+openid+profile`;
   window.location.href = signupUrl;
 }
 
