@@ -4,14 +4,34 @@ const CLIENT_ID = '73v7c7cbc0c0mm08kfdfv4casj';
 const REDIRECT_URI = window.location.origin + '/account/account.html';
 const API_BASE = 'https://u7klzkkpbc.execute-api.us-east-1.amazonaws.com';
 
+// PKCE Helper functions
+function generateCodeVerifier() {
+  const array = new Uint8Array(32);
+  crypto.getRandomValues(array);
+  return btoa(String.fromCharCode(...array))
+    .replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+}
+
+async function generateCodeChallenge(verifier) {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(verifier);
+  const digest = await crypto.subtle.digest('SHA-256', data);
+  return btoa(String.fromCharCode(...new Uint8Array(digest)))
+    .replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+}
+
 // Exchange authorization code for tokens
 async function exchangeCodeForTokens(code) {
+  const verifier = sessionStorage.getItem('pkce_verifier');
+  sessionStorage.removeItem('pkce_verifier');
+  
   const tokenUrl = `${COGNITO_DOMAIN}/oauth2/token`;
   const params = new URLSearchParams({
     grant_type: 'authorization_code',
     client_id: CLIENT_ID,
     code: code,
-    redirect_uri: REDIRECT_URI
+    redirect_uri: REDIRECT_URI,
+    code_verifier: verifier
   });
 
   try {
@@ -92,15 +112,39 @@ function getCurrentUser() {
 }
 
 // Redirect to Cognito hosted UI for login
-function login() {
-  const loginUrl = `${COGNITO_DOMAIN}/login?response_type=code&client_id=${CLIENT_ID}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&scope=email+openid+profile`;
-  window.location.href = loginUrl;
+async function login() {
+  const verifier = generateCodeVerifier();
+  const challenge = await generateCodeChallenge(verifier);
+  sessionStorage.setItem('pkce_verifier', verifier);
+
+  const params = new URLSearchParams({
+    response_type: 'code',
+    client_id: CLIENT_ID,
+    redirect_uri: REDIRECT_URI,
+    scope: 'email openid profile',
+    code_challenge: challenge,
+    code_challenge_method: 'S256',
+  });
+
+  window.location.href = `${COGNITO_DOMAIN}/login?${params}`;
 }
 
 // Redirect to Cognito hosted UI for signup
-function signup() {
-  const signupUrl = `${COGNITO_DOMAIN}/signup?response_type=code&client_id=${CLIENT_ID}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&scope=email+openid+profile`;
-  window.location.href = signupUrl;
+async function signup() {
+  const verifier = generateCodeVerifier();
+  const challenge = await generateCodeChallenge(verifier);
+  sessionStorage.setItem('pkce_verifier', verifier);
+
+  const params = new URLSearchParams({
+    response_type: 'code',
+    client_id: CLIENT_ID,
+    redirect_uri: REDIRECT_URI,
+    scope: 'email openid profile',
+    code_challenge: challenge,
+    code_challenge_method: 'S256',
+  });
+
+  window.location.href = `${COGNITO_DOMAIN}/signup?${params}`;
 }
 
 // Logout
@@ -235,11 +279,11 @@ document.addEventListener('DOMContentLoaded', () => {
   
   // Login button
   const loginBtn = document.getElementById('loginBtn');
-  if (loginBtn) loginBtn.addEventListener('click', login);
+  if (loginBtn) loginBtn.addEventListener('click', () => login());
   
   // Signup button
   const signupBtn = document.getElementById('signupBtn');
-  if (signupBtn) signupBtn.addEventListener('click', signup);
+  if (signupBtn) signupBtn.addEventListener('click', () => signup());
   
   // Logout button
   const logoutBtn = document.getElementById('logoutBtn');
