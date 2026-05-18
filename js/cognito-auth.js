@@ -126,7 +126,9 @@ async function login() {
     code_challenge_method: 'S256',
   });
 
-  window.location.href = `${COGNITO_DOMAIN}/login?${params}`;
+  // Force %20 instead of + for scope separator
+  const urlString = `${COGNITO_DOMAIN}/login?` + params.toString().replace('scope=email+openid+profile', 'scope=email%20openid%20profile');
+  window.location.href = urlString;
 }
 
 // Redirect to Cognito hosted UI for signup
@@ -144,7 +146,9 @@ async function signup() {
     code_challenge_method: 'S256',
   });
 
-  const fullUrl = `${COGNITO_DOMAIN}/signup?${params}`;
+  // Force %20 instead of + for scope separator
+  const urlString = `${COGNITO_DOMAIN}/signup?` + params.toString().replace('scope=email+openid+profile', 'scope=email%20openid%20profile');
+  const fullUrl = urlString;
   console.log('Signup URL:', fullUrl);
   window.location.href = fullUrl;
 }
