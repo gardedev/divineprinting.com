@@ -144,7 +144,9 @@ async function signup() {
     code_challenge_method: 'S256',
   });
 
-  window.location.href = `${COGNITO_DOMAIN}/signup?${params}`;
+  const fullUrl = `${COGNITO_DOMAIN}/signup?${params}`;
+  console.log('Signup URL:', fullUrl);
+  window.location.href = fullUrl;
 }
 
 // Logout
