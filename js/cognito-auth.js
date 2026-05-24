@@ -1,6 +1,7 @@
 // Divine Printing Cognito Authentication
 const COGNITO_DOMAIN = 'https://login.divineprinting.com';
-const CLIENT_ID = '73v7c7cbc0c0mm08kfdfv4casj';
+const USER_POOL_ID = 'us-east-1_1LBgFXfaY';
+const CLIENT_ID = '2skd2n55ct1kv189hn7pv2mbcj';
 const REDIRECT_URI = window.location.origin + '/account/account.html';
 const API_BASE = 'https://u7klzkkpbc.execute-api.us-east-1.amazonaws.com';
 
