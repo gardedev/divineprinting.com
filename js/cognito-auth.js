@@ -2,7 +2,20 @@
 const COGNITO_DOMAIN = 'https://login.divineprinting.com';
 const USER_POOL_ID = 'us-east-1_1LBgFXfaY';
 const CLIENT_ID = '2skd2n55ct1kv189hn7pv2mbcj';
-const REDIRECT_URI = window.location.origin + '/account/account.html';
+
+// Determine the correct redirect URI based on current domain
+const getRedirectUri = () => {
+  const hostname = window.location.hostname;
+  if (hostname === 'www.divineprinting.com') {
+    return 'https://www.divineprinting.com/account/account.html';
+  } else if (hostname === 'divineprinting.com') {
+    return 'https://divineprinting.com/account/account.html';
+  }
+  // Fallback for localhost/development
+  return window.location.origin + '/account/account.html';
+};
+
+const REDIRECT_URI = getRedirectUri();
 const API_BASE = 'https://u7klzkkpbc.execute-api.us-east-1.amazonaws.com';
 
 // PKCE Helper functions
