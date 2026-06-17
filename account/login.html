@@ -424,6 +424,21 @@
                     let message = err.message || 'Sign in failed';
                     if (err.code === 'UserNotFoundException' || err.code === 'NotAuthorizedException') {
                         message = 'Invalid email or password. Please try again.';
+                    } else if (err.code === 'UserNotConfirmedException') {
+                        message = 'Please verify your email before signing in. Check your inbox for the verification link, or click "Resend" below.';
+                        // Add resend button
+                        setTimeout(() => {
+                            const alertDiv = document.getElementById('loginAlert');
+                            if (!alertDiv.querySelector('#resendVerification')) {
+                                const resendBtn = document.createElement('button');
+                                resendBtn.id = 'resendVerification';
+                                resendBtn.textContent = 'Resend Verification Email';
+                                resendBtn.style.cssText = 'margin-top:12px;padding:8px 16px;background:var(--purple);color:white;border:none;border-radius:6px;cursor:pointer;font-size:0.9rem;';
+                                resendBtn.onclick = () => resendVerificationEmail(email);
+                                alertDiv.appendChild(document.createElement('br'));
+                                alertDiv.appendChild(resendBtn);
+                            }
+                        }, 100);
                     }
                     showAlert('loginAlert', message);
                 },
@@ -490,7 +505,7 @@
                 }
                 
                 // Success - show confirmation message
-                showAlert('signupAlert', 'Account created successfully! Please check your email to verify your account, then sign in.', 'success');
+                showAlert('signupAlert', 'Account created! Please check your email (including spam folder) and click the verification link before signing in.', 'success');
                 
                 // Switch to login tab after 3 seconds
                 setTimeout(() => {
@@ -534,6 +549,24 @@
                 if (!err && session.isValid()) {
                     window.location.href = 'account.html';
                 }
+            });
+        }
+        
+        // Resend verification email
+        function resendVerificationEmail(email) {
+            const userData = {
+                Username: email,
+                Pool: userPool
+            };
+            
+            const cognitoUser = new AmazonCognitoIdentity.CognitoUser(userData);
+            
+            cognitoUser.resendConfirmationCode((err, result) => {
+                if (err) {
+                    showAlert('loginAlert', err.message || 'Failed to resend verification email.');
+                    return;
+                }
+                showAlert('loginAlert', 'Verification email sent! Please check your inbox.', 'success');
             });
         }
     </script>
