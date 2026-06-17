@@ -76,8 +76,28 @@ async function exchangeCodeForTokens(code) {
 function parseCodeFromUrl() {
   const params = new URLSearchParams(window.location.search);
   const code = params.get('code');
+  const state = params.get('state');
+  const error = params.get('error');
+  const errorDescription = params.get('error_description');
+  
+  // Log all URL parameters for debugging
+  console.log('URL params:', { code: code ? 'present' : 'missing', state, error, errorDescription });
+  
+  // Check for OAuth errors
+  if (error) {
+    console.error('OAuth error:', error, errorDescription);
+    return null;
+  }
   
   if (code) {
+    // Validate state parameter if present
+    const savedState = sessionStorage.getItem('oauth_state');
+    if (state && savedState && state !== savedState) {
+      console.error('State mismatch - possible CSRF attack');
+      return null;
+    }
+    sessionStorage.removeItem('oauth_state');
+    
     // Clean URL
     window.history.replaceState({}, document.title, window.location.pathname);
     return code;
@@ -130,6 +150,10 @@ async function login() {
   const verifier = generateCodeVerifier();
   const challenge = await generateCodeChallenge(verifier);
   sessionStorage.setItem('pkce_verifier', verifier);
+  
+  // Generate state parameter for security
+  const state = generateCodeVerifier();
+  sessionStorage.setItem('oauth_state', state);
 
   const params = new URLSearchParams({
     response_type: 'code',
@@ -138,10 +162,13 @@ async function login() {
     scope: 'email openid profile',
     code_challenge: challenge,
     code_challenge_method: 'S256',
+    state: state
   });
 
   // Force %20 instead of + for scope separator
   const urlString = `${COGNITO_DOMAIN}/login?` + params.toString().replace('scope=email+openid+profile', 'scope=email%20openid%20profile');
+  console.log('Login URL:', urlString);
+  console.log('Redirect URI:', REDIRECT_URI);
   window.location.href = urlString;
 }
 
@@ -150,6 +177,10 @@ async function signup() {
   const verifier = generateCodeVerifier();
   const challenge = await generateCodeChallenge(verifier);
   sessionStorage.setItem('pkce_verifier', verifier);
+  
+  // Generate state parameter for security
+  const state = generateCodeVerifier();
+  sessionStorage.setItem('oauth_state', state);
 
   const params = new URLSearchParams({
     response_type: 'code',
@@ -158,13 +189,14 @@ async function signup() {
     scope: 'email openid profile',
     code_challenge: challenge,
     code_challenge_method: 'S256',
+    state: state
   });
 
   // Force %20 instead of + for scope separator
   const urlString = `${COGNITO_DOMAIN}/signup?` + params.toString().replace('scope=email+openid+profile', 'scope=email%20openid%20profile');
-  const fullUrl = urlString;
-  console.log('Signup URL:', fullUrl);
-  window.location.href = fullUrl;
+  console.log('Signup URL:', urlString);
+  console.log('Redirect URI:', REDIRECT_URI);
+  window.location.href = urlString;
 }
 
 // Logout
