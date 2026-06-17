@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign In | Divine Printing</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../styles.css">
+    <style>
+        :root { --purple: #3d1a6e; --gold: #c9a227; --gold-pale: #f5efe0; --dark: #1a0d30; --gray: #6b5b7a; --error: #c62828; --success: #2e7d32; }
+        
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, var(--purple) 0%, #5a2d8a 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        
+        .auth-container {
+            background: white;
+            border-radius: 24px;
+            box-shadow: 0 25px 80px rgba(0,0,0,0.3);
+            width: 100%;
+            max-width: 480px;
+            overflow: hidden;
+        }
+        
+        .auth-header {
+            background: var(--gold-pale);
+            padding: 40px 40px 30px;
+            text-align: center;
+        }
+        
+        .auth-header img {
+            height: 60px;
+            margin-bottom: 20px;
+        }
+        
+        .auth-header h1 {
+            font-family: 'Cinzel', serif;
+            font-size: 1.8rem;
+            color: var(--purple);
+            margin-bottom: 8px;
+        }
+        
+        .auth-header p {
+            color: var(--gray);
+            font-size: 0.95rem;
+        }
+        
+        .auth-tabs {
+            display: flex;
+            border-bottom: 2px solid #e8e2f5;
+        }
+        
+        .auth-tab {
+            flex: 1;
+            padding: 16px;
+            background: none;
+            border: none;
+            font-family: 'Cinzel', serif;
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--gray);
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .auth-tab.active {
+            color: var(--purple);
+            border-bottom: 3px solid var(--gold);
+            margin-bottom: -2px;
+        }
+        
+        .auth-tab:hover:not(.active) {
+            color: var(--purple);
+            background: rgba(61,26,110,0.05);
+        }
+        
+        .auth-body {
+            padding: 40px;
+        }
+        
+        .auth-form {
+            display: none;
+        }
+        
+        .auth-form.active {
+            display: block;
+        }
+        
+        .form-group {
+            margin-bottom: 24px;
+        }
+        
+        .form-group label {
+            display: block;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--dark);
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .form-group input {
+            width: 100%;
+            padding: 14px 16px;
+            border: 2px solid #e8e2f5;
+            border-radius: 12px;
+            font-size: 1rem;
+            transition: all 0.3s;
+            font-family: 'Inter', sans-serif;
+        }
+        
+        .form-group input:focus {
+            outline: none;
+            border-color: var(--gold);
+            box-shadow: 0 0 0 4px rgba(201,162,39,0.1);
+        }
+        
+        .form-group input.error {
+            border-color: var(--error);
+        }
+        
+        .password-requirements {
+            font-size: 0.8rem;
+            color: var(--gray);
+            margin-top: 8px;
+        }
+        
+        .password-requirements li {
+            margin-bottom: 4px;
+        }
+        
+        .password-requirements li.valid {
+            color: var(--success);
+        }
+        
+        .btn-primary {
+            width: 100%;
+            padding: 16px;
+            background: linear-gradient(135deg, var(--purple) 0%, #5a2d8a 100%);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: opacity 0.3s;
+            font-family: 'Inter', sans-serif;
+        }
+        
+        .btn-primary:hover:not(:disabled) {
+            opacity: 0.9;
+        }
+        
+        .btn-primary:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        
+        .btn-primary.loading::after {
+            content: '';
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid white;
+            border-top-color: transparent;
+            border-radius: 50%;
+            margin-left: 10px;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        .alert {
+            padding: 16px;
+            border-radius: 12px;
+            margin-bottom: 24px;
+            font-size: 0.95rem;
+            display: none;
+        }
+        
+        .alert.show {
+            display: block;
+        }
+        
+        .alert-error {
+            background: #ffebee;
+            color: var(--error);
+            border: 1px solid #ffcdd2;
+        }
+        
+        .alert-success {
+            background: #e8f5e9;
+            color: var(--success);
+            border: 1px solid #c8e6c9;
+        }
+        
+        .auth-footer {
+            text-align: center;
+            margin-top: 24px;
+            padding-top: 24px;
+            border-top: 1px solid #e8e2f5;
+        }
+        
+        .auth-footer a {
+            color: var(--purple);
+            text-decoration: none;
+            font-weight: 500;
+        }
+        
+        .auth-footer a:hover {
+            text-decoration: underline;
+        }
+        
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--gray);
+            text-decoration: none;
+            font-size: 0.9rem;
+            margin-bottom: 20px;
+        }
+        
+        .back-link:hover {
+            color: var(--purple);
+        }
+        
+        @media (max-width: 480px) {
+            .auth-container {
+                border-radius: 0;
+                min-height: 100vh;
+            }
+            
+            .auth-header, .auth-body {
+                padding: 30px 24px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="auth-container">
+        <div class="auth-header">
+            <a href="../index.html">
+                <img src="../images/logo.png" alt="Divine Printing" onerror="this.style.display='none'">
+            </a>
+            <h1>Welcome Back</h1>
+            <p>Sign in to access your account and orders</p>
+        </div>
+        
+        <div class="auth-tabs">
+            <button class="auth-tab active" data-tab="login">Sign In</button>
+            <button class="auth-tab" data-tab="signup">Create Account</button>
+        </div>
+        
+        <div class="auth-body">
+            <!-- Login Form -->
+            <form id="loginForm" class="auth-form active">
+                <div id="loginAlert" class="alert alert-error"></div>
+                
+                <div class="form-group">
+                    <label for="loginEmail">Email Address</label>
+                    <input type="email" id="loginEmail" name="email" required placeholder="you@example.com">
+                </div>
+                
+                <div class="form-group">
+                    <label for="loginPassword">Password</label>
+                    <input type="password" id="loginPassword" name="password" required placeholder="Enter your password">
+                </div>
+                
+                <button type="submit" class="btn-primary">Sign In</button>
+                
+                <div class="auth-footer">
+                    <a href="#" id="forgotPassword">Forgot your password?</a>
+                </div>
+            </form>
+            
+            <!-- Signup Form -->
+            <form id="signupForm" class="auth-form">
+                <div id="signupAlert" class="alert alert-error"></div>
+                
+                <div class="form-group">
+                    <label for="signupName">Full Name</label>
+                    <input type="text" id="signupName" name="name" required placeholder="John Smith">
+                </div>
+                
+                <div class="form-group">
+                    <label for="signupEmail">Email Address</label>
+                    <input type="email" id="signupEmail" name="email" required placeholder="you@example.com">
+                </div>
+                
+                <div class="form-group">
+                    <label for="signupPassword">Password</label>
+                    <input type="password" id="signupPassword" name="password" required placeholder="Create a password">
+                    <ul class="password-requirements">
+                        <li id="req-length">At least 8 characters</li>
+                        <li id="req-upper">One uppercase letter</li>
+                        <li id="req-lower">One lowercase letter</li>
+                        <li id="req-number">One number</li>
+                    </ul>
+                </div>
+                
+                <div class="form-group">
+                    <label for="signupConfirmPassword">Confirm Password</label>
+                    <input type="password" id="signupConfirmPassword" name="confirmPassword" required placeholder="Confirm your password">
+                </div>
+                
+                <button type="submit" class="btn-primary">Create Account</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- AWS SDK -->
+    <script src="https://sdk.amazonaws.com/js/aws-sdk-2.1000.0.min.js"></script>
+    <!-- Amazon Cognito Identity SDK -->
+    <script src="https://cdn.jsdelivr.net/npm/amazon-cognito-identity-js@6.3.1/dist/amazon-cognito-identity.min.js"></script>
+    
+    <script>
+        // Cognito Configuration
+        const poolData = {
+            UserPoolId: 'us-east-1_1LBgFXfaY',
+            ClientId: '2skd2n55ct1kv189hn7pv2mbcj'
+        };
+        
+        const userPool = new AmazonCognitoIdentity.CognitoUserPool(poolData);
+        
+        // Tab switching
+        document.querySelectorAll('.auth-tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                document.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('active'));
+                document.querySelectorAll('.auth-form').forEach(f => f.classList.remove('active'));
+                
+                tab.classList.add('active');
+                document.getElementById(tab.dataset.tab + 'Form').classList.add('active');
+                
+                // Clear alerts
+                hideAlert('loginAlert');
+                hideAlert('signupAlert');
+            });
+        });
+        
+        // Check for tab parameter in URL
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('tab') === 'signup') {
+            document.querySelector('[data-tab="signup"]').click();
+        }
+        
+        // Show/hide alerts
+        function showAlert(id, message, type = 'error') {
+            const alert = document.getElementById(id);
+            alert.textContent = message;
+            alert.className = 'alert alert-' + type + ' show';
+        }
+        
+        function hideAlert(id) {
+            const alert = document.getElementById(id);
+            alert.className = 'alert';
+            alert.textContent = '';
+        }
+        
+        // Password validation
+        const passwordInput = document.getElementById('signupPassword');
+        passwordInput.addEventListener('input', validatePassword);
+        
+        function validatePassword() {
+            const password = passwordInput.value;
+            
+            document.getElementById('req-length').className = password.length >= 8 ? 'valid' : '';
+            document.getElementById('req-upper').className = /[A-Z]/.test(password) ? 'valid' : '';
+            document.getElementById('req-lower').className = /[a-z]/.test(password) ? 'valid' : '';
+            document.getElementById('req-number').className = /[0-9]/.test(password) ? 'valid' : '';
+        }
+        
+        // Login form submission
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            hideAlert('loginAlert');
+            
+            const email = document.getElementById('loginEmail').value;
+            const password = document.getElementById('loginPassword').value;
+            const btn = e.target.querySelector('button[type="submit"]');
+            
+            btn.disabled = true;
+            btn.classList.add('loading');
+            btn.textContent = 'Signing in...';
+            
+            const authenticationDetails = new AmazonCognitoIdentity.AuthenticationDetails({
+                Username: email,
+                Password: password
+            });
+            
+            const userData = {
+                Username: email,
+                Pool: userPool
+            };
+            
+            const cognitoUser = new AmazonCognitoIdentity.CognitoUser(userData);
+            
+            cognitoUser.authenticateUser(authenticationDetails, {
+                onSuccess: (result) => {
+                    // Store tokens
+                    localStorage.setItem('dp_id_token', result.getIdToken().getJwtToken());
+                    localStorage.setItem('dp_access_token', result.getAccessToken().getJwtToken());
+                    localStorage.setItem('dp_refresh_token', result.getRefreshToken().getToken());
+                    
+                    // Redirect to account page
+                    window.location.href = 'account.html';
+                },
+                onFailure: (err) => {
+                    btn.disabled = false;
+                    btn.classList.remove('loading');
+                    btn.textContent = 'Sign In';
+                    
+                    let message = err.message || 'Sign in failed';
+                    if (err.code === 'UserNotFoundException' || err.code === 'NotAuthorizedException') {
+                        message = 'Invalid email or password. Please try again.';
+                    }
+                    showAlert('loginAlert', message);
+                },
+                newPasswordRequired: (userAttributes, requiredAttributes) => {
+                    btn.disabled = false;
+                    btn.classList.remove('loading');
+                    btn.textContent = 'Sign In';
+                    showAlert('loginAlert', 'Please check your email to verify your account before signing in.');
+                }
+            });
+        });
+        
+        // Signup form submission
+        document.getElementById('signupForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            hideAlert('signupAlert');
+            
+            const name = document.getElementById('signupName').value;
+            const email = document.getElementById('signupEmail').value;
+            const password = document.getElementById('signupPassword').value;
+            const confirmPassword = document.getElementById('signupConfirmPassword').value;
+            const btn = e.target.querySelector('button[type="submit"]');
+            
+            // Validation
+            if (password !== confirmPassword) {
+                showAlert('signupAlert', 'Passwords do not match.');
+                return;
+            }
+            
+            if (password.length < 8) {
+                showAlert('signupAlert', 'Password must be at least 8 characters.');
+                return;
+            }
+            
+            btn.disabled = true;
+            btn.classList.add('loading');
+            btn.textContent = 'Creating account...';
+            
+            const attributeList = [
+                new AmazonCognitoIdentity.CognitoUserAttribute({
+                    Name: 'email',
+                    Value: email
+                }),
+                new AmazonCognitoIdentity.CognitoUserAttribute({
+                    Name: 'name',
+                    Value: name
+                })
+            ];
+            
+            userPool.signUp(email, password, attributeList, null, (err, result) => {
+                btn.disabled = false;
+                btn.classList.remove('loading');
+                btn.textContent = 'Create Account';
+                
+                if (err) {
+                    let message = err.message || 'Sign up failed';
+                    if (err.code === 'UsernameExistsException') {
+                        message = 'An account with this email already exists. Please sign in instead.';
+                    } else if (err.code === 'InvalidPasswordException') {
+                        message = 'Password does not meet requirements. Please check the password guidelines.';
+                    }
+                    showAlert('signupAlert', message);
+                    return;
+                }
+                
+                // Success - show confirmation message
+                showAlert('signupAlert', 'Account created successfully! Please check your email to verify your account, then sign in.', 'success');
+                
+                // Switch to login tab after 3 seconds
+                setTimeout(() => {
+                    document.querySelector('[data-tab="login"]').click();
+                    document.getElementById('loginEmail').value = email;
+                }, 3000);
+            });
+        });
+        
+        // Forgot password
+        document.getElementById('forgotPassword').addEventListener('click', (e) => {
+            e.preventDefault();
+            const email = document.getElementById('loginEmail').value;
+            
+            if (!email) {
+                showAlert('loginAlert', 'Please enter your email address first.');
+                return;
+            }
+            
+            const userData = {
+                Username: email,
+                Pool: userPool
+            };
+            
+            const cognitoUser = new AmazonCognitoIdentity.CognitoUser(userData);
+            
+            cognitoUser.forgotPassword({
+                onSuccess: () => {
+                    showAlert('loginAlert', 'Password reset instructions have been sent to your email.', 'success');
+                },
+                onFailure: (err) => {
+                    showAlert('loginAlert', err.message || 'Failed to send reset instructions.');
+                }
+            });
+        });
+        
+        // Check if already logged in
+        const currentUser = userPool.getCurrentUser();
+        if (currentUser) {
+            currentUser.getSession((err, session) => {
+                if (!err && session.isValid()) {
+                    window.location.href = 'account.html';
+                }
+            });
+        }
+    </script>
+</body>
+</html>
