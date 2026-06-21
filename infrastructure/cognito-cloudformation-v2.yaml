@@ -7,8 +7,9 @@ Resources:
     Type: AWS::Cognito::UserPool
     Properties:
       UserPoolName: divine-printing-users
-      AutoVerifiedAttributes:
-        - email
+      # Auto-verification disabled - using Lambda trigger instead
+      # AutoVerifiedAttributes:
+      #   - email
       Policies:
         PasswordPolicy:
           MinimumLength: 8
@@ -23,6 +24,8 @@ Resources:
           Mutable: true
       EmailConfiguration:
         EmailSendingAccount: COGNITO_DEFAULT
+      LambdaConfig:
+        PreSignUp: !GetAtt AutoConfirmFunction.Arn
 
   # Cognito User Pool Client
   UserPoolClient:
@@ -108,6 +111,38 @@ Resources:
           KeyType: RANGE
 
   # IAM Role for Lambda
+  # Auto-Confirm Lambda (bypasses email verification)
+  AutoConfirmFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: divine-printing-auto-confirm
+      Runtime: nodejs18.x
+      Handler: index.handler
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Timeout: 10
+      Code:
+        ZipFile: |
+          exports.handler = async (event) => {
+            event.response.autoConfirmUser = true;
+            if (event.request.userAttributes.email) {
+              event.response.autoVerifyEmail = true;
+            }
+            if (event.request.userAttributes.phone_number) {
+              event.response.autoVerifyPhone = true;
+            }
+            console.log('Auto-confirmed user:', event.userName);
+            return event;
+          };
+
+  # Lambda Permission for Cognito to invoke auto-confirm
+  AutoConfirmPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref AutoConfirmFunction
+      Action: lambda:InvokeFunction
+      Principal: cognito-idp.amazonaws.com
+      SourceArn: !GetAtt UserPool.Arn
+
   LambdaExecutionRole:
     Type: AWS::IAM::Role
     Properties:
