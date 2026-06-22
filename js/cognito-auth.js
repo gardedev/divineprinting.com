@@ -1,8 +1,7 @@
 // Divine Printing Cognito Authentication
-// Using Cognito prefix domain instead of custom domain due to redirect issues
-const COGNITO_DOMAIN = 'https://divine-printing-users-v2.auth.us-east-1.amazoncognito.com';
+const COGNITO_DOMAIN = 'https://login.divineprinting.com';
 const USER_POOL_ID = 'us-east-1_1LBgFXfaY';
-const CLIENT_ID = '2skd2n55ct1kv189hn7pv2mbcj';
+const CLIENT_ID = '7map1lhflflcehr4ntjhhg2um268';
 
 // Determine the correct redirect URI based on current domain
 const getRedirectUri = () => {
