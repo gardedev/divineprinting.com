@@ -320,6 +320,11 @@
         </div>
     </div>
 
+    <!-- Cache buster meta -->
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    
     <!-- AWS SDK -->
     <script src="https://sdk.amazonaws.com/js/aws-sdk-2.1000.0.min.js"></script>
     <!-- Amazon Cognito Identity SDK -->
@@ -329,7 +334,7 @@
         // Cognito Configuration
         const poolData = {
             UserPoolId: 'us-east-1_1LBgFXfaY',
-            ClientId: '2skd2n55ct1kv189hn7pv2mbcj'
+            ClientId: '7map1lhflflcehr4ntjhhg2um268'
         };
         
         const userPool = new AmazonCognitoIdentity.CognitoUserPool(poolData);
