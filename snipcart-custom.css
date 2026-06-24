@@ -85,40 +85,7 @@
   letter-spacing: 0.05em !important;
 }
 
-.snipcart-cart-header__close-button {
-  color: #c9a227 !important;
-  background: transparent !important;
-  background-image: none !important;
-  border: none !important;
-  box-shadow: none !important;
-  padding: 8px !important;
-  cursor: pointer !important;
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-}
-
-.snipcart-cart-header__close-button:hover {
-  color: #e8c04a !important;
-  background: transparent !important;
-  background-image: none !important;
-}
-
-/* Close button SVG icon */
-.snipcart-cart-header__close-button svg {
-  width: 20px !important;
-  height: 20px !important;
-}
-
-.snipcart-cart-header__close-button svg path,
-.snipcart-cart-header__close-button path {
-  fill: #c9a227 !important;
-}
-
-.snipcart-cart-header__close-button:hover svg path,
-.snipcart-cart-header__close-button:hover path {
-  fill: #e8c04a !important;
-}
+/* Close button - REMOVED: styles moved to end of file for specificity */
 
 .snipcart-cart-header__count {
   background: #c9a227 !important;
