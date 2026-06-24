@@ -412,6 +412,14 @@ document.addEventListener('DOMContentLoaded', () => {
 <script src="cart.js"></script>
 <script src="https://cdn.snipcart.com/themes/v3.0.31/default/snipcart.js"></script>
 <script src="/snipcart-custom.js?v=2"></script>
+<script>
+  // INLINE FIX: Force close button styling
+  (function() {
+    const style = document.createElement('style');
+    style.textContent = '.snipcart-cart-header__close-button{background:#c9a227!important;border:2px solid #c9a227!important;border-radius:8px!important;width:44px!important;height:44px!important;position:relative!important}.snipcart-cart-header__close-button svg{display:none!important}.snipcart-cart-header__close-button::after{content:"×"!important;color:#1a0d30!important;font-size:28px!important;font-weight:300!important;position:absolute!important;top:50%!important;left:50%!important;transform:translate(-50%,-50%)!important;line-height:1!important}';
+    document.head.appendChild(style);
+  })();
+</script>
 <div hidden id="snipcart" data-api-key="ZjljZmI1ODItM2VmOS00M2ZhLTg3ZGItNmUwY2NiZjViMjQ4NjM5MTE0Njk1NzE1MTQwNTE3"></div>
 </body>
 </html>
