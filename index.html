@@ -2,7 +2,32 @@
 <html lang="en">
 <head>
 <!-- CLOSE BUTTON FIX -->
-<style>.snipcart-cart-header__close-button{background:#c9a227!important;border:2px solid #c9a227!important;border-radius:8px!important;width:44px!important;height:44px!important;display:flex!important;align-items:center!important;justify-content:center!important;position:relative!important;overflow:hidden!important}.snipcart-cart-header__close-button svg{display:none!important}.snipcart-cart-header__close-button::before{content:"×"!important;color:#1a0d30!important;font-size:36px!important;font-weight:300!important;line-height:44px!important;text-align:center!important;display:block!important;width:100%!important}</style>
+<style>
+.snipcart-cart-header__close-button {
+  background: #c9a227 !important;
+  border: 2px solid #c9a227 !important;
+  border-radius: 8px !important;
+  width: 44px !important;
+  height: 44px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  position: relative !important;
+}
+.snipcart-cart-header__close-button svg,
+.snipcart-cart-header__close-button .snipcart__icon {
+  display: none !important;
+}
+.snipcart-cart-header__close-button::after {
+  content: "×" !important;
+  color: #1a0d30 !important;
+  font-size: 32px !important;
+  font-weight: 400 !important;
+  line-height: 1 !important;
+  display: block !important;
+  position: static !important;
+}
+</style>
 <!-- Meta Pixel Code -->
 <script>
 !function(f,b,e,v,n,t,s)
