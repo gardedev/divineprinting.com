@@ -822,9 +822,14 @@ body.snipcart-sidecart--opened {
 }
 
 /* ========================================
-   SNIPCART CLOSE BUTTON FIX
+   SNIPCART CLOSE BUTTON FIX - AGGRESSIVE
    ======================================== */
-.snipcart-cart-header__close-button {
+.snipcart-cart-header__close-button,
+.snipcart-modal__close,
+button[aria-label="Close"],
+button[aria-label="close"],
+.snipcart-cart-header button[class*="close"],
+.snipcart-cart-header button[class*="Close"] {
   background: #c9a227 !important;
   border: 2px solid #c9a227 !important;
   border-radius: 8px !important;
@@ -834,18 +839,36 @@ body.snipcart-sidecart--opened {
   align-items: center !important;
   justify-content: center !important;
   position: relative !important;
-}
-.snipcart-cart-header__close-button svg {
-  display: none !important;
-}
-.snipcart-cart-header__close-button::after {
-  content: "×" !important;
   color: #1a0d30 !important;
   font-size: 28px !important;
+  font-weight: 300 !important;
+  line-height: 1 !important;
+  overflow: visible !important;
+}
+
+.snipcart-cart-header__close-button svg,
+.snipcart-modal__close svg,
+.snipcart-cart-header__close-button path,
+.snipcart-modal__close path {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+}
+
+.snipcart-cart-header__close-button::before,
+.snipcart-modal__close::before,
+.snipcart-cart-header__close-button::after,
+.snipcart-modal__close::after {
+  content: "×" !important;
+  color: #1a0d30 !important;
+  font-size: 32px !important;
   font-weight: 300 !important;
   position: absolute !important;
   top: 50% !important;
   left: 50% !important;
   transform: translate(-50%, -50%) !important;
   line-height: 1 !important;
+  display: block !important;
+  pointer-events: none !important;
+  z-index: 9999 !important;
 }
