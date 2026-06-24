@@ -435,6 +435,27 @@ document.addEventListener('DOMContentLoaded', () => {
 <script src="cart.js"></script>
 <script src="https://cdn.snipcart.com/themes/v3.0.31/default/snipcart.js"></script>
 <script src="/snipcart-custom.js?v=2"></script>
+<script>
+  // DIRECT FIX: Add X to close button
+  (function fixCloseButton() {
+    function addXToCloseButton() {
+      const closeBtn = document.querySelector('.snipcart-cart-header__close-button');
+      if (closeBtn && !closeBtn.querySelector('.custom-x')) {
+        closeBtn.style.cssText = 'background:#c9a227!important;border:2px solid #c9a227!important;border-radius:8px!important;width:44px!important;height:44px!important;position:relative!important;display:flex!important;align-items:center!important;justify-content:center!important';
+        const x = document.createElement('span');
+        x.className = 'custom-x';
+        x.textContent = '×';
+        x.style.cssText = 'color:#1a0d30!important;font-size:32px!important;font-weight:300!important;line-height:1!important;pointer-events:none!important';
+        closeBtn.innerHTML = '';
+        closeBtn.appendChild(x);
+      }
+    }
+    // Run when Snipcart loads
+    document.addEventListener('snipcart.ready', addXToCloseButton);
+    // Also check periodically
+    setInterval(addXToCloseButton, 500);
+  })();
+</script>
 <div hidden id="snipcart" data-api-key="ZjljZmI1ODItM2VmOS00M2ZhLTg3ZGItNmUwY2NiZjViMjQ4NjM5MTE0Njk1NzE1MTQwNTE3"></div>
 </body>
 </html>
