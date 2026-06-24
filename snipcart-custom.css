@@ -644,35 +644,7 @@ button.snipcart-button-primary:hover {
    CLOSE BUTTON FIX — Prevent gold rectangle
    ======================================== */
 
-/* The close button in the cart header must NOT get button styling */
-.snipcart-cart-header .snipcart-cart-button,
-.snipcart-cart-header__close-button .snipcart-cart-button,
-.snipcart-cart-header__close-button.snipcart-cart-button {
-  background: transparent !important;
-  background-image: none !important;
-  box-shadow: none !important;
-  padding: 8px !important;
-  width: auto !important;
-  color: #c9a227 !important;
-}
-
-.snipcart-cart-header .snipcart-cart-button:hover,
-.snipcart-cart-header__close-button .snipcart-cart-button:hover {
-  background: transparent !important;
-  background-image: none !important;
-  color: #e8c04a !important;
-}
-
-/* Ensure close button SVG inside cart-button gets correct color */
-.snipcart-cart-header .snipcart-cart-button .snipcart__icon path,
-.snipcart-cart-header__close-button .snipcart__icon path {
-  fill: #c9a227 !important;
-}
-
-.snipcart-cart-header .snipcart-cart-button:hover .snipcart__icon path,
-.snipcart-cart-header__close-button:hover .snipcart__icon path {
-  fill: #e8c04a !important;
-}
+/* REMOVED: Conflicting close button styles - see SNIPCART CART MODAL FIXES section */
 
 /* ========================================
    PAYMENT METHODS & COMPLETED STEPS
