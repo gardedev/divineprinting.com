@@ -27,7 +27,7 @@ src="https://www.facebook.com/tr?id=2413483535782004&ev=PageView&noscript=1"
     gtag('js', new Date());
     gtag('config', 'G-FYH23228K7');
   </script>
-    <link rel="icon" type="image/x-icon" href="favicon.ico" />
+  <link rel="icon" type="image/x-icon" href="favicon.ico" />
   <link rel="apple-touch-icon" href="images/logo-192.png" />
 
   <meta charset="UTF-8" />
@@ -47,87 +47,100 @@ src="https://www.facebook.com/tr?id=2413483535782004&ev=PageView&noscript=1"
       align-items: center;
       justify-content: center;
       padding: 2rem;
+      overflow-x: hidden;
+      position: relative;
     }
 
-    .card {
-      background: #2a1550;
-      border: 1px solid #c9a22740;
-      border-radius: 16px;
-      padding: 3rem 2.5rem;
-      max-width: 540px;
+    /* ── Confetti Canvas ── */
+    #confetti-canvas {
+      position: fixed;
+      top: 0;
+      left: 0;
       width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 10;
+    }
+
+    /* ── Radial glow behind card ── */
+    .glow {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 700px;
+      height: 700px;
+      background: radial-gradient(circle, rgba(201,162,39,0.08) 0%, transparent 70%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* ── Main Card ── */
+    .card {
+      position: relative;
+      z-index: 1;
+      background: linear-gradient(165deg, #2a1550 0%, #1e1040 100%);
+      border: 1px solid #c9a22740;
+      border-radius: 24px;
+      padding: 3rem;
+      max-width: 960px;
+      width: 100%;
+      box-shadow:
+        0 8px 40px rgba(0,0,0,0.4),
+        0 0 80px rgba(201,162,39,0.06);
+      animation: cardEntry 0.6s ease-out;
+    }
+
+    @keyframes cardEntry {
+      from { opacity: 0; transform: translateY(30px) scale(0.97); }
+      to   { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    /* ── Card Layout ── */
+    .card-inner {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 2rem;
+    }
+
+    .card-header {
       text-align: center;
-      box-shadow: 0 8px 40px rgba(0,0,0,0.4);
     }
 
-    .icon {
-      font-size: 3.5rem;
-      margin-bottom: 1rem;
+    .card-body {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 2.5rem;
+      align-items: start;
     }
 
-    h1 {
-      font-family: 'Cinzel', serif;
-      font-size: 2rem;
-      color: #c9a227;
-      margin-bottom: 0.75rem;
-    }
-
-    p {
-      font-size: 1.05rem;
-      line-height: 1.7;
-      color: #cbb8e8;
-      margin-bottom: 1.25rem;
-    }
-
-    p.sub {
-      font-size: 0.9rem;
-      color: #9980c0;
-      margin-bottom: 2rem;
-    }
-
-    .btn {
-      display: inline-block;
-      background: linear-gradient(135deg, #c9a227, #e8c547);
-      color: #1a0d30;
-      font-family: 'Cinzel', serif;
-      font-weight: 700;
-      font-size: 0.95rem;
-      padding: 0.85rem 2rem;
-      border-radius: 8px;
-      text-decoration: none;
-      transition: opacity 0.2s;
-    }
-
-    .btn:hover { opacity: 0.88; }
-
+    /* ── Logo ── */
     .logo {
       display: flex;
       align-items: center;
       justify-content: center;
       gap: 0.6rem;
-      margin-bottom: 2rem;
+      margin-bottom: 1.5rem;
       text-decoration: none;
     }
 
     .logo-icon {
-      width: 40px;
-      height: 40px;
+      width: 44px;
+      height: 44px;
       background: linear-gradient(135deg, #c9a227, #e8c547);
-      border-radius: 8px;
+      border-radius: 10px;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 1.3rem;
+      font-size: 1.4rem;
       color: #1a0d30;
       overflow: hidden;
       flex-shrink: 0;
     }
 
-
-
     .logo-text .brand {
       font-family: 'Cinzel', serif;
-      font-size: 1.1rem;
+      font-size: 1.15rem;
       color: #c9a227;
       font-weight: 700;
     }
@@ -137,27 +150,598 @@ src="https://www.facebook.com/tr?id=2413483535782004&ev=PageView&noscript=1"
       color: #9980c0;
       letter-spacing: 0.05em;
     }
+
+    /* ── Celebration Icon ── */
+    .celebration-icon {
+      font-size: 4rem;
+      margin-bottom: 0.75rem;
+      animation: celebBounce 1s ease-out;
+    }
+
+    @keyframes celebBounce {
+      0%   { transform: scale(0); opacity: 0; }
+      50%  { transform: scale(1.2); }
+      100% { transform: scale(1); opacity: 1; }
+    }
+
+    /* ── Success Badge ── */
+    .success-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: rgba(201,162,39,0.12);
+      border: 1px solid rgba(201,162,39,0.25);
+      border-radius: 50px;
+      padding: 0.5rem 1.25rem;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: #c9a227;
+      margin-bottom: 1.25rem;
+    }
+
+    .success-badge .check {
+      width: 20px;
+      height: 20px;
+      background: #c9a227;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #1a0d30;
+      font-size: 0.75rem;
+      font-weight: 700;
+    }
+
+    /* ── Typography ── */
+    h1 {
+      font-family: 'Cinzel', serif;
+      font-size: 2.5rem;
+      color: #c9a227;
+      margin-bottom: 0.5rem;
+      line-height: 1.2;
+    }
+
+    h1 .highlight {
+      background: linear-gradient(135deg, #c9a227, #e8c547);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    p {
+      font-size: 1.05rem;
+      line-height: 1.7;
+      color: #cbb8e8;
+      margin-bottom: 1rem;
+    }
+
+    p.sub {
+      font-size: 0.9rem;
+      color: #9980c0;
+      margin-bottom: 0;
+    }
+
+    /* ── Info Panel (left) ── */
+    .info-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+
+    .what-next {
+      background: rgba(201,162,39,0.06);
+      border: 1px solid rgba(201,162,39,0.15);
+      border-radius: 16px;
+      padding: 1.5rem;
+    }
+
+    .what-next h2 {
+      font-family: 'Cinzel', serif;
+      font-size: 1.1rem;
+      color: #c9a227;
+      margin-bottom: 1rem;
+    }
+
+    .timeline {
+      list-style: none;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .timeline li {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.85rem;
+      font-size: 0.92rem;
+      color: #cbb8e8;
+      line-height: 1.5;
+    }
+
+    .timeline li .step-icon {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: rgba(201,162,39,0.12);
+      border: 1px solid rgba(201,162,39,0.25);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      font-size: 0.85rem;
+    }
+
+    .timeline li .step-text strong {
+      color: #f0e6ff;
+      display: block;
+      font-size: 0.9rem;
+      margin-bottom: 0.15rem;
+    }
+
+    /* ── Celebration Visual (right) ── */
+    .celebration-visual {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 1.5rem;
+      text-align: center;
+    }
+
+    .visual-graphic {
+      width: 100%;
+      max-width: 320px;
+      aspect-ratio: 1;
+      background: radial-gradient(circle at 30% 30%, rgba(201,162,39,0.15), transparent 60%),
+                  radial-gradient(circle at 70% 70%, rgba(90,45,138,0.3), transparent 60%),
+                  linear-gradient(135deg, #2a1550 0%, #1e1040 100%);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 6rem;
+      position: relative;
+      overflow: hidden;
+      border: 2px solid rgba(201,162,39,0.15);
+    }
+
+    .visual-graphic::before {
+      content: '';
+      position: absolute;
+      inset: -4px;
+      border-radius: 50%;
+      border: 2px solid transparent;
+      background: conic-gradient(from 0deg, #c9a227, transparent, #c9a227, transparent, #c9a227) border-box;
+      -webkit-mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
+      -webkit-mask-composite: xor;
+      mask-composite: exclude;
+      animation: spin 8s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .sparkle-text {
+      font-family: 'Cinzel', serif;
+      font-size: 0.95rem;
+      color: #c9a227;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+    }
+
+    /* ── T-Shirt Product Section (hidden by default) ── */
+    .tshirt-section {
+      display: none;
+      animation: fadeSlideUp 0.5s ease-out;
+    }
+
+    .tshirt-section.visible {
+      display: block;
+    }
+
+    @keyframes fadeSlideUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .tshirt-card {
+      background: rgba(201,162,39,0.06);
+      border: 1px solid rgba(201,162,39,0.2);
+      border-radius: 16px;
+      padding: 1.5rem;
+      display: flex;
+      align-items: center;
+      gap: 1.5rem;
+      margin-top: 2rem;
+    }
+
+    .tshirt-card .tshirt-img {
+      width: 140px;
+      height: 140px;
+      object-fit: contain;
+      border-radius: 12px;
+      background: #fff;
+      padding: 0.5rem;
+      flex-shrink: 0;
+    }
+
+    .tshirt-card .tshirt-info {
+      flex: 1;
+    }
+
+    .tshirt-card .tshirt-info h3 {
+      font-family: 'Cinzel', serif;
+      color: #c9a227;
+      font-size: 1.1rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .tshirt-card .tshirt-info p {
+      font-size: 0.9rem;
+      color: #cbb8e8;
+      margin-bottom: 0;
+      line-height: 1.5;
+    }
+
+    .tshirt-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      background: rgba(201,162,39,0.15);
+      color: #c9a227;
+      font-size: 0.75rem;
+      font-weight: 600;
+      padding: 0.3rem 0.75rem;
+      border-radius: 50px;
+      margin-bottom: 0.5rem;
+    }
+
+    /* ── Buttons ── */
+    .btn-group {
+      display: flex;
+      gap: 1rem;
+      flex-wrap: wrap;
+      margin-top: 1.5rem;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-family: 'Cinzel', serif;
+      font-weight: 700;
+      font-size: 0.95rem;
+      padding: 0.85rem 2rem;
+      border-radius: 10px;
+      text-decoration: none;
+      transition: all 0.2s;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #c9a227, #e8c547);
+      color: #1a0d30;
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(201,162,39,0.3);
+    }
+
+    .btn-secondary {
+      background: rgba(201,162,39,0.1);
+      border: 1px solid rgba(201,162,39,0.3);
+      color: #c9a227;
+    }
+
+    .btn-secondary:hover {
+      background: rgba(201,162,39,0.18);
+      transform: translateY(-2px);
+    }
+
+    /* ── Responsive ── */
+    @media (max-width: 700px) {
+      .card {
+        padding: 2rem 1.5rem;
+        border-radius: 16px;
+      }
+
+      .card-body {
+        grid-template-columns: 1fr;
+      }
+
+      h1 { font-size: 1.8rem; }
+
+      .visual-graphic {
+        max-width: 200px;
+        font-size: 4rem;
+      }
+
+      .celebration-visual {
+        order: -1;
+      }
+
+      .btn-group {
+        flex-direction: column;
+      }
+
+      .btn { justify-content: center; width: 100%; }
+
+      .tshirt-card {
+        flex-direction: column;
+        text-align: center;
+      }
+
+      .tshirt-card .tshirt-img {
+        width: 120px;
+        height: 120px;
+      }
+    }
   </style>
   <link rel="stylesheet" href="https://cdn.snipcart.com/themes/v3.0.31/default/snipcart.css" />
   <link rel="stylesheet" href="/snipcart-custom.css" />
 </head>
 <body>
 
+  <!-- Background glow -->
+  <div class="glow"></div>
+
+  <!-- Confetti canvas -->
+  <canvas id="confetti-canvas"></canvas>
+
+  <!-- Main Card -->
   <div class="card">
-    <a href="/" class="logo">
-      <div class="logo-icon">&#10013;</div>
-      <div class="logo-text">
-        <div class="brand">Divine Printing</div>
-        <div class="tagline">Crafted for the Kingdom</div>
+    <div class="card-inner">
+
+      <!-- Header -->
+      <div class="card-header">
+        <a href="/" class="logo">
+          <div class="logo-icon">&#10013;</div>
+          <div class="logo-text">
+            <div class="brand">Divine Printing</div>
+            <div class="tagline">Crafted for the Kingdom</div>
+          </div>
+        </a>
+
+        <div class="celebration-icon">🎉</div>
+
+        <div class="success-badge">
+          <span class="check">✓</span>
+          Request Received
+        </div>
+
+        <h1><span class="highlight">Thank You!</span></h1>
+        <p>Your quote request has been received. We&rsquo;ll review your details and get back to you within <strong>1 business day</strong>.</p>
       </div>
-    </a>
 
-    <h1>Thank You!</h1>
-    <p>Your quote request has been received. We'll review your details and get back to you within <strong>1 business day</strong>.</p>
-    <p class="sub">Check your inbox &mdash; a confirmation may be on its way.</p>
+      <!-- Body: Info + Visual -->
+      <div class="card-body">
 
-    <a href="/" class="btn">&larr; Back to Home</a>
+        <!-- Left: Info -->
+        <div class="info-panel">
+          <div class="what-next">
+            <h2>What Happens Next</h2>
+            <ul class="timeline">
+              <li>
+                <span class="step-icon">📋</span>
+                <div class="step-text">
+                  <strong>We Review Your Request</strong>
+                  Our team checks your details, design needs, and quantity.
+                </div>
+              </li>
+              <li>
+                <span class="step-icon">💬</span>
+                <div class="step-text">
+                  <strong>Custom Quote Sent</strong>
+                  You'll receive a personalized quote within 1 business day.
+                </div>
+              </li>
+              <li>
+                <span class="step-icon">🎨</span>
+                <div class="step-text">
+                  <strong>Design &amp; Approval</strong>
+                  We'll create a proof for your review before printing.
+                </div>
+              </li>
+              <li>
+                <span class="step-icon">📦</span>
+                <div class="step-text">
+                  <strong>Print &amp; Deliver</strong>
+                  Fast turnaround with careful packaging &mdash; your order, done right.
+                </div>
+              </li>
+            </ul>
+          </div>
+
+          <p class="sub">Check your inbox &mdash; a confirmation may be on its way.</p>
+
+          <div class="btn-group">
+            <a href="/" class="btn btn-primary">&larr; Back to Home</a>
+            <a href="/#products" class="btn btn-secondary">Browse Products</a>
+          </div>
+        </div>
+
+        <!-- Right: Celebration Visual -->
+        <div class="celebration-visual">
+          <div class="visual-graphic">✝️</div>
+          <p class="sparkle-text">Bringing Your Vision to Life</p>
+        </div>
+
+      </div>
+
+      <!-- T-Shirt Section (shown conditionally via JS) -->
+      <div class="tshirt-section" id="tshirt-section">
+        <div class="tshirt-card">
+          <img src="/images/tshirt-flat-white.png" alt="Custom Church T-Shirt" class="tshirt-img" id="tshirt-img" />
+          <div class="tshirt-info">
+            <div class="tshirt-badge">👕 In Your Order</div>
+            <h3>Custom Church T-Shirt</h3>
+            <p>Your custom t-shirts are in the queue! We'll reach out to finalize your design, colors, and sizing before production begins.</p>
+          </div>
+        </div>
+      </div>
+
+    </div>
   </div>
+
+  <!-- Confetti Animation Script -->
+  <script>
+    (function() {
+      var canvas = document.getElementById('confetti-canvas');
+      var ctx = canvas.getContext('2d');
+      var particles = [];
+      var animating = true;
+
+      var colors = [
+        '#c9a227', '#e8c547', '#3d1a6e', '#5a2d8a',
+        '#f0e6ff', '#9980c0', '#d4af37', '#7b4fbf'
+      ];
+
+      function resize() {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+      }
+      resize();
+      window.addEventListener('resize', resize);
+
+      function randomRange(min, max) {
+        return Math.random() * (max - min) + min;
+      }
+
+      // Create particles
+      for (var i = 0; i < 150; i++) {
+        particles.push({
+          x: randomRange(0, canvas.width),
+          y: randomRange(-canvas.height, 0),
+          w: randomRange(4, 10),
+          h: randomRange(6, 14),
+          color: colors[Math.floor(Math.random() * colors.length)],
+          vy: randomRange(1.5, 4),
+          vx: randomRange(-1, 1),
+          rot: randomRange(0, 360),
+          rotSpeed: randomRange(-3, 3),
+          opacity: randomRange(0.6, 1),
+          shape: Math.random() > 0.5 ? 'rect' : 'circle'
+        });
+      }
+
+      function draw() {
+        if (!animating) return;
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        var allDone = true;
+        for (var i = 0; i < particles.length; i++) {
+          var p = particles[i];
+          if (p.y < canvas.height + 20) allDone = false;
+
+          p.y += p.vy;
+          p.x += p.vx;
+          p.rot += p.rotSpeed;
+          p.vy += 0.02; // gravity
+          p.vx += randomRange(-0.05, 0.05); // wobble
+
+          ctx.save();
+          ctx.translate(p.x, p.y);
+          ctx.rotate((p.rot * Math.PI) / 180);
+          ctx.globalAlpha = p.opacity;
+          ctx.fillStyle = p.color;
+
+          if (p.shape === 'rect') {
+            ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
+          } else {
+            ctx.beginPath();
+            ctx.arc(0, 0, p.w / 2, 0, Math.PI * 2);
+            ctx.fill();
+          }
+
+          ctx.restore();
+        }
+
+        if (allDone) {
+          animating = false;
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+          return;
+        }
+
+        requestAnimationFrame(draw);
+      }
+
+      draw();
+
+      // Stop confetti after 6 seconds regardless
+      setTimeout(function() {
+        animating = false;
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+      }, 6000);
+    })();
+  </script>
+
+  <!-- Snipcart T-Shirt Detection -->
+  <script>
+    /**
+     * After Snipcart loads, check if the most recent order contains
+     * a church t-shirt. If so, show the product section.
+     *
+     * Snipcart stores order data that we can access via the SDK.
+     * We also check URL params in case the redirect includes order info.
+     */
+    (function() {
+      function showTshirtSection() {
+        var section = document.getElementById('tshirt-section');
+        if (section) section.classList.add('visible');
+      }
+
+      // Method 1: Check URL params (some checkout flows pass item info)
+      var params = new URLSearchParams(window.location.search);
+      var itemsParam = params.get('items') || params.get('products') || '';
+      if (itemsParam.toLowerCase().indexOf('t-shirt') !== -1 ||
+          itemsParam.toLowerCase().indexOf('tshirt') !== -1 ||
+          itemsParam.toLowerCase().indexOf('church-t-shirt') !== -1) {
+        showTshirtSection();
+      }
+
+      // Method 2: Check Snipcart cart state after it loads
+      document.addEventListener('snipcart.ready', function() {
+        try {
+          var state = Snipcart.store.getState();
+          var items = (state && state.cart && state.cart.items && state.cart.items.items) || [];
+
+          for (var i = 0; i < items.length; i++) {
+            var item = items[i];
+            var id = (item.id || item.uniqueId || '').toLowerCase();
+            var name = (item.name || '').toLowerCase();
+
+            if (id.indexOf('church-t-shirt') !== -1 ||
+                id.indexOf('tshirt') !== -1 ||
+                name.indexOf('t-shirt') !== -1 ||
+                name.indexOf('tshirt') !== -1) {
+              showTshirtSection();
+              break;
+            }
+          }
+        } catch (e) {
+          console.log('[Divine] Could not read Snipcart cart state:', e);
+        }
+      });
+
+      // Method 3: Check sessionStorage/localStorage for recent order with t-shirt
+      try {
+        var recentOrder = sessionStorage.getItem('divine_recent_order');
+        if (recentOrder) {
+          var order = JSON.parse(recentOrder);
+          var orderItems = order.items || [];
+          for (var j = 0; j < orderItems.length; j++) {
+            if ((orderItems[j].id || '').toLowerCase().indexOf('t-shirt') !== -1 ||
+                (orderItems[j].name || '').toLowerCase().indexOf('t-shirt') !== -1) {
+              showTshirtSection();
+              break;
+            }
+          }
+        }
+      } catch (e) { /* ignore */ }
+    })();
+  </script>
 
 <script src="cart.js"></script>
 <script async src="https://cdn.snipcart.com/themes/v3.0.31/default/snipcart.js"></script>
