@@ -16,36 +16,39 @@
 
 .cart-grid { display: grid; grid-template-columns: 1fr 380px; gap: 32px; }
 
-.cart-items { background: #fff; border-radius: 16px; padding: 24px; box-shadow: 0 4px 24px rgba(61,26,110,.08); }
+.cart-items { background: #fff; border-radius: 16px; padding: 28px; box-shadow: 0 4px 24px rgba(61,26,110,.08); }
 .cart-items h2 { font-family: 'Cinzel', serif; color: var(--purple); margin-bottom: 24px; font-size: 1.3rem; }
 
 .cart-item { display: grid; grid-template-columns: 100px 1fr auto; gap: 16px; padding: 20px 0; border-bottom: 1px solid #e8e2f5; align-items: center; }
 .cart-item:last-child { border-bottom: none; }
-.cart-item-image { width: 100px; height: 100px; border-radius: 12px; object-fit: cover; background: var(--light-bg); }
+.cart-item-image { width: 100px; height: 100px; border-radius: 12px; object-fit: cover; background: var(--light-bg); border: 2px solid #e8e2f5; }
+.cart-item-image.logo-fallback { object-fit: contain; padding: 16px; background: var(--gold-pale); border-color: var(--gold); }
 .cart-item-details h3 { font-family: 'Cinzel', serif; color: var(--purple); font-size: 1.1rem; margin-bottom: 4px; }
 .cart-item-details p { color: var(--gray); font-size: 0.85rem; margin-bottom: 12px; }
 .cart-item-price { font-weight: 700; color: var(--purple); font-size: 1.2rem; }
 
-.quantity-control { display: flex; align-items: center; gap: 8px; }
-.quantity-control button { width: 32px; height: 32px; border: 2px solid #e8e2f5; background: #fff; border-radius: 8px; cursor: pointer; font-size: 1rem; color: var(--purple); transition: all 0.2s; }
-.quantity-control button:hover { border-color: var(--gold); background: var(--gold-pale); }
-.quantity-control span { min-width: 40px; text-align: center; font-weight: 600; color: var(--purple); }
+.quantity-control { display: flex; align-items: center; gap: 0; background: #f5f2fa; border-radius: 10px; overflow: hidden; border: 2px solid #e8e2f5; width: fit-content; }
+.quantity-control button { width: 40px; height: 40px; border: none; background: transparent; cursor: pointer; font-size: 1.25rem; font-weight: 600; color: var(--purple); transition: all 0.2s; display: flex; align-items: center; justify-content: center; line-height: 1; }
+.quantity-control button:hover { background: var(--gold); color: var(--dark); }
+.quantity-control button:active { background: #b8911e; }
+.quantity-control span { min-width: 44px; text-align: center; font-weight: 700; color: var(--purple); font-size: 1.05rem; background: #fff; padding: 8px 0; }
 
 .remove-btn { background: none; border: none; color: var(--gray); cursor: pointer; font-size: 0.85rem; text-decoration: underline; padding: 0; margin-top: 8px; }
 .remove-btn:hover { color: #c62828; }
 
-.cart-summary { background: #fff; border-radius: 16px; padding: 24px; box-shadow: 0 4px 24px rgba(61,26,110,.08); height: fit-content; position: sticky; top: 100px; }
-.cart-summary h2 { font-family: 'Cinzel', serif; color: var(--purple); margin-bottom: 24px; font-size: 1.3rem; }
+.cart-summary { background: #fff; border-radius: 16px; padding: 32px; box-shadow: 0 4px 24px rgba(61,26,110,.08); height: fit-content; position: sticky; top: 100px; border: 2px solid #e8e2f5; }
+.cart-summary h2 { font-family: 'Cinzel', serif; color: var(--purple); margin-bottom: 20px; font-size: 1.3rem; padding-bottom: 16px; border-bottom: 2px solid #e8e2f5; }
 
-.summary-row { display: flex; justify-content: space-between; padding: 12px 0; color: var(--gray); }
-.summary-row.total { border-top: 2px solid #e8e2f5; margin-top: 12px; padding-top: 20px; font-weight: 700; color: var(--purple); font-size: 1.2rem; }
+.summary-row { display: flex; justify-content: space-between; padding: 14px 0; color: var(--gray); font-size: 0.95rem; }
+.summary-row.total { border-top: 2px solid var(--purple); margin-top: 16px; padding-top: 20px; font-weight: 700; color: var(--purple); font-size: 1.35rem; }
 
-.checkout-btn { width: 100%; background: var(--gold); color: var(--dark); border: none; padding: 16px; border-radius: 12px; font-size: 1rem; font-weight: 700; cursor: pointer; margin-top: 24px; transition: all 0.2s; }
-.checkout-btn:hover { background: #e8c04a; transform: translateY(-2px); }
-.checkout-btn:disabled { background: #ccc; cursor: not-allowed; transform: none; }
+.checkout-btn { width: 100%; background: var(--gold); color: var(--dark); border: none; padding: 18px 24px; border-radius: 12px; font-size: 1.15rem; font-weight: 700; cursor: pointer; margin-top: 28px; transition: all 0.25s; letter-spacing: 0.5px; text-transform: uppercase; box-shadow: 0 4px 16px rgba(201,162,39,.35); }
+.checkout-btn:hover { background: #e8c04a; transform: translateY(-2px); box-shadow: 0 6px 24px rgba(201,162,39,.45); }
+.checkout-btn:active { transform: translateY(0); box-shadow: 0 2px 8px rgba(201,162,39,.3); }
+.checkout-btn:disabled { background: #ccc; cursor: not-allowed; transform: none; box-shadow: none; }
 
-.continue-shopping { display: block; text-align: center; margin-top: 16px; color: var(--purple); text-decoration: none; font-weight: 500; }
-.continue-shopping:hover { text-decoration: underline; }
+.continue-shopping { display: block; text-align: center; margin-top: 20px; color: var(--purple); text-decoration: none; font-weight: 500; font-size: 0.95rem; padding: 10px; border-radius: 8px; transition: background 0.2s; }
+.continue-shopping:hover { text-decoration: underline; background: var(--light-bg); }
 
 .empty-cart { text-align: center; padding: 64px 32px; }
 .empty-cart-icon { font-size: 4rem; margin-bottom: 24px; }
@@ -59,9 +62,12 @@
 
 @media (max-width: 900px) {
   .cart-grid { grid-template-columns: 1fr; }
-  .cart-summary { position: static; }
+  .cart-summary { position: static; padding: 24px; }
   .cart-item { grid-template-columns: 80px 1fr; }
+  .cart-item-image { width: 80px; height: 80px; }
+  .cart-item-image.logo-fallback { padding: 12px; }
   .cart-item-price { grid-column: 2; text-align: left; }
+  .checkout-btn { font-size: 1.05rem; padding: 16px 20px; }
 }
 </style>
   <link rel="stylesheet" href="https://cdn.snipcart.com/themes/v3.0.31/default/snipcart.css" />
@@ -283,7 +289,7 @@ function renderCart() {
   
   const itemsHtml = cart.map(item => `
     <div class="cart-item">
-      <img src="${item.image}" alt="${item.name}" class="cart-item-image" onerror="this.src='images/logo-icon.png'">
+      <img src="${item.image}" alt="${item.name}" class="cart-item-image" onerror="this.src='images/logo-icon.png'; this.classList.add('logo-fallback');">
       <div class="cart-item-details">
         <h3>${item.name}</h3>
         <p>${item.options || ''}</p>
