@@ -822,14 +822,11 @@ body.snipcart-sidecart--opened {
 }
 
 /* ========================================
-   SNIPCART CLOSE BUTTON FIX - AGGRESSIVE
+   SNIPCART CLOSE BUTTON FIX - WORKING
    ======================================== */
-.snipcart-cart-header__close-button,
-.snipcart-modal__close,
-button[aria-label="Close"],
-button[aria-label="close"],
-.snipcart-cart-header button[class*="close"],
-.snipcart-cart-header button[class*="Close"] {
+
+/* Target the close button directly */
+.snipcart-cart-header__close-button {
   background: #c9a227 !important;
   border: 2px solid #c9a227 !important;
   border-radius: 8px !important;
@@ -838,37 +835,32 @@ button[aria-label="close"],
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
-  position: relative !important;
-  color: #1a0d30 !important;
-  font-size: 28px !important;
-  font-weight: 300 !important;
-  line-height: 1 !important;
-  overflow: visible !important;
-}
-
-.snipcart-cart-header__close-button svg,
-.snipcart-modal__close svg,
-.snipcart-cart-header__close-button path,
-.snipcart-modal__close path {
-  display: none !important;
-  visibility: hidden !important;
-  opacity: 0 !important;
-}
-
-.snipcart-cart-header__close-button::before,
-.snipcart-modal__close::before,
-.snipcart-cart-header__close-button::after,
-.snipcart-modal__close::after {
-  content: "×" !important;
   color: #1a0d30 !important;
   font-size: 32px !important;
   font-weight: 300 !important;
-  position: absolute !important;
-  top: 50% !important;
-  left: 50% !important;
-  transform: translate(-50%, -50%) !important;
   line-height: 1 !important;
+  text-align: center !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+}
+
+/* Hide the SVG icon inside */
+.snipcart-cart-header__close-button svg,
+.snipcart-cart-header__close-button .snipcart__icon,
+.snipcart-cart-header__close-button path {
+  display: none !important;
+}
+
+/* Use ::before for the X - simpler and more reliable */
+.snipcart-cart-header__close-button::before {
+  content: "×" !important;
+  color: #1a0d30 !important;
+  font-size: 36px !important;
+  font-weight: 300 !important;
+  line-height: 44px !important;
+  height: 44px !important;
+  width: 44px !important;
+  text-align: center !important;
   display: block !important;
-  pointer-events: none !important;
-  z-index: 9999 !important;
+  margin-top: -2px !important;
 }
