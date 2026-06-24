@@ -72,6 +72,32 @@
 </style>
   <link rel="stylesheet" href="https://cdn.snipcart.com/themes/v3.0.31/default/snipcart.css" />
   <link rel="stylesheet" href="/snipcart-custom.css?v=2" />
+  <style>
+    /* INLINE OVERRIDE: Fix Snipcart close button */
+    .snipcart-cart-header__close-button {
+      background: #c9a227 !important;
+      border: 2px solid #c9a227 !important;
+      border-radius: 8px !important;
+      width: 44px !important;
+      height: 44px !important;
+      position: relative !important;
+      overflow: hidden !important;
+    }
+    .snipcart-cart-header__close-button svg,
+    .snipcart-cart-header__close-button path {
+      display: none !important;
+    }
+    .snipcart-cart-header__close-button::before {
+      content: '×' !important;
+      color: #1a0d30 !important;
+      font-size: 28px !important;
+      font-weight: 300 !important;
+      position: absolute !important;
+      top: 50% !important;
+      left: 50% !important;
+      transform: translate(-50%, -50%) !important;
+    }
+  </style>
 </head>
 <body>
 
