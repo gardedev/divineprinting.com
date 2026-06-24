@@ -766,23 +766,39 @@ src="https://www.facebook.com/tr?id=2413483535782004&ev=PageView&noscript=1"
 <script async src="https://cdn.snipcart.com/themes/v3.0.31/default/snipcart.js"></script>
 <script src="/snipcart-custom.js"></script>
 <script>
-  // DIRECT FIX: Add X to close button
-  (function fixCloseButton() {
-    function addXToCloseButton() {
-      const closeBtn = document.querySelector('.snipcart-cart-header__close-button');
-      if (closeBtn && !closeBtn.querySelector('.custom-x')) {
-        closeBtn.style.cssText = 'background:#c9a227!important;border:2px solid #c9a227!important;border-radius:8px!important;width:44px!important;height:44px!important;position:relative!important;display:flex!important;align-items:center!important;justify-content:center!important';
-        const x = document.createElement('span');
-        x.className = 'custom-x';
-        x.textContent = '×';
-        x.style.cssText = 'color:#1a0d30!important;font-size:32px!important;font-weight:300!important;line-height:1!important;pointer-events:none!important';
-        closeBtn.innerHTML = '';
-        closeBtn.appendChild(x);
+  // DIRECT FIX: Add X to close button - AGGRESSIVE
+(function() {
+  function fixButton() {
+    // Try multiple selectors
+    const selectors = [
+      '.snipcart-cart-header__close-button',
+      '.snipcart-modal__close',
+      '[aria-label="Close cart"]',
+      '.snipcart-cart-header button[class*="close"]'
+    ];
+    
+    for (const selector of selectors) {
+      const btn = document.querySelector(selector);
+      if (btn && !btn.dataset.fixed) {
+        btn.dataset.fixed = 'true';
+        btn.style.cssText = 'background:#c9a227!important;border:2px solid #c9a227!important;border-radius:8px!important;width:44px!important;height:44px!important;position:relative!important;display:flex!important;align-items:center!important;justify-content:center!important;color:#1a0d30!important;font-size:24px!important';
+        btn.innerHTML = '<span style="color:#1a0d30!important;font-size:28px!important;line-height:1!important">&times;</span>';
+        console.log('Fixed close button:', selector);
       }
     }
-    document.addEventListener('snipcart.ready', addXToCloseButton);
-    setInterval(addXToCloseButton, 500);
-  })();
+  }
+  
+  // Run immediately and on events
+  setInterval(fixButton, 200);
+  document.addEventListener('snipcart.ready', fixButton);
+  document.addEventListener('click', function(e) {
+    if (e.target.closest('.snipcart-checkout') || e.target.closest('[class*="cart"]')) {
+      setTimeout(fixButton, 100);
+      setTimeout(fixButton, 500);
+      setTimeout(fixButton, 1000);
+    }
+  });
+})();
 </script>
 <div hidden id="snipcart" data-api-key="ZjljZmI1ODItM2VmOS00M2ZhLTg3ZGItNmUwY2NiZjViMjQ4NjM5MTE0Njk1NzE1MTQwNTE3" data-config-modal-style="side"></div>
 </body>
