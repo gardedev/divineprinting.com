@@ -820,3 +820,32 @@ body.snipcart-sidecart--opened {
   .footer-inner { grid-template-columns: 1fr; }
   .hero { padding: 56px 20px 44px; }
 }
+
+/* ========================================
+   SNIPCART CLOSE BUTTON FIX
+   ======================================== */
+.snipcart-cart-header__close-button {
+  background: #c9a227 !important;
+  border: 2px solid #c9a227 !important;
+  border-radius: 8px !important;
+  width: 44px !important;
+  height: 44px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  position: relative !important;
+}
+.snipcart-cart-header__close-button svg {
+  display: none !important;
+}
+.snipcart-cart-header__close-button::after {
+  content: "×" !important;
+  color: #1a0d30 !important;
+  font-size: 28px !important;
+  font-weight: 300 !important;
+  position: absolute !important;
+  top: 50% !important;
+  left: 50% !important;
+  transform: translate(-50%, -50%) !important;
+  line-height: 1 !important;
+}
