@@ -840,8 +840,8 @@ button.snipcart-button-primary:hover {
 
 /* Fix close button in header - ensure X icon is visible */
 .snipcart-cart-header__close-button {
-  color: #c9a227 !important;
-  background: transparent !important;
+  color: #1a0d30 !important;
+  background: #c9a227 !important;
   border: 2px solid #c9a227 !important;
   border-radius: 8px !important;
   width: 40px !important;
@@ -852,21 +852,49 @@ button.snipcart-button-primary:hover {
   cursor: pointer !important;
   font-size: 1.5rem !important;
   line-height: 1 !important;
+  position: relative !important;
+  overflow: visible !important;
 }
 
-.snipcart-cart-header__close-button::before {
-  content: '×' !important;
-  color: #c9a227 !important;
-  font-size: 1.5rem !important;
-  font-weight: 300 !important;
+/* Force X icon visibility using SVG path styling */
+.snipcart-cart-header__close-button svg,
+.snipcart-cart-header__close-button path,
+.snipcart-cart-header__close-button * {
+  fill: #1a0d30 !important;
+  color: #1a0d30 !important;
+  stroke: #1a0d30 !important;
+}
+
+/* Alternative: Add X as text content if SVG fails */
+.snipcart-cart-header__close-button::after {
+  content: '✕' !important;
+  color: #1a0d30 !important;
+  font-size: 1.25rem !important;
+  font-weight: 700 !important;
+  position: absolute !important;
+  top: 50% !important;
+  left: 50% !important;
+  transform: translate(-50%, -50%) !important;
+  line-height: 1 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 100% !important;
+  height: 100% !important;
+  pointer-events: none !important;
 }
 
 .snipcart-cart-header__close-button:hover {
-  background: #c9a227 !important;
+  background: #e8c04a !important;
+  border-color: #e8c04a !important;
 }
 
-.snipcart-cart-header__close-button:hover::before {
+.snipcart-cart-header__close-button:hover svg,
+.snipcart-cart-header__close-button:hover path,
+.snipcart-cart-header__close-button:hover::after {
   color: #1a0d30 !important;
+  fill: #1a0d30 !important;
+  stroke: #1a0d30 !important;
 }
 
 /* Fix cart footer layout - remove empty whitespace */
