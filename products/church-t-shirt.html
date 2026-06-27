@@ -434,8 +434,8 @@
         data-item-id="church-t-shirt" 
         data-item-name="Custom Church T-Shirt" 
         data-item-price="15.00" 
-        data-item-url="https://divineprinting.com/products/church-t-shirt.html"
-        data-item-description="Custom designed church t-shirt"
+        data-item-url="/products/church-t-shirt.html"
+        data-item-description="Custom designed church t-shirt. Pricing: 1-5 ($25 each) | 6-10 ($22 each) | 11-24 ($18 each) | 25-49 ($15 each) | 50-99 ($13 each) | 100+ ($11 each)"
         data-item-custom1-name="Text on Shirt" data-item-custom1-value="" data-item-custom1-type="readonly"
         data-item-custom2-name="Design" data-item-custom2-value="" data-item-custom2-type="readonly"
         data-item-custom3-name="Shirt Color" data-item-custom3-value="" data-item-custom3-type="readonly"
@@ -471,14 +471,9 @@ function addToCart() {
     : '';
   var designType = (typeof state !== 'undefined' && state.uploadedImage) ? 'Custom Upload' : 'Standard Design';
 
-  // Determine price tier
+  // Use fixed unit price of $15 for Snipcart validation
+  // Tiered pricing is shown in description and handled via custom field
   var price = 15.00;
-  if (quantity <= 5) price = 25.00;
-  else if (quantity <= 10) price = 22.00;
-  else if (quantity <= 24) price = 18.00;
-  else if (quantity <= 49) price = 15.00;
-  else if (quantity <= 99) price = 13.00;
-  else price = 11.00;
 
   // Try Snipcart JS API first (v3)
   if (window.Snipcart && Snipcart.api && Snipcart.api.cart && Snipcart.api.cart.items) {
@@ -488,7 +483,7 @@ function addToCart() {
       price: price,
       quantity: quantity,
       url: '/products/church-t-shirt.html',
-      description: 'Custom designed church t-shirt',
+      description: 'Custom designed church t-shirt. Pricing: 1-5 ($25 each) | 6-10 ($22 each) | 11-24 ($18 each) | 25-49 ($15 each) | 50-99 ($13 each) | 100+ ($11 each)',
       customFields: [
         { name: 'Text on Shirt', value: texts || 'None' },
         { name: 'Design', value: designName },

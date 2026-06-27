@@ -981,21 +981,20 @@ function updateCartButton() {
   const quantity = parseInt(document.getElementById('quantityInput')?.value || '25');
   const texts = state.texts.filter(t => t.text).map(t => t.text).join(', ') || 'None';
   
-  // Determine price based on quantity
-  let price = 15.00;
+  // Determine tier for display purposes only (price is fixed at $15 for Snipcart validation)
   let tier = '25-49';
-  if (quantity <= 5) { price = 25.00; tier = '1-5'; }
-  else if (quantity <= 10) { price = 22.00; tier = '6-10'; }
-  else if (quantity <= 24) { price = 18.00; tier = '11-24'; }
-  else if (quantity <= 49) { price = 15.00; tier = '25-49'; }
-  else if (quantity <= 99) { price = 13.00; tier = '50-99'; }
-  else { price = 11.00; tier = '100+'; }
+  if (quantity <= 5) { tier = '1-5'; }
+  else if (quantity <= 10) { tier = '6-10'; }
+  else if (quantity <= 24) { tier = '11-24'; }
+  else if (quantity <= 49) { tier = '25-49'; }
+  else if (quantity <= 99) { tier = '50-99'; }
+  else { tier = '100+'; }
   
   // Get design data for webhook
   const designData = getDesignDataForWebhook();
   
-  // Update data attributes
-  btn.setAttribute('data-item-price', price.toFixed(2));
+  // Update data attributes (keep price at $15 for Snipcart crawling validation)
+  // Tiered pricing is handled via custom field and description
   btn.setAttribute('data-item-quantity', quantity);
   btn.setAttribute('data-item-custom1-value', texts);
   btn.setAttribute('data-item-custom2-value', designName);
@@ -1008,8 +1007,8 @@ function updateCartButton() {
   // Store design data in a global variable for the webhook to access
   window.divinePrintingDesignData = designData;
   
-  // Update button text
-  btn.textContent = `Add to Cart - $${price.toFixed(2)} each`;
+  // Update button text (generic, price is shown in cart)
+  btn.textContent = `Add to Cart`;
   
   // Generate design preview image
   const canvas = document.getElementById('tshirtCanvas');
