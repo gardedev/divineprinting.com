@@ -2,17 +2,16 @@
 const express = require('express');
 const cors = require('cors');
 const crypto = require('crypto');
-const { DynamoDBClient } = require('@aws-sdk/client-dynamodb');
-const { DynamoDBDocumentClient, GetCommand, PutCommand, QueryCommand } = require('@aws-sdk/lib-dynamodb');
+const { GetCommand, PutCommand, QueryCommand } = require('@aws-sdk/lib-dynamodb');
+
+// Shared DynamoDB client (initialized once, reused across all modules)
+const { docClient } = require('./utils/dynamoDbClient');
+
+// Route modules
+const productRoutes = require('./products/index');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-
-// AWS config - uses IAM role on Lightsail, or env vars locally
-const client = new DynamoDBClient({ 
-  region: process.env.AWS_REGION || 'us-east-1'
-});
-const docClient = DynamoDBDocumentClient.from(client);
 
 const CUSTOMERS_TABLE = process.env.CUSTOMERS_TABLE || 'divine-printing-customers';
 const ORDERS_TABLE = process.env.ORDERS_TABLE || 'divine-printing-orders';
@@ -20,6 +19,9 @@ const JWT_SECRET = process.env.JWT_SECRET || 'change-this-secret-key';
 
 app.use(cors());
 app.use(express.json());
+
+// Product admin routes
+app.use('/api/admin/products', productRoutes);
 
 // Health check
 app.get('/', (req, res) => {
