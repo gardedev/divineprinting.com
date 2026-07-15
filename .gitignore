@@ -1,0 +1,16 @@
+
+# Dependencies
+node_modules/
+**/node_modules/
+
+# Test output
+playwright-report/
+test-results/
+coverage/
+
+# Environment and runtime files
+.env
+.env.*
+!.env.example
+*.log
+.DS_Store
