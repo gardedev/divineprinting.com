@@ -1,0 +1,37 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Divine Printing Products Table
+
+Resources:
+  ProductsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: divine-printing-products
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: productId
+          AttributeType: S
+        - AttributeName: slug
+          AttributeType: S
+      KeySchema:
+        - AttributeName: productId
+          KeyType: HASH
+      GlobalSecondaryIndexes:
+        - IndexName: slug-index
+          KeySchema:
+            - AttributeName: slug
+              KeyType: HASH
+          Projection:
+            ProjectionType: ALL
+      Tags:
+        - Key: Name
+          Value: divine-printing-products
+        - Key: Environment
+          Value: production
+
+Outputs:
+  ProductsTableName:
+    Description: Name of the DynamoDB Products table
+    Value: !Ref ProductsTable
+  ProductsTableArn:
+    Description: ARN of the DynamoDB Products table
+    Value: !GetAtt ProductsTable.Arn
