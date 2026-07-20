@@ -4,11 +4,14 @@ const cors = require('cors');
 const crypto = require('crypto');
 const { GetCommand, PutCommand, QueryCommand } = require('@aws-sdk/lib-dynamodb');
 
+const logger = require('./utils/logger');
+
 // Shared DynamoDB client (initialized once, reused across all modules)
 const { docClient } = require('./utils/dynamoDbClient');
 
 // Route modules
 const productRoutes = require('./products/index');
+const publicProductRoutes = require('./products/publicProductRoutes');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -22,6 +25,9 @@ app.use(express.json());
 
 // Product admin routes
 app.use('/api/admin/products', productRoutes);
+
+// Public product routes (unauthenticated)
+app.use('/api/products', publicProductRoutes);
 
 // Health check
 app.get('/', (req, res) => {
@@ -82,7 +88,7 @@ app.post('/api/auth/register', async (req, res) => {
 
     res.status(201).json({ success: true, token: generateToken(email) });
   } catch (error) {
-    console.error('Register error:', error);
+    logger.error('Register error', error, { route: 'POST /api/auth/register' });
     res.status(500).json({ error: 'Server error' });
   }
 });
@@ -112,7 +118,7 @@ app.post('/api/auth/login', async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Login error:', error);
+    logger.error('Login error', error, { route: 'POST /api/auth/login' });
     res.status(500).json({ error: 'Server error' });
   }
 });
@@ -144,7 +150,7 @@ app.post('/api/auth/verify', async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Verify error:', error);
+    logger.error('Verify error', error, { route: 'POST /api/auth/verify' });
     res.status(500).json({ error: 'Server error' });
   }
 });
@@ -172,7 +178,7 @@ app.get('/api/orders', async (req, res) => {
       count: result.Count || 0,
     });
   } catch (error) {
-    console.error('Orders error:', error);
+    logger.error('Orders error', error, { route: 'GET /api/orders' });
     res.status(500).json({ error: 'Server error' });
   }
 });
@@ -235,15 +241,15 @@ app.post('/api/webhook/snipcart', async (req, res) => {
       Item: orderItem,
     }));
 
-    console.log('Order saved:', order.token);
+    logger.info('Order saved', { orderId: order.token });
     res.json({ success: true, orderId: order.token });
 
   } catch (error) {
-    console.error('Webhook error:', error);
+    logger.error('Webhook error', error, { route: 'POST /api/webhook/snipcart' });
     res.status(500).json({ error: 'Server error' });
   }
 });
 
 app.listen(PORT, () => {
-  console.log(`Divine Printing API running on port ${PORT}`);
+  logger.info('Divine Printing API running', { port: PORT });
 });

@@ -18,6 +18,7 @@ const router = express.Router();
 
 const productService = require('./productService');
 const { adminAuth } = require('../middleware/adminAuth');
+const logger = require('../utils/logger');
 
 // Apply admin auth guard to every route in this router.
 router.use(adminAuth);
@@ -249,7 +250,7 @@ router.use((err, req, res, next) => {
   const message = err.message || 'Internal server error';
 
   if (status === 500) {
-    console.error('[admin/products] Unexpected error:', err);
+    logger.error('[admin/products] Unexpected error', err);
   }
 
   return res.status(status).json({ error: message });
