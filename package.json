@@ -8,7 +8,9 @@
     "test:ui": "playwright test --ui",
     "test:debug": "playwright test --debug",
     "test:unit": "jest --no-coverage",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "test:integration": "jest --config jest.integration.config.js --runInBand --forceExit",
+    "test:all": "npm run test:unit && npm run test:integration"
   },
   "repository": {
     "type": "git",
@@ -23,7 +25,8 @@
   "homepage": "https://github.com/gardedev/divineprinting.com#readme",
   "devDependencies": {
     "@playwright/test": "^1.59.1",
-    "jest": "^30.4.2"
+    "jest": "^30.4.2",
+    "supertest": "^7.2.2"
   },
   "dependencies": {
     "@aws-sdk/client-dynamodb": "^3.1085.0",

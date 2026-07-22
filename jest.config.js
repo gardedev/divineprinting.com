@@ -9,3 +9,4 @@ module.exports = {
     '<rootDir>/tests/'
   ]
 };
+

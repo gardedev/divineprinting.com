@@ -27,7 +27,7 @@ function adminAuth(req, res, next) {
   // -------------------------------------------------------------------------
   return res.status(503).json({
     error: 'Admin authentication is not yet configured.',
-    blocker: 'PLACEHOLDER_ADMIN_AUTH — implement token verification before enabling.',
+    code: 'AUTH_NOT_CONFIGURED',
   });
 
   // When real auth is in place the handler should:
