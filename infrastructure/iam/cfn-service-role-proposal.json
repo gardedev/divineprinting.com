@@ -1,0 +1,196 @@
+{
+  "_comment": [
+    "PROPOSAL ONLY - READ-ONLY ASSESSMENT. Do not apply without explicit approval.",
+    "",
+    "Least-privilege CloudFormation Service Role for the divine-printing-cognito-v2 stack.",
+    "This role would be passed to CloudFormation at change-set creation time via --role-arn.",
+    "",
+    "Associating a service role with an existing stack requires an UPDATE change-set with",
+    "--role-arn specified. This permanently associates the role until it is explicitly removed.",
+    "PERMANENT STACK ASSOCIATION REQUIRES EXPLICIT APPROVAL before execution.",
+    "",
+    "Why a service role matters:",
+    "  - Without a service role, CloudFormation uses the caller's credentials to provision",
+    "    resources. This means the openclaw-automation caller needs direct IAM permissions",
+    "    for every resource type in the stack (DynamoDB, Lambda, Cognito, API Gateway, IAM).",
+    "  - With a service role, the caller only needs cloudformation:CreateChangeSet,",
+    "    cloudformation:ExecuteChangeSet, cloudformation:Describe*, and iam:PassRole.",
+    "    All resource-level actions are performed by the service role, not the caller.",
+    "  - This follows the principle of least privilege for human/automation operators.",
+    "",
+    "Scoped to the two-stage Sprint 4 import-and-update workflow:",
+    "  Stage 1 (IMPORT change-set): Adopts CustomersTableV2 into stack management.",
+    "  Stage 2 (UPDATE change-set): Cognito User Pool hardening, Groups creation,",
+    "    AppClient update, AutoConfirmFunction + AutoConfirmPermission removal.",
+    "    Legacy DynamoDB tables, LambdaExecutionRole, other Lambda functions, and",
+    "    API Gateway are semantically unchanged (zero-unintended-diff policy).",
+    "",
+    "Usage (after approval):",
+    "  aws cloudformation create-change-set \\",
+    "    --stack-name divine-printing-cognito-v2 \\",
+    "    --role-arn arn:aws:iam::911762440868:role/divine-printing-cfn-service-role \\",
+    "    --change-set-name ... \\",
+    "    --template-body file://..."
+  ],
+
+  "TrustPolicy": {
+    "_comment": [
+      "Trust policy - allows CloudFormation service to assume this role.",
+      "Conditions restrict trust to the specific stack ARN and source account,",
+      "preventing confused-deputy attacks from other stacks or accounts."
+    ],
+    "Version": "2012-10-17",
+    "Statement": [
+      {
+        "Sid": "AllowCloudFormationToAssumeRole",
+        "Effect": "Allow",
+        "Principal": {
+          "Service": "cloudformation.amazonaws.com"
+        },
+        "Action": "sts:AssumeRole",
+        "Condition": {
+          "StringEquals": {
+            "aws:SourceAccount": "911762440868"
+          },
+          "ArnLike": {
+            "aws:SourceArn": "arn:aws:cloudformation:us-east-1:911762440868:stack/divine-printing-cognito-v2/*"
+          }
+        }
+      }
+    ]
+  },
+
+  "PermissionsPolicy": {
+    "_comment": [
+      "Permissions policy scoped to exactly the resource types and ARN patterns",
+      "required for the two-stage Sprint 4 import-and-update workflow:",
+      "  - CustomersTableV2 IMPORT (describe + tag only; no creation/deletion)",
+      "  - Cognito User Pool update, Groups create/update/delete, AppClient update",
+      "  - AutoConfirmFunction and AutoConfirmPermission removal (Lambda delete actions)",
+      "  - IAM read-only on LambdaExecutionRole (unchanged; CloudFormation drift-check only)",
+      "  - No ApiGateway permissions (no API Gateway resources changed in this workflow)",
+      "  - No legacy DynamoDB table permissions (not being modified by this update)",
+      "  - No s3:* or logs:* (not required for this specific service role purpose)",
+      "  - No cognito-idp:CreateUserPool or cognito-idp:DeleteUserPool (updating existing pool)",
+      "  - iam:PassRole is omitted: no new Lambda execution role is created or modified",
+      "    through this stack update (existing LambdaExecutionRole is unchanged)."
+    ],
+    "Version": "2012-10-17",
+    "Statement": [
+      {
+        "Sid": "CustomersTableV2ImportAndTag",
+        "Effect": "Allow",
+        "Action": [
+          "dynamodb:DescribeTable",
+          "dynamodb:DescribeTimeToLive",
+          "dynamodb:DescribeContinuousBackups",
+          "dynamodb:ListTagsOfResource",
+          "dynamodb:TagResource",
+          "dynamodb:UntagResource"
+        ],
+        "Resource": [
+          "arn:aws:dynamodb:us-east-1:911762440868:table/divine-printing-customers-v2",
+          "arn:aws:dynamodb:us-east-1:911762440868:table/divine-printing-customers-v2/index/*"
+        ]
+      },
+      {
+        "Sid": "CognitoUserPoolUpdate",
+        "Effect": "Allow",
+        "Action": [
+          "cognito-idp:DescribeUserPool",
+          "cognito-idp:UpdateUserPool",
+          "cognito-idp:SetUserPoolMfaConfig",
+          "cognito-idp:GetUserPoolMfaConfig",
+          "cognito-idp:AddCustomAttributes",
+          "cognito-idp:TagResource",
+          "cognito-idp:UntagResource",
+          "cognito-idp:ListTagsForResource"
+        ],
+        "Resource": [
+          "arn:aws:cognito-idp:us-east-1:911762440868:userpool/us-east-1_hs1jWXB87"
+        ]
+      },
+      {
+        "Sid": "CognitoUserPoolClientManagement",
+        "Effect": "Allow",
+        "Action": [
+          "cognito-idp:CreateUserPoolClient",
+          "cognito-idp:DeleteUserPoolClient",
+          "cognito-idp:DescribeUserPoolClient",
+          "cognito-idp:UpdateUserPoolClient"
+        ],
+        "Resource": [
+          "arn:aws:cognito-idp:us-east-1:911762440868:userpool/us-east-1_hs1jWXB87"
+        ]
+      },
+      {
+        "Sid": "CognitoUserPoolDomainManagement",
+        "Effect": "Allow",
+        "Action": [
+          "cognito-idp:CreateUserPoolDomain",
+          "cognito-idp:DeleteUserPoolDomain",
+          "cognito-idp:DescribeUserPoolDomain"
+        ],
+        "Resource": [
+          "arn:aws:cognito-idp:us-east-1:911762440868:userpool/us-east-1_hs1jWXB87"
+        ]
+      },
+      {
+        "Sid": "CognitoGroupManagement",
+        "Effect": "Allow",
+        "Action": [
+          "cognito-idp:CreateGroup",
+          "cognito-idp:DeleteGroup",
+          "cognito-idp:GetGroup",
+          "cognito-idp:UpdateGroup"
+        ],
+        "Resource": [
+          "arn:aws:cognito-idp:us-east-1:911762440868:userpool/us-east-1_hs1jWXB87"
+        ]
+      },
+      {
+        "Sid": "LambdaAutoConfirmRemoval",
+        "Effect": "Allow",
+        "Action": [
+          "lambda:GetFunction",
+          "lambda:GetFunctionConfiguration",
+          "lambda:GetPolicy",
+          "lambda:DeleteFunction",
+          "lambda:RemovePermission",
+          "lambda:ListVersionsByFunction"
+        ],
+        "Resource": [
+          "arn:aws:lambda:us-east-1:911762440868:function:divine-printing-auto-confirm"
+        ]
+      },
+      {
+        "Sid": "LambdaUnchangedFunctionsRead",
+        "Effect": "Allow",
+        "Action": [
+          "lambda:GetFunction",
+          "lambda:GetFunctionConfiguration",
+          "lambda:GetPolicy",
+          "lambda:ListVersionsByFunction"
+        ],
+        "Resource": [
+          "arn:aws:lambda:us-east-1:911762440868:function:divine-printing-webhook",
+          "arn:aws:lambda:us-east-1:911762440868:function:divine-printing-orders",
+          "arn:aws:lambda:us-east-1:911762440868:function:divine-printing-designs"
+        ]
+      },
+      {
+        "Sid": "IAMLambdaExecutionRoleRead",
+        "Effect": "Allow",
+        "Action": [
+          "iam:GetRole",
+          "iam:GetRolePolicy",
+          "iam:ListRolePolicies",
+          "iam:ListAttachedRolePolicies"
+        ],
+        "Resource": [
+          "arn:aws:iam::911762440868:role/divine-printing-cognito-v2-LambdaExecutionRole-*"
+        ]
+      }
+    ]
+  }
+}

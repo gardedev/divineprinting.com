@@ -1,0 +1,61 @@
+{
+  "_comment": [
+    "Minimum-necessary caller IAM policy for the 'openclaw-automation' principal.",
+    "Covers the two-step deployment sequence for divine-printing-cognito-v2:",
+    "  Step 1 - IMPORT change-set (cognito-import-only.yaml)",
+    "  Step 2 - UPDATE change-set (cognito-update.yaml)",
+    "",
+    "Notes:",
+    "  - Underlying service permissions (Cognito, DynamoDB, Lambda, API Gateway)",
+    "    belong ONLY on the CloudFormation service role (cfn-service-role-proposal.json),",
+    "    not on this caller policy.",
+    "  - iam:PassRole is scoped to the specific CFN service role ARN only,",
+    "    with iam:PassedToService condition restricting to cloudformation.amazonaws.com.",
+    "  - Resource ARNs are tightened to the specific stack identifier.",
+    "  - This policy document is for ASSESSMENT ONLY. Do not apply directly."
+  ],
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "CloudFormationChangeSetManagement",
+      "Effect": "Allow",
+      "Action": [
+        "cloudformation:CreateChangeSet",
+        "cloudformation:DescribeChangeSet",
+        "cloudformation:ExecuteChangeSet",
+        "cloudformation:DeleteChangeSet",
+        "cloudformation:ListChangeSets",
+        "cloudformation:DescribeStacks",
+        "cloudformation:DescribeStackEvents",
+        "cloudformation:DescribeStackResources",
+        "cloudformation:GetTemplate"
+      ],
+      "Resource": [
+        "arn:aws:cloudformation:us-east-1:911762440868:stack/divine-printing-cognito-v2/*"
+      ]
+    },
+    {
+      "Sid": "CloudFormationValidateTemplate",
+      "Effect": "Allow",
+      "Action": [
+        "cloudformation:ValidateTemplate"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "PassRoleToCloudFormationServiceRole",
+      "Effect": "Allow",
+      "Action": [
+        "iam:PassRole"
+      ],
+      "Resource": [
+        "arn:aws:iam::911762440868:role/divine-printing-cfn-service-role"
+      ],
+      "Condition": {
+        "StringEquals": {
+          "iam:PassedToService": "cloudformation.amazonaws.com"
+        }
+      }
+    }
+  ]
+}

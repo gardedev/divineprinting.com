@@ -1,0 +1,560 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Divine Printing Cognito Authentication with Saved Designs
+
+Resources:
+  # ─── Cognito User Pool ───────────────────────────────────────────────────────
+  # Semantically UNCHANGED from deployed cognito-cloudformation-v2.yaml baseline.
+  UserPool:
+    Type: AWS::Cognito::UserPool
+    Properties:
+      UserPoolName: divine-printing-users
+      # Auto-verification disabled - using Lambda trigger instead
+      # AutoVerifiedAttributes:
+      #   - email
+      Policies:
+        PasswordPolicy:
+          MinimumLength: 8
+          RequireUppercase: true
+          RequireLowercase: true
+          RequireNumbers: true
+          RequireSymbols: false
+      Schema:
+        - AttributeDataType: String
+          Name: name
+          Required: true
+          Mutable: true
+      EmailConfiguration:
+        EmailSendingAccount: COGNITO_DEFAULT
+      LambdaConfig:
+        PreSignUp: !GetAtt AutoConfirmFunction.Arn
+
+  # ─── Cognito User Pool Client ─────────────────────────────────────────────────
+  # Semantically UNCHANGED from deployed cognito-cloudformation-v2.yaml baseline.
+  UserPoolClient:
+    Type: AWS::Cognito::UserPoolClient
+    Properties:
+      ClientName: divine-printing-web
+      UserPoolId: !Ref UserPool
+      GenerateSecret: false
+      ExplicitAuthFlows:
+        - ALLOW_USER_SRP_AUTH
+        - ALLOW_REFRESH_TOKEN_AUTH
+        - ALLOW_USER_PASSWORD_AUTH
+      SupportedIdentityProviders:
+        - COGNITO
+      CallbackURLs:
+        - https://divineprinting.com/account/account.html
+        - https://www.divineprinting.com/account/account.html
+        - http://localhost:3000/account/account.html
+      LogoutURLs:
+        - https://divineprinting.com/account/account.html
+        - https://www.divineprinting.com/account/account.html
+        - http://localhost:3000/account/account.html
+      AllowedOAuthFlows:
+        - code
+        - implicit
+      AllowedOAuthScopes:
+        - email
+        - openid
+        - profile
+      AllowedOAuthFlowsUserPoolClient: true
+
+  # ─── Cognito Domain for hosted UI ────────────────────────────────────────────
+  # Semantically UNCHANGED from deployed cognito-cloudformation-v2.yaml baseline.
+  UserPoolDomain:
+    Type: AWS::Cognito::UserPoolDomain
+    Properties:
+      Domain: divine-printing-auth
+      UserPoolId: !Ref UserPool
+
+  # ─── DynamoDB Tables (legacy) ─────────────────────────────────────────────────
+  # Semantically UNCHANGED from deployed cognito-cloudformation-v2.yaml baseline.
+  CustomersTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: divine-printing-customers
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: email
+          AttributeType: S
+      KeySchema:
+        - AttributeName: email
+          KeyType: HASH
+
+  OrdersTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: divine-printing-orders
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: email
+          AttributeType: S
+        - AttributeName: orderId
+          AttributeType: S
+      KeySchema:
+        - AttributeName: email
+          KeyType: HASH
+        - AttributeName: orderId
+          KeyType: RANGE
+
+  DesignsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: divine-printing-designs
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: email
+          AttributeType: S
+        - AttributeName: designId
+          AttributeType: S
+      KeySchema:
+        - AttributeName: email
+          KeyType: HASH
+        - AttributeName: designId
+          KeyType: RANGE
+
+  # ─── CustomersTableV2 (IMPORT ONLY) ──────────────────────────────────────────
+  # This is the ONLY addition relative to cognito-cloudformation-v2.yaml.
+  #
+  # This resource describes the EXISTING live table divine-printing-customers-v2.
+  # It must be imported via a CloudFormation IMPORT change-set – CloudFormation
+  # will not create or modify the physical table; it adopts management of it.
+  #
+  # Key properties match the verified live table state:
+  #   - TableName:   divine-printing-customers-v2
+  #   - BillingMode: PAY_PER_REQUEST (on-demand)
+  #   - PK:          customerId (HASH)
+  #   - GSI:         EmailIndex (emailNormalized HASH, createdAt RANGE, ALL projection)
+  #   - PITR:        ABSENT (live table has PITR not configured; adding
+  #                  PointInTimeRecoverySpecification would be a live-state mismatch)
+  #   - DeletionPolicy: Retain  – CloudFormation must never delete this live table
+  #   - UpdateReplacePolicy: Retain – CloudFormation must never replace-and-delete it
+  CustomersTableV2:
+    Type: AWS::DynamoDB::Table
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      TableName: divine-printing-customers-v2
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: customerId
+          AttributeType: S
+        - AttributeName: emailNormalized
+          AttributeType: S
+        - AttributeName: createdAt
+          AttributeType: S
+      KeySchema:
+        - AttributeName: customerId
+          KeyType: HASH
+      GlobalSecondaryIndexes:
+        - IndexName: EmailIndex
+          KeySchema:
+            - AttributeName: emailNormalized
+              KeyType: HASH
+            - AttributeName: createdAt
+              KeyType: RANGE
+          Projection:
+            ProjectionType: ALL
+      Tags:
+        - Key: Project
+          Value: divine-printing
+        - Key: ManagedBy
+          Value: cloudformation
+        - Key: ADR
+          Value: "0003"
+        - Key: Sprint
+          Value: "4"
+
+  # ─── IAM Role for Lambda ──────────────────────────────────────────────────────
+  # Semantically UNCHANGED from deployed cognito-cloudformation-v2.yaml baseline.
+  LambdaExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: DynamoDBAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - dynamodb:GetItem
+                  - dynamodb:PutItem
+                  - dynamodb:DeleteItem
+                  - dynamodb:Query
+                Resource:
+                  - !GetAtt CustomersTable.Arn
+                  - !GetAtt OrdersTable.Arn
+                  - !GetAtt DesignsTable.Arn
+
+  # ─── Auto-Confirm Lambda ──────────────────────────────────────────────────────
+  # Semantically UNCHANGED from deployed cognito-cloudformation-v2.yaml baseline.
+  AutoConfirmFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: divine-printing-auto-confirm
+      Runtime: nodejs18.x
+      Handler: index.handler
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Timeout: 10
+      Code:
+        ZipFile: |
+          exports.handler = async (event) => {
+            event.response.autoConfirmUser = true;
+            if (event.request.userAttributes.email) {
+              event.response.autoVerifyEmail = true;
+            }
+            if (event.request.userAttributes.phone_number) {
+              event.response.autoVerifyPhone = true;
+            }
+            console.log('Auto-confirmed user:', event.userName);
+            return event;
+          };
+
+  # Lambda Permission for Cognito to invoke auto-confirm
+  # Semantically UNCHANGED from deployed cognito-cloudformation-v2.yaml baseline.
+  AutoConfirmPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref AutoConfirmFunction
+      Action: lambda:InvokeFunction
+      Principal: cognito-idp.amazonaws.com
+      SourceArn: !GetAtt UserPool.Arn
+
+  # ─── Webhook Lambda ───────────────────────────────────────────────────────────
+  # Semantically UNCHANGED from deployed cognito-cloudformation-v2.yaml baseline.
+  WebhookFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: divine-printing-webhook
+      Runtime: nodejs18.x
+      Handler: index.handler
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Timeout: 30
+      Environment:
+        Variables:
+          CUSTOMERS_TABLE: !Ref CustomersTable
+          ORDERS_TABLE: !Ref OrdersTable
+      Code:
+        ZipFile: |
+          const AWS = require('aws-sdk');
+          const crypto = require('crypto');
+          const dynamodb = new AWS.DynamoDB.DocumentClient();
+          const CUSTOMERS_TABLE = process.env.CUSTOMERS_TABLE;
+          const ORDERS_TABLE = process.env.ORDERS_TABLE;
+          exports.handler = async (event) => {
+            if (event.httpMethod !== 'POST') {
+              return { statusCode: 405, body: JSON.stringify({ error: 'Method not allowed' }) };
+            }
+            try {
+              const body = JSON.parse(event.body);
+              const { eventName, content } = body;
+              if (eventName !== 'order.completed') {
+                return { statusCode: 200, body: JSON.stringify({ message: 'Event ignored' }) };
+              }
+              const order = content;
+              const email = order.email?.toLowerCase();
+              if (!email) {
+                return { statusCode: 400, body: JSON.stringify({ error: 'No email in order' }) };
+              }
+              const customerName = order.billingAddress?.name || order.shippingAddress?.name || 'Customer';
+              const customerItem = {
+                email: email,
+                customerId: order.customerId || crypto.randomUUID(),
+                name: customerName,
+                updatedAt: new Date().toISOString(),
+              };
+              if (!order.customerId) {
+                customerItem.createdAt = new Date().toISOString();
+              }
+              await dynamodb.put({ TableName: CUSTOMERS_TABLE, Item: customerItem }).promise();
+              const orderItem = {
+                email: email,
+                orderId: order.token,
+                invoiceNumber: order.invoiceNumber,
+                total: order.total,
+                items: order.items.map(item => ({
+                  name: item.name,
+                  quantity: item.quantity,
+                  price: item.price,
+                  customFields: item.customFields || [],
+                })),
+                status: order.status,
+                createdAt: order.creationDate || new Date().toISOString(),
+                shippingAddress: order.shippingAddress,
+                billingAddress: order.billingAddress,
+              };
+              await dynamodb.put({ TableName: ORDERS_TABLE, Item: orderItem }).promise();
+              return {
+                statusCode: 200,
+                headers: { 'Access-Control-Allow-Origin': '*' },
+                body: JSON.stringify({ success: true, orderId: order.token }),
+              };
+            } catch (error) {
+              console.error('Error:', error);
+              return { statusCode: 500, body: JSON.stringify({ error: 'Server error' }) };
+            }
+          };
+
+  # ─── Orders Lambda ────────────────────────────────────────────────────────────
+  # Semantically UNCHANGED from deployed cognito-cloudformation-v2.yaml baseline.
+  OrdersFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: divine-printing-orders
+      Runtime: nodejs18.x
+      Handler: index.handler
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Timeout: 30
+      Environment:
+        Variables:
+          ORDERS_TABLE: !Ref OrdersTable
+      Code:
+        ZipFile: |
+          const AWS = require('aws-sdk');
+          const dynamodb = new AWS.DynamoDB.DocumentClient();
+          const ORDERS_TABLE = process.env.ORDERS_TABLE;
+          exports.handler = async (event) => {
+            const headers = {
+              'Access-Control-Allow-Origin': '*',
+              'Access-Control-Allow-Headers': 'Content-Type,Authorization',
+              'Access-Control-Allow-Methods': 'GET, OPTIONS',
+            };
+            if (event.httpMethod === 'OPTIONS') {
+              return { statusCode: 200, headers, body: '' };
+            }
+            try {
+              const email = event.requestContext?.authorizer?.claims?.email?.toLowerCase();
+              if (!email) {
+                return { statusCode: 401, headers, body: JSON.stringify({ error: 'Unauthorized' }) };
+              }
+              const result = await dynamodb.query({
+                TableName: ORDERS_TABLE,
+                KeyConditionExpression: 'email = :email',
+                ExpressionAttributeValues: { ':email': email },
+                ScanIndexForward: false,
+              }).promise();
+              return { statusCode: 200, headers, body: JSON.stringify({ orders: result.Items || [], count: result.Count || 0 }) };
+            } catch (error) {
+              console.error('Orders error:', error);
+              return { statusCode: 500, headers, body: JSON.stringify({ error: 'Server error' }) };
+            }
+          };
+
+  # ─── Designs Lambda ───────────────────────────────────────────────────────────
+  # Semantically UNCHANGED from deployed cognito-cloudformation-v2.yaml baseline.
+  DesignsFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: divine-printing-designs
+      Runtime: nodejs18.x
+      Handler: index.handler
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Timeout: 30
+      Environment:
+        Variables:
+          DESIGNS_TABLE: !Ref DesignsTable
+      Code:
+        ZipFile: |
+          const AWS = require('aws-sdk');
+          const dynamodb = new AWS.DynamoDB.DocumentClient();
+          const DESIGNS_TABLE = process.env.DESIGNS_TABLE;
+          exports.handler = async (event) => {
+            const headers = {
+              'Access-Control-Allow-Origin': '*',
+              'Access-Control-Allow-Headers': 'Content-Type,Authorization',
+              'Access-Control-Allow-Methods': 'GET,POST,DELETE,OPTIONS',
+            };
+            if (event.httpMethod === 'OPTIONS') {
+              return { statusCode: 200, headers, body: '' };
+            }
+            try {
+              const email = event.requestContext?.authorizer?.claims?.email?.toLowerCase();
+              if (!email) {
+                return { statusCode: 401, headers, body: JSON.stringify({ error: 'Unauthorized' }) };
+              }
+
+              // GET - List designs
+              if (event.httpMethod === 'GET') {
+                const result = await dynamodb.query({
+                  TableName: DESIGNS_TABLE,
+                  KeyConditionExpression: 'email = :email',
+                  ExpressionAttributeValues: { ':email': email },
+                  ScanIndexForward: false,
+                }).promise();
+                return { statusCode: 200, headers, body: JSON.stringify({ designs: result.Items || [], count: result.Count || 0 }) };
+              }
+
+              // POST - Save design
+              if (event.httpMethod === 'POST') {
+                const body = JSON.parse(event.body || '{}');
+                const design = {
+                  email: email,
+                  designId: body.designId || Date.now().toString(),
+                  name: body.name || 'Untitled Design',
+                  productType: body.productType,
+                  config: body.config,
+                  previewUrl: body.previewUrl,
+                  createdAt: new Date().toISOString(),
+                  updatedAt: new Date().toISOString(),
+                };
+                await dynamodb.put({ TableName: DESIGNS_TABLE, Item: design }).promise();
+                return { statusCode: 201, headers, body: JSON.stringify({ success: true, design }) };
+              }
+
+              // DELETE - Remove design
+              if (event.httpMethod === 'DELETE') {
+                const designId = event.queryStringParameters?.designId;
+                if (!designId) {
+                  return { statusCode: 400, headers, body: JSON.stringify({ error: 'designId required' }) };
+                }
+                await dynamodb.delete({
+                  TableName: DESIGNS_TABLE,
+                  Key: { email, designId }
+                }).promise();
+                return { statusCode: 200, headers, body: JSON.stringify({ success: true }) };
+              }
+
+              return { statusCode: 405, headers, body: JSON.stringify({ error: 'Method not allowed' }) };
+            } catch (error) {
+              console.error('Designs error:', error);
+              return { statusCode: 500, headers, body: JSON.stringify({ error: 'Server error' }) };
+            }
+          };
+
+  # ─── API Gateway ──────────────────────────────────────────────────────────────
+  # Semantically UNCHANGED from deployed cognito-cloudformation-v2.yaml baseline.
+  ApiGateway:
+    Type: AWS::ApiGatewayV2::Api
+    Properties:
+      Name: divine-printing-api
+      ProtocolType: HTTP
+      Target: !GetAtt WebhookFunction.Arn
+      CorsConfiguration:
+        AllowOrigins:
+          - '*'
+        AllowMethods:
+          - GET
+          - POST
+          - DELETE
+          - OPTIONS
+        AllowHeaders:
+          - Content-Type
+          - Authorization
+
+  # ─── Cognito Authorizer ───────────────────────────────────────────────────────
+  # Semantically UNCHANGED from deployed cognito-cloudformation-v2.yaml baseline.
+  CognitoAuthorizer:
+    Type: AWS::ApiGatewayV2::Authorizer
+    Properties:
+      ApiId: !Ref ApiGateway
+      AuthorizerType: JWT
+      IdentitySource:
+        - '$request.header.Authorization'
+      JwtConfiguration:
+        Audience:
+          - !Ref UserPoolClient
+        Issuer: !Sub https://cognito-idp.${AWS::Region}.amazonaws.com/${UserPool}
+      Name: divine-printing-cognito
+
+  # ─── API Gateway Routes & Integrations ───────────────────────────────────────
+  # Semantically UNCHANGED from deployed cognito-cloudformation-v2.yaml baseline.
+  WebhookRoute:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId: !Ref ApiGateway
+      RouteKey: POST /webhook
+      Target: !Sub integrations/${WebhookIntegration}
+
+  WebhookIntegration:
+    Type: AWS::ApiGatewayV2::Integration
+    Properties:
+      ApiId: !Ref ApiGateway
+      IntegrationType: AWS_PROXY
+      IntegrationUri: !GetAtt WebhookFunction.Arn
+      PayloadFormatVersion: '2.0'
+
+  OrdersRoute:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId: !Ref ApiGateway
+      RouteKey: GET /orders
+      AuthorizationType: JWT
+      AuthorizerId: !Ref CognitoAuthorizer
+      Target: !Sub integrations/${OrdersIntegration}
+
+  OrdersIntegration:
+    Type: AWS::ApiGatewayV2::Integration
+    Properties:
+      ApiId: !Ref ApiGateway
+      IntegrationType: AWS_PROXY
+      IntegrationUri: !GetAtt OrdersFunction.Arn
+      PayloadFormatVersion: '2.0'
+
+  DesignsRoute:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId: !Ref ApiGateway
+      RouteKey: ANY /designs
+      AuthorizationType: JWT
+      AuthorizerId: !Ref CognitoAuthorizer
+      Target: !Sub integrations/${DesignsIntegration}
+
+  DesignsIntegration:
+    Type: AWS::ApiGatewayV2::Integration
+    Properties:
+      ApiId: !Ref ApiGateway
+      IntegrationType: AWS_PROXY
+      IntegrationUri: !GetAtt DesignsFunction.Arn
+      PayloadFormatVersion: '2.0'
+
+  # ─── Lambda Permissions ───────────────────────────────────────────────────────
+  # Semantically UNCHANGED from deployed cognito-cloudformation-v2.yaml baseline.
+  WebhookPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref WebhookFunction
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${ApiGateway}/*
+
+  OrdersPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref OrdersFunction
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${ApiGateway}/*
+
+  DesignsPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref DesignsFunction
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${ApiGateway}/*
+
+Outputs:
+  UserPoolId:
+    Description: Cognito User Pool ID
+    Value: !Ref UserPool
+  UserPoolClientId:
+    Description: Cognito App Client ID
+    Value: !Ref UserPoolClient
+  CognitoDomain:
+    Description: Cognito Hosted UI Domain
+    Value: !Sub https://divine-printing-auth.auth.${AWS::Region}.amazoncognito.com
+  ApiEndpoint:
+    Description: API Gateway endpoint URL
+    Value: !Sub https://${ApiGateway}.execute-api.${AWS::Region}.amazonaws.com
+  WebhookUrl:
+    Description: Webhook URL for Snipcart
+    Value: !Sub https://${ApiGateway}.execute-api.${AWS::Region}.amazonaws.com/webhook
