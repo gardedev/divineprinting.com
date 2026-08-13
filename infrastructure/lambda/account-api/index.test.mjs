@@ -28,6 +28,7 @@ function eventFor(path, claimOverrides = {}, clientInput = {}) {
             exp: String(NOW + 3600),
             sub: 'trusted-sub',
             email: 'Trusted@Example.com',
+            'cognito:groups': '[customer]',
             ...claimOverrides,
           },
         },
@@ -43,7 +44,9 @@ function parseBody(response) {
 test('accepts API Gateway-verified Cognito access-token claims', () => {
   const result = getTrustedIdentity(eventFor('/account/profile'), ENV, NOW);
   assert.equal(result.ok, true);
-  assert.deepEqual(result.identity, { sub: 'trusted-sub', email: 'trusted@example.com' });
+  assert.deepEqual(result.identity, {
+    sub: 'trusted-sub', email: 'trusted@example.com', groups: ['customer'],
+  });
 });
 
 test('rejects missing access token context', async () => {
@@ -75,6 +78,42 @@ test('rejects expired, wrong issuer, wrong client, and ID-token claims', () => {
     assert.equal(result.response.statusCode, statusCode);
     assert.equal(parseBody(result.response).code, code);
   }
+});
+
+test('requires exact customer group for account routes', async () => {
+  const handler = createHandler({
+    ddb: { send: async () => assert.fail('DynamoDB must not be called') }, env: ENV, now: () => NOW,
+  });
+  for (const groups of ['[admin]', '[system]', '[]', 'customer', '[unknown]']) {
+    const response = await handler(eventFor('/account/profile', { 'cognito:groups': groups }));
+    assert.equal(response.statusCode, 403);
+    assert.equal(parseBody(response).code, 'CUSTOMER_REQUIRED');
+  }
+  const acceptedHandler = createHandler({ ddb: { send: async () => ({}) }, env: ENV, now: () => NOW });
+  const accepted = await acceptedHandler(eventFor('/account/profile', {
+    'cognito:groups': '[admin customer]',
+  }));
+  assert.notEqual(accepted.statusCode, 403);
+});
+
+test('authorization audit hook receives safe decision fields only', async () => {
+  const events = [];
+  const handler = createHandler({
+    ddb: { send: async () => ({}) }, env: ENV, now: () => NOW,
+    audit: event => events.push(event),
+  });
+  await handler(eventFor('/account/profile', {}, {
+    headers: { authorization: 'Bearer must-not-be-logged' },
+    query: { email: 'client@example.com' },
+  }));
+  assert.deepEqual(events[0], {
+    requestId: undefined,
+    route: 'GET /account/profile',
+    rule: 'group:customer',
+    decision: 'allow',
+    actorSub: 'trusted-sub',
+  });
+  assert.doesNotMatch(JSON.stringify(events), /must-not-be-logged|client@example\.com/);
 });
 
 test('orders use trusted JWT email and preserve response behavior', async () => {

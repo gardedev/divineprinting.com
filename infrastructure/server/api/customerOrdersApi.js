@@ -2,11 +2,13 @@
 
 const { Router } = require('express');
 const { QueryCommand } = require('@aws-sdk/lib-dynamodb');
+const { requireGroup } = require('../middleware/authorization');
 
 function createCustomerOrdersRouter(jwtAuthMiddleware, documentClient, ordersTable) {
   const router = Router();
+  const requireCustomer = requireGroup('customer');
 
-  router.get('/', jwtAuthMiddleware, async (req, res) => {
+  router.get('/', jwtAuthMiddleware, requireCustomer, async (req, res) => {
     try {
       const email = req.auth && typeof req.auth.email === 'string'
         ? req.auth.email.trim().toLowerCase()

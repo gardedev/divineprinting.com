@@ -20,6 +20,7 @@
 
 const { Router } = require('express');
 const { bootstrapCustomer, DomainErrors } = require('../services/customerService');
+const { requireGroup } = require('../middleware/authorization');
 
 // ---------------------------------------------------------------------------
 // Error code → HTTP status mapping
@@ -68,6 +69,7 @@ function sendSafeError(res, status, code, message) {
 function createCustomerRegistrationRouter(jwtAuthMiddleware, _customerService) {
   const router = Router();
   const service = _customerService || { bootstrapCustomer };
+  const requireCustomer = requireGroup('customer');
 
   // -------------------------------------------------------------------------
   // POST /api/customers/bootstrap
@@ -79,6 +81,7 @@ function createCustomerRegistrationRouter(jwtAuthMiddleware, _customerService) {
   router.post(
     '/bootstrap',
     jwtAuthMiddleware,
+    requireCustomer,
     async (req, res) => {
       try {
         // Pass ONLY req.auth (trusted JWT claims) to the service.

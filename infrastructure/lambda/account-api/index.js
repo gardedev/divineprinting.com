@@ -26,6 +26,21 @@ function authFailure(statusCode, code, error) {
   return { ok: false, response: respond(statusCode, { error, code }) };
 }
 
+function normalizeGroups(value) {
+  if (Array.isArray(value)) return value.filter(group => typeof group === 'string');
+  if (typeof value !== 'string') return [];
+  const trimmed = value.trim();
+  if (!trimmed.startsWith('[') || !trimmed.endsWith(']')) return [];
+  try {
+    const parsed = JSON.parse(trimmed);
+    if (Array.isArray(parsed) && parsed.every(group => typeof group === 'string')) return parsed;
+  } catch (_error) {
+    // API Gateway may serialize Cognito arrays as "[customer admin]".
+  }
+  const inner = trimmed.slice(1, -1).trim();
+  return inner ? inner.split(/[\s,]+/).filter(Boolean) : [];
+}
+
 /**
  * Reads identity exclusively from API Gateway's verified JWT authorizer.
  * Raw Authorization headers and client-supplied identity are never inspected.
@@ -57,12 +72,17 @@ export function getTrustedIdentity(event, env = process.env, nowSeconds = Math.f
   if (!claims.sub || typeof claims.email !== 'string' || !claims.email.trim()) {
     return authFailure(403, 'MISSING_CLAIMS', 'Required identity claims are missing.');
   }
+  const groups = normalizeGroups(claims['cognito:groups']);
+  if (!groups.includes('customer')) {
+    return authFailure(403, 'CUSTOMER_REQUIRED', 'Customer access is required.');
+  }
 
   return {
     ok: true,
     identity: {
       sub: claims.sub,
       email: claims.email.trim().toLowerCase(),
+      groups,
     },
   };
 }
@@ -71,6 +91,7 @@ export function createHandler({
   ddb = defaultDdb,
   env = process.env,
   now = () => Math.floor(Date.now() / 1000),
+  audit = () => {},
 } = {}) {
   const ordersTable = env.ORDERS_TABLE || 'divine-printing-orders';
   const customersTable = env.CUSTOMERS_TABLE || 'divine-printing-customers';
@@ -81,9 +102,19 @@ export function createHandler({
     }
 
     const auth = getTrustedIdentity(event, env, now());
-    if (!auth.ok) return auth.response;
-
     const routeKey = event.routeKey || event.requestContext?.http?.path || '';
+    if (!auth.ok) {
+      audit({ route: routeKey, rule: 'group:customer', decision: 'deny' });
+      return auth.response;
+    }
+    audit({
+      requestId: event.requestContext?.requestId,
+      route: routeKey,
+      rule: 'group:customer',
+      decision: 'allow',
+      actorSub: auth.identity.sub,
+    });
+
     if (routeKey.includes('/account/orders')) {
       return getOrders(ddb, ordersTable, auth.identity.email);
     }

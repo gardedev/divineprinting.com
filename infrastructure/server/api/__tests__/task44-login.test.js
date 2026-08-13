@@ -48,7 +48,7 @@ function makeJwtStub(mode = 'authenticated', auth = null) {
         sub: 'cognito-sub-test',
         email: 'test@example.com',
         emailVerified: true,
-        groups: [],
+        groups: ['customer'],
         scopes: [],
       };
       return next();
@@ -535,7 +535,7 @@ describe('Task 4.4: backend statelessness', () => {
       sub: 'real-jwt-sub',
       email: 'real@example.com',
       emailVerified: true,
-      groups: [],
+      groups: ['customer'],
       scopes: [],
     });
 

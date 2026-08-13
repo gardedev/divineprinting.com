@@ -50,7 +50,7 @@ function makeJwtStub(mode = 'authenticated', auth = null) {
         sub: 'cognito-sub-abc123',
         email: 'Alice@Example.com',
         emailVerified: true,
-        groups: [],
+        groups: ['customer'],
         scopes: [],
       };
       return next();
@@ -220,6 +220,36 @@ describe('customerRegistrationApi', () => {
   // POST /api/customers/bootstrap — Happy path
   // =========================================================================
   describe('POST /api/customers/bootstrap — new verified bootstrap', () => {
+    test.each([
+      ['admin only', ['admin']],
+      ['system only', ['system']],
+      ['no groups', []],
+      ['malformed groups', 'customer'],
+    ])('denies %s with CUSTOMER_REQUIRED', async (_label, groups) => {
+      const jwtStub = makeJwtStub('authenticated', {
+        sub: 'trusted-sub', email: 'trusted@example.com', emailVerified: true, groups,
+      });
+      const mockService = makeMockService();
+      const app = express();
+      app.use(express.json());
+      app.use('/api/customers', createCustomerRegistrationRouter(jwtStub, mockService));
+      const result = await request(app, 'POST', '/api/customers/bootstrap');
+      expect(result.status).toBe(403);
+      expect(result.body.code).toBe('CUSTOMER_REQUIRED');
+      expect(mockService.bootstrapCustomer).not.toHaveBeenCalled();
+    });
+
+    it('accepts admin plus customer without granting customer access from admin alone', async () => {
+      const jwtStub = makeJwtStub('authenticated', {
+        sub: 'trusted-sub', email: 'trusted@example.com', emailVerified: true,
+        groups: ['admin', 'customer'],
+      });
+      const mockService = makeMockService();
+      const app = express();
+      app.use(express.json());
+      app.use('/api/customers', createCustomerRegistrationRouter(jwtStub, mockService));
+      expect((await request(app, 'POST', '/api/customers/bootstrap')).status).toBe(201);
+    });
     it('returns 201 with sanitized customer on successful new bootstrap', async () => {
       const app = buildTestApp('authenticated', {
         bootstrapCustomer: jest.fn().mockResolvedValue({
@@ -255,7 +285,7 @@ describe('customerRegistrationApi', () => {
         sub: 'real-sub',
         email: 'real@example.com',
         emailVerified: true,
-        groups: [],
+        groups: ['customer'],
         scopes: [],
       });
 
@@ -434,7 +464,7 @@ describe('customerRegistrationApi', () => {
         sub: 'the-real-sub',
         email: 'real@example.com',
         emailVerified: true,
-        groups: [],
+        groups: ['customer'],
         scopes: [],
       });
 
@@ -459,7 +489,7 @@ describe('customerRegistrationApi', () => {
         sub: 'jwt-sub-xyz',
         email: 'jwt@example.com',
         emailVerified: true,
-        groups: [],
+        groups: ['customer'],
         scopes: [],
       };
       const jwtStub = makeJwtStub('authenticated', auth);
