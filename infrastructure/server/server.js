@@ -13,12 +13,14 @@ const { docClient } = require('./utils/dynamoDbClient');
 const productRoutes = require('./products/index');
 const publicProductRoutes = require('./products/publicProductRoutes');
 
+// Customer registration (Task 4.3)
+const { createCustomerRegistrationRouter } = require('./api/customerRegistrationApi');
+const { jwtAuth } = require('./middleware/jwtAuth');
+
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-const CUSTOMERS_TABLE = process.env.CUSTOMERS_TABLE || 'divine-printing-customers';
 const ORDERS_TABLE = process.env.ORDERS_TABLE || 'divine-printing-orders';
-const JWT_SECRET = process.env.JWT_SECRET || 'change-this-secret-key';
 
 app.use(cors());
 app.use(express.json());
@@ -29,15 +31,27 @@ app.use('/api/admin/products', productRoutes);
 // Public product routes (unauthenticated)
 app.use('/api/products', publicProductRoutes);
 
+// Customer bootstrap route (JWT-protected via Cognito)
+// IMPORTANT: This replaces the legacy /api/auth/register which has been removed.
+// Identity is derived exclusively from the verified Cognito JWT; no passwords are
+// accepted or stored.
+app.use('/api/customers', createCustomerRegistrationRouter(jwtAuth));
+
+// Legacy /api/auth/register endpoint has been permanently disabled.
+// It previously accepted plaintext passwords and generated random UUIDs — both
+// security anti-patterns. All customer creation now flows through
+// POST /api/customers/bootstrap (Cognito-backed, JWT-authenticated).
+app.post('/api/auth/register', (req, res) => {
+  return res.status(404).json({
+    error: 'This endpoint has been removed. Customer registration is now handled by Cognito.',
+    code: 'ENDPOINT_REMOVED',
+  });
+});
+
 // Health check
 app.get('/', (req, res) => {
   res.json({ status: 'ok', service: 'divine-printing-api' });
 });
-
-// Simple hash function
-function hashPassword(password) {
-  return crypto.createHmac('sha256', JWT_SECRET).update(password).digest('hex');
-}
 
 function generateToken(email) {
   const payload = { email, exp: Date.now() + (7 * 24 * 60 * 60 * 1000) };
@@ -53,45 +67,6 @@ function verifyToken(token) {
     return null;
   }
 }
-
-// Register
-app.post('/api/auth/register', async (req, res) => {
-  try {
-    const { email, password, name } = req.body;
-    
-    if (!email || !password) {
-      return res.status(400).json({ error: 'Email and password required' });
-    }
-
-    const existing = await docClient.send(new GetCommand({
-      TableName: CUSTOMERS_TABLE,
-      Key: { email: email.toLowerCase() },
-    }));
-
-    if (existing.Item && existing.Item.passwordHash) {
-      return res.status(409).json({ error: 'Account already exists' });
-    }
-
-    const customer = {
-      email: email.toLowerCase(),
-      customerId: crypto.randomUUID(),
-      name: name || 'Customer',
-      passwordHash: hashPassword(password),
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
-
-    await docClient.send(new PutCommand({
-      TableName: CUSTOMERS_TABLE,
-      Item: customer,
-    }));
-
-    res.status(201).json({ success: true, token: generateToken(email) });
-  } catch (error) {
-    logger.error('Register error', error, { route: 'POST /api/auth/register' });
-    res.status(500).json({ error: 'Server error' });
-  }
-});
 
 // Login
 app.post('/api/auth/login', async (req, res) => {
