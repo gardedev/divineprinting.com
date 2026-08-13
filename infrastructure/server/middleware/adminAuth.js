@@ -1,41 +1,33 @@
 'use strict';
 
-/**
- * adminAuth.js — Admin authentication/authorisation middleware placeholder.
- *
- * STATUS: PLACEHOLDER — DENIES ALL REQUESTS BY DEFAULT.
- *
- * No working admin authentication architecture exists in this codebase yet.
- * This middleware is deliberately isolated here so it is easy to find and
- * replace once a real auth system is implemented (e.g. JWT verification
- * against a Cognito user pool with an 'admin' group claim).
- *
- * Until then, every request to any /api/admin/* route will receive:
- *   HTTP 503 Service Unavailable
- *   { "error": "Admin authentication is not yet configured." }
- *
- * BLOCKER: Replace this middleware with real token verification before
- * exposing the admin API to any public or production environment.
- *
- * @param {import('express').Request}  req
- * @param {import('express').Response} res
- * @param {import('express').NextFunction} next
- */
-function adminAuth(req, res, next) {
-  // -------------------------------------------------------------------------
-  // PLACEHOLDER — replace with real JWT/Cognito admin verification
-  // -------------------------------------------------------------------------
-  return res.status(503).json({
-    error: 'Admin authentication is not yet configured.',
-    code: 'AUTH_NOT_CONFIGURED',
-  });
+const { jwtAuth } = require('./jwtAuth');
 
-  // When real auth is in place the handler should:
-  //   1. Extract the Authorization: Bearer <token> header
-  //   2. Verify and decode the JWT
-  //   3. Assert the decoded payload has an admin role/claim
-  //   4. Attach req.adminUser = { id, email, role } for downstream handlers
-  //   5. Call next() on success, or return 401/403 on failure
+function requireAdminGroup(req, res, next) {
+  const groups = req.auth && req.auth.groups;
+  if (!Array.isArray(groups) || !groups.includes('admin')) {
+    return res.status(403).json({
+      error: 'Administrator access is required.',
+      code: 'ADMIN_REQUIRED',
+    });
+  }
+
+  req.adminUser = {
+    sub: req.auth.sub,
+    email: req.auth.email,
+    groups: [...groups],
+  };
+  return next();
 }
 
-module.exports = { adminAuth };
+function createAdminAuth(jwtAuthMiddleware = jwtAuth) {
+  return function adminAuthMiddleware(req, res, next) {
+    return jwtAuthMiddleware(req, res, authError => {
+      if (authError) return next(authError);
+      return requireAdminGroup(req, res, next);
+    });
+  };
+}
+
+const adminAuth = createAdminAuth();
+
+module.exports = { adminAuth, createAdminAuth, requireAdminGroup };

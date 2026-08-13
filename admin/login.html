@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <title>Admin Sign In | Divine Printing</title>
+  <link rel="stylesheet" href="../styles.css">
+  <style>
+    body { min-height: 100vh; display: grid; place-items: center; background: #1a0d30; font-family: Arial, sans-serif; }
+    main { width: min(420px, calc(100% - 32px)); padding: 40px; border-radius: 16px; background: white; text-align: center; }
+    button { padding: 12px 24px; border: 0; border-radius: 8px; background: #3d1a6e; color: white; cursor: pointer; }
+    #adminAuthError { color: #a31515; margin: 16px 0; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Administrator Sign In</h1>
+    <p>Sign in through Divine Printing’s secure Cognito portal.</p>
+    <p id="adminAuthError" role="alert" hidden></p>
+    <button id="adminLoginButton" type="button">Sign In</button>
+  </main>
+  <script src="../js/cognito-auth.js"></script>
+  <script src="../js/admin-auth.js"></script>
+  <script>
+    if (new URLSearchParams(window.location.search).get('error') === 'ADMIN_REQUIRED') {
+      showAdminError('ADMIN_REQUIRED');
+    }
+    document.getElementById('adminLoginButton').addEventListener('click', startAdminLogin);
+  </script>
+</body>
+</html>

@@ -6,6 +6,7 @@ const { createAdminProductRouter } = require('./routes/adminProducts');
 const { adminAuth } = require('./middleware/adminAuth');
 const { jwtAuth } = require('./middleware/jwtAuth');
 const { createCustomerRegistrationRouter } = require('./api/customerRegistrationApi');
+const { createAdminSessionRouter } = require('./api/adminSessionApi');
 
 /**
  * Creates and configures an Express application.
@@ -13,7 +14,7 @@ const { createCustomerRegistrationRouter } = require('./api/customerRegistration
  * Accepts an options object to allow dependency injection:
  *   - productService              : ProductService instance (required)
  *   - adminAuthMiddleware         : Express middleware for admin routes.
- *                                   Defaults to the production adminAuth (deny-by-default, 503).
+ *                                   Defaults to production Cognito JWT + admin-group auth.
  *                                   Integration tests MUST pass a test-only middleware here.
  *                                   Do NOT use this hook to weaken production behaviour.
  *   - jwtAuthMiddleware           : JWT auth middleware for customer routes.
@@ -61,6 +62,7 @@ function createApp({
   // Admin routes (auth-gated)
   // --------------------------------------------------------------------------
   app.use('/api/admin/products', createAdminProductRouter(productService, adminAuthMiddleware));
+  app.use('/api/admin', createAdminSessionRouter(adminAuthMiddleware));
 
   // --------------------------------------------------------------------------
   // Customer registration routes (JWT-gated)

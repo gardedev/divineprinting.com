@@ -9,7 +9,7 @@
 :root { --purple: #3d1a6e; --gold: #c9a227; --gold-pale: #f5efe0; --dark: #1a0d30; --gray: #6b5b7a; }
 
 * { box-sizing: border-box; }
-body { font-family: 'Inter', sans-serif; margin: 0; padding: 0; background: #f8f6fb; }
+body { font-family: 'Inter', sans-serif; margin: 0; padding: 0; background: #f8f6fb; visibility: hidden; }
 
 header { background: var(--purple); color: #fff; padding: 20px 32px; }
 header h1 { font-family: 'Cinzel', serif; margin: 0; font-size: 1.5rem; }
@@ -85,6 +85,8 @@ header h1 { font-family: 'Cinzel', serif; margin: 0; font-size: 1.5rem; }
   </div>
 </div>
 
+<script src="../js/cognito-auth.js"></script>
+<script src="../js/admin-auth.js"></script>
 <script>
 // Load and display all orders with designs
 function loadOrders() {
@@ -222,11 +224,15 @@ document.getElementById('dateFilter')?.addEventListener('change', function(e) {
   });
 });
 
-// Load on page load
-loadOrders();
-
-// Refresh every 30 seconds
-setInterval(loadOrders, 30000);
+initAdminAuth().then((authorized) => {
+  if (!authorized) {
+    window.location.replace('/admin/login.html?error=ADMIN_REQUIRED');
+    return;
+  }
+  document.body.style.visibility = 'visible';
+  loadOrders();
+  setInterval(loadOrders, 30000);
+});
 </script>
 
 </body>

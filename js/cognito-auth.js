@@ -40,17 +40,26 @@ const BOOTSTRAP_RETRY_BASE_MS = 500; // Base delay for exponential backoff
  */
 function getRedirectUri() {
   const hostname = window.location.hostname;
+  const isAdmin = window.location.pathname.startsWith('/admin/');
+  const path = isAdmin ? '/admin/index.html' : '/account/account.html';
   if (hostname === 'www.divineprinting.com') {
-    return 'https://www.divineprinting.com/account/account.html';
+    return `https://www.divineprinting.com${path}`;
   }
   if (hostname === 'divineprinting.com') {
-    return 'https://divineprinting.com/account/account.html';
+    return `https://divineprinting.com${path}`;
   }
   // Fallback: localhost / development
-  return window.location.origin + '/account/account.html';
+  return window.location.origin + path;
 }
 
 const REDIRECT_URI = getRedirectUri();
+
+function getLogoutUri() {
+  const path = window.location.pathname.startsWith('/admin/')
+    ? '/admin/login.html'
+    : '/account/account.html';
+  return window.location.origin + path;
+}
 
 // ---------------------------------------------------------------------------
 // In-memory token store (cleared on page unload / tab close)
@@ -635,7 +644,7 @@ async function signup() {
 function logout() {
   clearAllAuthState();
   const logoutUrl =
-    `${COGNITO_DOMAIN}/logout?client_id=${CLIENT_ID}&logout_uri=${encodeURIComponent(REDIRECT_URI)}`;
+    `${COGNITO_DOMAIN}/logout?client_id=${CLIENT_ID}&logout_uri=${encodeURIComponent(getLogoutUri())}`;
   window.location.href = logoutUrl;
 }
 
@@ -820,7 +829,11 @@ async function loadOrders() {
 // ---------------------------------------------------------------------------
 
 document.addEventListener('DOMContentLoaded', () => {
-  initAuth();
+  // Admin pages own their callback lifecycle and must never invoke customer
+  // bootstrap. They reuse the primitives above through admin-auth.js.
+  if (!window.location.pathname.startsWith('/admin/')) {
+    initAuth();
+  }
 
   const loginBtn = document.getElementById('loginBtn');
   if (loginBtn) loginBtn.addEventListener('click', () => login());
@@ -865,6 +878,8 @@ if (typeof module !== 'undefined' && module.exports) {
     fetchOrders,
     // Error codes (for testing assertions)
     AUTH_ERRORS,
+    getRedirectUri,
+    getLogoutUri,
     // Internals exposed for testing
     mapOAuthError,
   };

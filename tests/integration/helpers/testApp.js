@@ -4,7 +4,7 @@
  * Builds an Express app wired to the integration repository (DynamoDB Local).
  *
  * Two variants are exported:
- *   - createTestApp()         → admin routes return 503 (production behaviour)
+ *   - createTestApp()         → admin routes use production JWT authentication
  *   - createAuthBypassApp()   → admin routes bypass auth (test-only, never used in prod)
  *
  * The auth bypass is implemented by injecting a permissive middleware via the
@@ -41,7 +41,7 @@ function testAdminBypass(req, res, next) {
 // ---------------------------------------------------------------------------
 
 /**
- * Creates an app that uses production adminAuth (deny-by-default, 503).
+ * Creates an app that uses production Cognito JWT + admin-group authentication.
  * Used for testing auth-rejection behaviour.
  */
 function createTestApp() {

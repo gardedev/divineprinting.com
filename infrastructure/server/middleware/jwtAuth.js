@@ -39,7 +39,6 @@
  */
 
 const jwt = require('jsonwebtoken');
-const jwksClient = require('jwks-rsa');
 
 // ---------------------------------------------------------------------------
 // Configuration helpers
@@ -79,6 +78,8 @@ function buildConfig(env = process.env) {
  * @returns {import('jwks-rsa').JwksClient}
  */
 function createJwksClient(jwksUri) {
+  // Load only when a presented token actually needs signature verification.
+  const jwksClient = require('jwks-rsa');
   return jwksClient({
     jwksUri,
     cache: true,
@@ -385,6 +386,13 @@ function createJwtAuthMiddleware(deps) {
  * @type {import('express').RequestHandler}
  */
 async function jwtAuth(req, res, next) {
+  // Reject absent/malformed authorization before initializing configuration or
+  // the JWKS client. The created middleware performs the same check for all
+  // requests that continue into token verification.
+  if (!extractBearerToken(req)) {
+    return sendAuthError(res, 401, 'MISSING_TOKEN',
+      'Authorization header with Bearer token is required.');
+  }
   const { config, client } = getSingletons();
   return createJwtAuthMiddleware({ config, client })(req, res, next);
 }

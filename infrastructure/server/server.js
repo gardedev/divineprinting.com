@@ -17,6 +17,8 @@ const publicProductRoutes = require('./products/publicProductRoutes');
 const { createCustomerRegistrationRouter } = require('./api/customerRegistrationApi');
 const { createCustomerOrdersRouter } = require('./api/customerOrdersApi');
 const { jwtAuth } = require('./middleware/jwtAuth');
+const { adminAuth } = require('./middleware/adminAuth');
+const { createAdminSessionRouter } = require('./api/adminSessionApi');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -28,6 +30,7 @@ app.use(express.json());
 
 // Product admin routes
 app.use('/api/admin/products', productRoutes);
+app.use('/api/admin', createAdminSessionRouter(adminAuth));
 
 // Public product routes (unauthenticated)
 app.use('/api/products', publicProductRoutes);

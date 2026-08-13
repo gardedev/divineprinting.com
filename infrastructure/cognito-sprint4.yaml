@@ -151,10 +151,16 @@ Resources:
         - https://divineprinting.com/account/account.html
         - https://www.divineprinting.com/account/account.html
         - http://localhost:3000/account/account.html
+        - https://divineprinting.com/admin/index.html
+        - https://www.divineprinting.com/admin/index.html
+        - http://localhost:3000/admin/index.html
       LogoutURLs:
         - https://divineprinting.com/account/account.html
         - https://www.divineprinting.com/account/account.html
         - http://localhost:3000/account/account.html
+        - https://divineprinting.com/admin/login.html
+        - https://www.divineprinting.com/admin/login.html
+        - http://localhost:3000/admin/login.html
 
       # D-6: Prevent user-existence errors from leaking (security hardening)
       PreventUserExistenceErrors: ENABLED

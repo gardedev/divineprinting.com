@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <title>Admin | Divine Printing</title>
+  <link rel="stylesheet" href="../styles.css">
+  <style>
+    body { font-family: Arial, sans-serif; margin: 0; background: #f5f2f8; color: #1a0d30; }
+    header, main { max-width: 960px; margin: auto; padding: 24px; }
+    header { display: flex; justify-content: space-between; align-items: center; }
+    #adminContent[hidden] { display: none; }
+    #adminAuthError { color: #a31515; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Divine Printing Admin</h1>
+    <button id="adminLogoutButton" type="button" hidden>Sign Out</button>
+  </header>
+  <main>
+    <p id="adminAuthStatus">Verifying administrator access…</p>
+    <p id="adminAuthError" role="alert" hidden></p>
+    <section id="adminContent" hidden>
+      <h2>Administration</h2>
+      <p>Your administrator session is active.</p>
+      <a href="designs.html">Order designs</a>
+    </section>
+  </main>
+  <script src="../js/cognito-auth.js"></script>
+  <script src="../js/admin-auth.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', async function () {
+      var allowed = await initAdminAuth();
+      var status = document.getElementById('adminAuthStatus');
+      if (!allowed) {
+        if (status) status.textContent = 'Administrator access was not established.';
+        return;
+      }
+      if (status) status.textContent = 'Authenticated.';
+      document.getElementById('adminContent').hidden = false;
+      document.getElementById('adminLogoutButton').hidden = false;
+    });
+    document.getElementById('adminLogoutButton').addEventListener('click', adminLogout);
+  </script>
+</body>
+</html>

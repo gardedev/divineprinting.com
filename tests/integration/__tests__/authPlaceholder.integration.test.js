@@ -1,11 +1,11 @@
 'use strict';
 
 /**
- * Integration tests – Authentication placeholder
+ * Integration tests – Admin authentication boundary
  *
  * Documents and verifies the current authentication posture:
- *   - adminAuth.js returns 503 for ALL admin requests (deny-by-default)
- *   - The response body includes a machine-readable code
+ *   - admin routes require a Cognito access token
+ *   - Missing credentials return a machine-readable authentication error
  *   - Public routes are NOT auth-gated
  *
  * These tests serve as a living contract: when real authentication is
@@ -32,16 +32,15 @@ beforeEach(async () => {
 // adminAuth.js behaviour contract
 // ===========================================================================
 
-describe('adminAuth.js – deny-by-default contract', () => {
-  it('returns 503 (not 401 or 403) for unauthenticated admin requests', async () => {
-    // 503 signals "not yet configured", distinct from 401/403 auth failures
+describe('adminAuth.js – authentication contract', () => {
+  it('returns 401 for unauthenticated admin requests', async () => {
     const res = await request(app).get('/api/admin/products');
-    expect(res.status).toBe(503);
+    expect(res.status).toBe(401);
   });
 
-  it('returns the AUTH_NOT_CONFIGURED code in the response body', async () => {
+  it('returns the MISSING_TOKEN code in the response body', async () => {
     const res = await request(app).post('/api/admin/products').send(makeProduct());
-    expect(res.body.code).toBe('AUTH_NOT_CONFIGURED');
+    expect(res.body.code).toBe('MISSING_TOKEN');
   });
 
   it('blocks every HTTP method on admin routes', async () => {
@@ -55,7 +54,7 @@ describe('adminAuth.js – deny-by-default contract', () => {
 
     const results = await Promise.all(checks);
     for (const res of results) {
-      expect(res.status).toBe(503);
+      expect(res.status).toBe(401);
     }
   });
 
@@ -65,7 +64,7 @@ describe('adminAuth.js – deny-by-default contract', () => {
 
     const res = await request(app).get('/api/admin/products');
 
-    expect(res.status).toBe(503);
+    expect(res.status).toBe(401);
     // Body must not contain product array
     expect(res.body.products).toBeUndefined();
   });
@@ -104,7 +103,7 @@ describe('Public routes – no authentication required', () => {
 
     // Admin route is blocked
     const adminRes = await request(app).get('/api/admin/products');
-    expect(adminRes.status).toBe(503);
+    expect(adminRes.status).toBe(401);
 
     // But public route still works
     const pubRes = await request(app).get('/api/products');
@@ -114,41 +113,15 @@ describe('Public routes – no authentication required', () => {
 });
 
 // ===========================================================================
-// Future auth placeholder
+// Authorization header shape
 // ===========================================================================
 
-describe('Future authentication – placeholder assertions', () => {
-  /**
-   * These tests document what SHOULD happen once auth is implemented.
-   * They intentionally test the current 503 behaviour so that the test
-   * suite fails the moment auth is added without updating the tests.
-   *
-   * When implementing auth:
-   *   1. Remove the 503 assertions below
-   *   2. Replace with proper token/session-based test helpers
-   *   3. Keep the auth bypass in createAuthBypassApp() for route-logic tests
-   */
-
-  it('PLACEHOLDER: valid credentials should eventually return non-503 (currently 503)', async () => {
-    // No credentials → 503 today; this test documents the transition point
+describe('Authorization header shape', () => {
+  it('rejects a malformed Authorization header', async () => {
     const res = await request(app)
       .get('/api/admin/products')
-      .set('Authorization', 'Bearer placeholder-token');
-
-    // Current expectation: still 503 (auth not implemented)
-    expect(res.status).toBe(503);
-
-    // Future: expect(res.status).toBe(200);
-  });
-
-  it('PLACEHOLDER: invalid credentials should eventually return 401 (currently 503)', async () => {
-    const res = await request(app)
-      .get('/api/admin/products')
-      .set('Authorization', 'Bearer invalid-token');
-
-    // Current expectation: 503 (auth not configured, regardless of header)
-    expect(res.status).toBe(503);
-
-    // Future: expect(res.status).toBe(401);
+      .set('Authorization', 'Basic not-a-bearer-token');
+    expect(res.status).toBe(401);
+    expect(res.body.code).toBe('MISSING_TOKEN');
   });
 });

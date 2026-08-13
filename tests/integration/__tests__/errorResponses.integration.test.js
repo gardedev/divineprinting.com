@@ -114,41 +114,41 @@ describe('404 Not Found', () => {
 });
 
 // ===========================================================================
-// 503 Service Unavailable (auth not configured)
+// 401 Unauthorized (admin authentication required)
 // ===========================================================================
 
-describe('503 Service Unavailable – admin routes without auth', () => {
-  it('POST /api/admin/products returns 503 with code AUTH_NOT_CONFIGURED', async () => {
+describe('401 Unauthorized – admin routes without auth', () => {
+  it('POST /api/admin/products returns 401 with code MISSING_TOKEN', async () => {
     const res = await request(protectedApp)
       .post('/api/admin/products')
       .send(makeProduct());
-    expect(res.status).toBe(503);
-    expect(res.body.code).toBe('AUTH_NOT_CONFIGURED');
+    expect(res.status).toBe(401);
+    expect(res.body.code).toBe('MISSING_TOKEN');
   });
 
-  it('GET /api/admin/products returns 503', async () => {
+  it('GET /api/admin/products returns 401', async () => {
     const res = await request(protectedApp).get('/api/admin/products');
-    expect(res.status).toBe(503);
+    expect(res.status).toBe(401);
   });
 
-  it('GET /api/admin/products/:id returns 503', async () => {
+  it('GET /api/admin/products/:id returns 401', async () => {
     const res = await request(protectedApp).get('/api/admin/products/any-id');
-    expect(res.status).toBe(503);
+    expect(res.status).toBe(401);
   });
 
-  it('PUT /api/admin/products/:id returns 503', async () => {
+  it('PUT /api/admin/products/:id returns 401', async () => {
     const res = await request(protectedApp)
       .put('/api/admin/products/any-id')
       .send({ name: 'x' });
-    expect(res.status).toBe(503);
+    expect(res.status).toBe(401);
   });
 
-  it('DELETE /api/admin/products/:id returns 503', async () => {
+  it('DELETE /api/admin/products/:id returns 401', async () => {
     const res = await request(protectedApp).delete('/api/admin/products/any-id');
-    expect(res.status).toBe(503);
+    expect(res.status).toBe(401);
   });
 
-  it('returns JSON body for 503 responses', async () => {
+  it('returns JSON body for 401 responses', async () => {
     const res = await request(protectedApp).get('/api/admin/products');
     expect(res.headers['content-type']).toMatch(/application\/json/);
     expect(res.body).toHaveProperty('error');
