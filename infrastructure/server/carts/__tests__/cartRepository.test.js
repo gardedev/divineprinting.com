@@ -194,6 +194,15 @@ describe('cartRepository', () => {
     expect(tx[1].Update.ExpressionAttributeValues[':nextItemVersion']).toBe(3);
   });
 
+  test('persists approved option and fulfillment snapshots during item update', async () => {
+    const { client, repository } = setup();
+    client.send.mockResolvedValueOnce({ Item: { cartId: 'c', customerId: 'cognito-sub-1', status: 'active', version: 1, idempotencyRecords: [] } }).mockResolvedValueOnce({});
+    await repository.updateCartItem({ cartId: 'c', cartItemId: 'i', owner: customerOwner, expectedCartVersion: 1, expectedItemVersion: 1, mutationId: 'options', updates: { options: { size: 'L' }, fulfillment: { rush: false } } });
+    const values = client.send.mock.calls[1][0].input.TransactItems[1].Update.ExpressionAttributeValues;
+    expect(values[':u_options']).toEqual({ size: 'L' });
+    expect(values[':u_fulfillment']).toEqual({ rush: false });
+  });
+
   test('hard-deletes an item transactionally with ownership and both version guards', async () => {
     const { client, repository } = setup(); client.send.mockResolvedValueOnce({ Item: { cartId: 'c', customerId: 'cognito-sub-1', status: 'active', version: 2, idempotencyRecords: [] } }).mockResolvedValueOnce({});
     await expect(repository.deleteCartItem({ cartId: 'c', cartItemId: 'i', owner: customerOwner, expectedCartVersion: 2, expectedItemVersion: 7, mutationId: 'delete-1' })).resolves.toBe(true);
@@ -212,6 +221,14 @@ describe('cartRepository', () => {
 
     client.send.mockResolvedValueOnce({ Item: { cartId: 'c', customerId: 'cognito-sub-1', status: 'active', version: 2, idempotencyRecords: [record] } });
     await expect(repository.createCartItem({ cartId: 'c', owner: customerOwner, expectedCartVersion: 1, mutationId: 'add-retry', item: { productId: 'p1', quantity: 2, unitPriceCents: 100, lineTotalCents: 200 } })).rejects.toMatchObject({ code: 'CART_IDEMPOTENCY_CONFLICT' });
+  });
+
+  test('preflights mutation replay with ownership and canonical conflict checks', async () => {
+    const { client, repository } = setup();
+    const semantic = { operation: 'addItem', productId: 'p1', quantity: 1 };
+    client.send.mockResolvedValue({ Item: { cartId: 'c', customerId: 'cognito-sub-1', idempotencyRecords: [{ mutationId: 'same', fingerprint: fingerprint(semantic), result: { cartItemId: 'i' } }] } });
+    await expect(repository.getMutationReplay({ cartId: 'c', owner: customerOwner, mutationId: 'same', idempotencyInput: semantic })).resolves.toMatchObject({ result: { cartItemId: 'i' } });
+    await expect(repository.getMutationReplay({ cartId: 'c', owner: customerOwner, mutationId: 'same', idempotencyInput: { ...semantic, quantity: 2 } })).rejects.toMatchObject({ code: 'CART_IDEMPOTENCY_CONFLICT' });
   });
 
   test('replays item update and delete without applying either mutation twice', async () => {

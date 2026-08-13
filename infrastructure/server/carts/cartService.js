@@ -1,0 +1,237 @@
+'use strict';
+
+const crypto = require('crypto');
+const defaultCartRepository = require('./cartRepository').createCartRepository();
+const defaultProductService = require('../products/productService');
+
+const USD = 'USD';
+const MIN_QUANTITY = 1;
+const MAX_QUANTITY = 99;
+
+class CartServiceError extends Error {
+  constructor(code, message = code) {
+    super(message);
+    this.name = 'CartServiceError';
+    this.code = code;
+  }
+}
+
+function requiredString(value, field) {
+  if (typeof value !== 'string' || !value.trim()) throw new CartServiceError('CART_INVALID_INPUT', `${field} is required`);
+  return value.trim();
+}
+
+function canonical(value) {
+  if (Array.isArray(value)) return value.map(canonical);
+  if (value && typeof value === 'object') {
+    return Object.fromEntries(Object.keys(value).sort().map((key) => [key, canonical(value[key])]));
+  }
+  return value;
+}
+
+function dedupeKey(input) {
+  const identity = canonical({
+    productId: input.productId,
+    sku: input.sku,
+    variation: input.variation,
+    options: input.options,
+    personalization: input.personalization,
+    designId: input.designId,
+    uploadId: input.uploadId,
+    fulfillment: input.fulfillment,
+  });
+  return crypto.createHash('sha256').update(JSON.stringify(identity)).digest('hex');
+}
+
+function ownerFromContext(context) {
+  if (context?.type === 'customer') return { type: 'customer', customerId: requiredString(context.sub, 'sub') };
+  if (context?.type === 'anonymous') return { type: 'anonymous', anonymousSessionHash: requiredString(context.anonymousSessionHash, 'anonymousSessionHash') };
+  throw new CartServiceError('CART_ACCESS_DENIED');
+}
+
+function validateQuantity(quantity, product = {}) {
+  const minimum = Number.isInteger(product.minimumQuantity) ? Math.max(MIN_QUANTITY, product.minimumQuantity) : MIN_QUANTITY;
+  const maximum = Number.isInteger(product.maximumQuantity) ? Math.min(MAX_QUANTITY, product.maximumQuantity) : MAX_QUANTITY;
+  const increment = Number.isInteger(product.quantityIncrement) && product.quantityIncrement > 0 ? product.quantityIncrement : 1;
+  if (!Number.isInteger(quantity) || quantity < minimum || quantity > maximum || (quantity - minimum) % increment !== 0) {
+    throw new CartServiceError('CART_QUANTITY_INVALID');
+  }
+  return quantity;
+}
+
+function nonempty(value) {
+  return value !== undefined && value !== null && (!(typeof value === 'object') || Object.keys(value).length > 0);
+}
+
+function selectionSupported(requested, supported) {
+  if (!nonempty(requested)) return true;
+  if (!supported) return false;
+  if (Array.isArray(supported)) {
+    const needle = JSON.stringify(canonical(requested));
+    return supported.some((entry) => JSON.stringify(canonical(entry)) === needle || entry === requested);
+  }
+  if (typeof supported === 'object' && typeof requested === 'object') {
+    return Object.entries(requested).every(([key, value]) => {
+      const allowed = supported[key];
+      return Array.isArray(allowed) ? allowed.includes(value) : allowed === value;
+    });
+  }
+  return supported === requested;
+}
+
+function validateProductSelections(product, input) {
+  if (input.sku !== undefined && !selectionSupported(input.sku, product.skus || product.sku)) throw new CartServiceError('CART_INVALID_VARIATION');
+  if (!selectionSupported(input.variation, product.variations || product.variation)) throw new CartServiceError('CART_INVALID_VARIATION');
+  if (!selectionSupported(input.options, product.options)) throw new CartServiceError('CART_INVALID_VARIATION');
+  if (!selectionSupported(input.personalization, product.personalizationSchema || product.personalization)) throw new CartServiceError('CART_INVALID_PERSONALIZATION');
+}
+
+function totals(items) {
+  const subtotalCents = items.reduce((sum, item) => {
+    if (!Number.isInteger(item.lineTotalCents) || item.lineTotalCents < 0) throw new CartServiceError('CART_PRICE_CHANGED');
+    return sum + item.lineTotalCents;
+  }, 0);
+  if (!Number.isSafeInteger(subtotalCents)) throw new CartServiceError('CART_PRICE_CHANGED');
+  return { subtotalCents, discountCents: 0, taxCents: 0, shippingCents: 0, totalCents: subtotalCents };
+}
+
+function lifecycleError(status) {
+  const codes = {
+    pending_checkout: 'CART_CHECKOUT_IN_PROGRESS', expired: 'CART_EXPIRED',
+    abandoned: 'CART_ABANDONED', converted: 'CART_ALREADY_CONVERTED',
+  };
+  return codes[status] || 'CART_VERSION_CONFLICT';
+}
+
+function assertMutable(cart) {
+  if (!cart || !['draft', 'active'].includes(cart.status)) throw new CartServiceError(lifecycleError(cart?.status));
+}
+
+function assertOwned(cart, owner) {
+  const valid = owner.type === 'customer'
+    ? cart?.customerId === owner.customerId && !cart.anonymousSessionHash
+    : cart?.anonymousSessionHash === owner.anonymousSessionHash && !cart.customerId;
+  if (!valid) throw new CartServiceError('CART_ACCESS_DENIED');
+}
+
+function translate(error) {
+  if (error instanceof CartServiceError) return error;
+  if (error?.code) {
+    if (error.code === 'CART_PENDING_CHECKOUT_LOCKED') return new CartServiceError('CART_CHECKOUT_IN_PROGRESS');
+    return new CartServiceError(error.code);
+  }
+  return error;
+}
+
+function createCartService({ cartRepository = defaultCartRepository, productService = defaultProductService } = {}) {
+  async function getTrustedProduct(productId) {
+    const product = await productService.getProduct(requiredString(productId, 'productId'));
+    if (!product) throw new CartServiceError('CART_PRODUCT_UNAVAILABLE');
+    if (product.status !== 'active' || product.deletedAt) throw new CartServiceError('CART_PRODUCT_UNAVAILABLE');
+    if (!Number.isInteger(product.basePrice) || product.basePrice < 0) throw new CartServiceError('CART_PRICE_CHANGED');
+    if (product.currency && product.currency !== USD) throw new CartServiceError('CART_CURRENCY_MISMATCH');
+    return product;
+  }
+
+  async function createCart(context) {
+    const owner = ownerFromContext(context);
+    return cartRepository.createCart(owner.type === 'customer'
+      ? { cartType: 'customer', customerId: owner.customerId, currency: USD }
+      : { cartType: 'anonymous', anonymousSessionHash: owner.anonymousSessionHash, currency: USD });
+  }
+
+  async function getCurrentCart(context) {
+    const owner = ownerFromContext(context);
+    let cart;
+    if (owner.type === 'customer') {
+      cart = await cartRepository.findActiveCustomerCart(owner.customerId);
+      if (cart) assertOwned(cart, owner);
+      if (cart?.status === 'pending_checkout') throw new CartServiceError('CART_CHECKOUT_IN_PROGRESS');
+      if (!cart) cart = await createCart(context);
+    } else {
+      cart = await cartRepository.findAnonymousCartByHash(owner.anonymousSessionHash);
+      if (!cart) throw new CartServiceError('CART_NOT_FOUND');
+      assertOwned(cart, owner);
+    }
+    return { cart, items: await cartRepository.listCartItems(cart.cartId) };
+  }
+
+  async function addItem({ context, cartId, expectedCartVersion, mutationId, item }) {
+    try {
+      const owner = ownerFromContext(context);
+      const idempotencyInput = { operation: 'addItem', productId: item?.productId, sku: item?.sku, variation: canonical(item?.variation), options: canonical(item?.options), personalization: canonical(item?.personalization), designId: item?.designId, uploadId: item?.uploadId, quantity: item?.quantity };
+      const replay = await cartRepository.getMutationReplay({ cartId, owner, mutationId, idempotencyInput });
+      if (replay) return cartRepository.getCartItem(cartId, replay.result.cartItemId);
+      const cart = await cartRepository.getCart(requiredString(cartId, 'cartId'));
+      assertOwned(cart, owner);
+      assertMutable(cart);
+      const product = await getTrustedProduct(item?.productId);
+      validateProductSelections(product, item || {});
+      const requestedQuantity = validateQuantity(item.quantity, product);
+      const key = dedupeKey(item);
+      const existingItems = await cartRepository.listCartItems(cartId);
+      const existing = existingItems.find((entry) => entry.dedupeKey === key);
+      const quantity = validateQuantity((existing?.quantity || 0) + requestedQuantity, product);
+      const unitPriceCents = product.basePrice;
+      const lineTotalCents = unitPriceCents * quantity;
+      if (!Number.isSafeInteger(lineTotalCents)) throw new CartServiceError('CART_PRICE_CHANGED');
+      const inventoryStatus = product.availableForSale === false ? 'unavailable' : 'not_checked';
+      const validationStatus = inventoryStatus === 'not_checked' ? 'warning' : 'valid';
+      const snapshot = {
+        productId: product.productId || item.productId, sku: item.sku, variation: canonical(item.variation),
+        options: canonical(item.options), personalization: canonical(item.personalization), designId: item.designId,
+        uploadId: item.uploadId, fulfillment: canonical(item.fulfillment), dedupeKey: key, quantity, currency: USD, unitPriceCents,
+        lineTotalCents, productVersion: product.version, pricingVersion: product.pricingVersion,
+        validationStatus, inventoryStatus,
+      };
+      if (snapshot.inventoryStatus === 'unavailable') throw new CartServiceError('CART_INVENTORY_UNAVAILABLE');
+      const nextItems = existingItems.filter((entry) => entry.cartItemId !== existing?.cartItemId).concat(snapshot);
+      const cartUpdates = { ...totals(nextItems), validationStatus, ...(cart.status === 'draft' ? { status: 'active' } : {}) };
+      const { productId: immutableProductId, ...itemUpdates } = snapshot;
+      return existing
+        ? await cartRepository.updateCartItem({ cartId, cartItemId: existing.cartItemId, owner, expectedCartVersion, expectedItemVersion: existing.version, mutationId, updates: itemUpdates, cartUpdates, idempotencyInput })
+        : await cartRepository.createCartItem({ cartId, owner, expectedCartVersion, mutationId, item: snapshot, cartUpdates, idempotencyInput });
+    } catch (error) { throw translate(error); }
+  }
+
+  async function updateItemQuantity({ context, cartId, cartItemId, expectedCartVersion, expectedItemVersion, mutationId, quantity }) {
+    try {
+      const owner = ownerFromContext(context);
+      const idempotencyInput = { operation: 'updateItemQuantity', cartItemId, quantity };
+      const replay = await cartRepository.getMutationReplay({ cartId, owner, mutationId, idempotencyInput });
+      if (replay) return cartRepository.getCartItem(cartId, replay.result.cartItemId);
+      const cart = await cartRepository.getCart(requiredString(cartId, 'cartId'));
+      assertOwned(cart, owner);
+      assertMutable(cart);
+      const existing = await cartRepository.getCartItem(cartId, requiredString(cartItemId, 'cartItemId'));
+      if (!existing) throw new CartServiceError('CART_ITEM_NOT_FOUND');
+      const product = await getTrustedProduct(existing.productId);
+      validateQuantity(quantity, product);
+      const lineTotalCents = product.basePrice * quantity;
+      const items = await cartRepository.listCartItems(cartId);
+      const updated = { ...existing, quantity, unitPriceCents: product.basePrice, lineTotalCents };
+      const cartUpdates = { ...totals(items.map((entry) => entry.cartItemId === cartItemId ? updated : entry)), validationStatus: 'valid' };
+      return await cartRepository.updateCartItem({ cartId, cartItemId, owner, expectedCartVersion, expectedItemVersion, mutationId, updates: { quantity, unitPriceCents: product.basePrice, lineTotalCents, productVersion: product.version, pricingVersion: product.pricingVersion, validationStatus: 'valid' }, cartUpdates, idempotencyInput });
+    } catch (error) { throw translate(error); }
+  }
+
+  async function removeItem({ context, cartId, cartItemId, expectedCartVersion, expectedItemVersion, mutationId }) {
+    try {
+      const owner = ownerFromContext(context);
+      const idempotencyInput = { operation: 'removeItem', cartItemId };
+      const replay = await cartRepository.getMutationReplay({ cartId, owner, mutationId, idempotencyInput });
+      if (replay) return true;
+      const cart = await cartRepository.getCart(requiredString(cartId, 'cartId'));
+      assertOwned(cart, owner);
+      assertMutable(cart);
+      const items = await cartRepository.listCartItems(cartId);
+      if (!items.some((entry) => entry.cartItemId === cartItemId)) throw new CartServiceError('CART_ITEM_NOT_FOUND');
+      const cartUpdates = { ...totals(items.filter((entry) => entry.cartItemId !== cartItemId)), validationStatus: 'valid' };
+      return await cartRepository.deleteCartItem({ cartId, cartItemId, owner, expectedCartVersion, expectedItemVersion, mutationId, cartUpdates, idempotencyInput });
+    } catch (error) { throw translate(error); }
+  }
+
+  return { createCart, getCurrentCart, addItem, updateItemQuantity, removeItem };
+}
+
+module.exports = { createCartService, CartServiceError, dedupeKey, constants: { USD, MIN_QUANTITY, MAX_QUANTITY } };

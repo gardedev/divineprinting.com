@@ -22,7 +22,7 @@ const MAX_IDEMPOTENCY_RECORDS = 20;
 const MUTABLE_STATUSES = ['draft', 'active'];
 const CART_STATUSES = ['draft', 'active', 'pending_checkout', 'abandoned', 'expired', 'converted'];
 const CART_ITEM_FIELDS = [
-  'sku', 'productVersion', 'pricingVersion', 'variation', 'personalization',
+  'sku', 'productVersion', 'pricingVersion', 'variation', 'options', 'personalization', 'fulfillment',
   'uploadId', 'designId', 'dedupeKey', 'validationStatus', 'validationErrors',
   'inventoryStatus',
 ];
@@ -301,7 +301,7 @@ function createCartRepository({ client = docClient, now = () => new Date(), gene
     return response.Items || [];
   }
 
-  function itemMutationCartUpdate({ cartId, owner, expectedCartVersion, at, idempotencyRecords }) {
+  function itemMutationCartUpdate({ cartId, owner, expectedCartVersion, at, idempotencyRecords, cartUpdates = {} }) {
     const names = conditionNames();
     names['#updatedAt'] = 'updatedAt';
     names['#expiresAt'] = 'expiresAt';
@@ -310,7 +310,17 @@ function createCartRepository({ client = docClient, now = () => new Date(), gene
     const condition = mutableCondition(owner, expectedCartVersion, names, values);
     const ttl = owner.type === 'anonymous' ? ANONYMOUS_TTL_SECONDS : CUSTOMER_TTL_SECONDS;
     Object.assign(values, { ':nextCartVersion': expectedCartVersion + 1, ':updatedAt': at.toISOString(), ':expiresAt': Math.floor(at.getTime() / 1000) + ttl, ':records': idempotencyRecords });
-    return { Update: { TableName: CARTS_TABLE, Key: { cartId }, UpdateExpression: 'SET #version = :nextCartVersion, #updatedAt = :updatedAt, #expiresAt = :expiresAt, #records = :records', ConditionExpression: condition, ExpressionAttributeNames: names, ExpressionAttributeValues: values } };
+    const sets = ['#version = :nextCartVersion', '#updatedAt = :updatedAt', '#expiresAt = :expiresAt', '#records = :records'];
+    const allowed = new Set(['status', 'subtotalCents', 'discountCents', 'taxCents', 'shippingCents', 'totalCents', 'validationStatus']);
+    for (const [key, value] of Object.entries(cartUpdates)) {
+      if (!allowed.has(key)) throw new TypeError(`${key} is not mutable through an item transaction`);
+      if (key.endsWith('Cents')) integer(value, key);
+      if (key === 'status' && !CART_STATUSES.includes(value)) throw new TypeError('status is not a recognized cart lifecycle state');
+      names[`#cart_${key}`] = key;
+      values[`:cart_${key}`] = value;
+      sets.push(`#cart_${key} = :cart_${key}`);
+    }
+    return { Update: { TableName: CARTS_TABLE, Key: { cartId }, UpdateExpression: `SET ${sets.join(', ')}`, ConditionExpression: condition, ExpressionAttributeNames: names, ExpressionAttributeValues: values } };
   }
 
   async function prepareItemMutation({ cartId, owner, expectedCartVersion, mutationId, mutationFingerprint, result }) {
@@ -332,7 +342,18 @@ function createCartRepository({ client = docClient, now = () => new Date(), gene
     return { replay: false, records: [...(existing.idempotencyRecords || []), record].slice(-MAX_IDEMPOTENCY_RECORDS), record };
   }
 
-  async function createCartItem({ cartId, owner, expectedCartVersion, mutationId, item }) {
+  async function getMutationReplay({ cartId, owner, mutationId, idempotencyInput }) {
+    const id = requiredString(mutationId, 'mutationId');
+    const existing = await getCart(cartId);
+    if (!existing) throw new CartRepositoryError('CART_NOT_FOUND');
+    assertOwnerMatches(existing, owner);
+    const prior = (existing.idempotencyRecords || []).find((record) => record.mutationId === id);
+    if (!prior) return null;
+    if (prior.fingerprint !== fingerprint(idempotencyInput)) throw new CartRepositoryError('CART_IDEMPOTENCY_CONFLICT');
+    return prior;
+  }
+
+  async function createCartItem({ cartId, owner, expectedCartVersion, mutationId, item, cartUpdates = {}, idempotencyInput }) {
     assertNoRawIdentity(item);
     const at = now();
     const validatedProductId = requiredString(item.productId, 'productId');
@@ -340,7 +361,7 @@ function createCartRepository({ client = docClient, now = () => new Date(), gene
     const validatedUnitPrice = integer(item.unitPriceCents, 'unitPriceCents');
     const validatedLineTotal = integer(item.lineTotalCents, 'lineTotalCents');
     const semanticItem = { productId: validatedProductId, quantity: validatedQuantity, currency: item.currency || 'USD', unitPriceCents: validatedUnitPrice, lineTotalCents: validatedLineTotal, ...Object.fromEntries(CART_ITEM_FIELDS.filter((field) => item[field] !== undefined).map((field) => [field, item[field]])) };
-    const mutationFingerprint = fingerprint({ operation: 'createCartItem', item: semanticItem });
+    const mutationFingerprint = fingerprint(idempotencyInput || { operation: 'createCartItem', item: semanticItem });
     const prepared = await prepareItemMutation({ cartId, owner, expectedCartVersion, mutationId, mutationFingerprint });
     if (prepared.replay) return getCartItem(cartId, prepared.record.result.cartItemId);
     const cartItemId = item.cartItemId ? requiredString(item.cartItemId, 'cartItemId') : generateId();
@@ -348,14 +369,14 @@ function createCartRepository({ client = docClient, now = () => new Date(), gene
     const snapshots = Object.fromEntries(CART_ITEM_FIELDS.filter((field) => item[field] !== undefined).map((field) => [field, item[field]]));
     const persisted = { ...snapshots, cartId: requiredString(cartId, 'cartId'), cartItemId, ...semanticItem, createdAt: at.toISOString(), updatedAt: at.toISOString(), version: 1 };
     try {
-      await client.send(new TransactWriteCommand({ TransactItems: [itemMutationCartUpdate({ cartId, owner, expectedCartVersion, at, idempotencyRecords: prepared.records }), { Put: { TableName: CART_ITEMS_TABLE, Item: persisted, ConditionExpression: 'attribute_not_exists(cartId) AND attribute_not_exists(cartItemId)' } }] }));
+      await client.send(new TransactWriteCommand({ TransactItems: [itemMutationCartUpdate({ cartId, owner, expectedCartVersion, at, idempotencyRecords: prepared.records, cartUpdates }), { Put: { TableName: CART_ITEMS_TABLE, Item: persisted, ConditionExpression: 'attribute_not_exists(cartId) AND attribute_not_exists(cartItemId)' } }] }));
       return persisted;
     } catch (error) { throw translate(error); }
   }
 
-  async function updateCartItem({ cartId, cartItemId, owner, expectedCartVersion, expectedItemVersion, mutationId, updates }) {
+  async function updateCartItem({ cartId, cartItemId, owner, expectedCartVersion, expectedItemVersion, mutationId, updates, cartUpdates = {}, idempotencyInput }) {
     assertNoRawIdentity(updates);
-    const allowed = new Set(['quantity', 'unitPriceCents', 'lineTotalCents', 'currency', 'productVersion', 'pricingVersion', 'variation', 'personalization', 'uploadId', 'designId', 'dedupeKey', 'validationStatus', 'inventoryStatus']);
+    const allowed = new Set(['quantity', 'unitPriceCents', 'lineTotalCents', 'currency', 'productVersion', 'pricingVersion', 'variation', 'options', 'personalization', 'fulfillment', 'uploadId', 'designId', 'dedupeKey', 'validationStatus', 'inventoryStatus']);
     const names = { '#cartId': 'cartId', '#cartItemId': 'cartItemId', '#version': 'version', '#updatedAt': 'updatedAt' };
     const values = { ':expectedItemVersion': integer(expectedItemVersion, 'expectedItemVersion', { min: 1 }), ':nextItemVersion': expectedItemVersion + 1, ':updatedAt': now().toISOString() };
     const sets = ['#version = :nextItemVersion', '#updatedAt = :updatedAt'];
@@ -365,23 +386,23 @@ function createCartRepository({ client = docClient, now = () => new Date(), gene
       if (key.endsWith('Cents')) integer(value, key);
       names[`#u_${key}`] = key; values[`:u_${key}`] = value; sets.push(`#u_${key} = :u_${key}`);
     }
-    const mutationFingerprint = fingerprint({ operation: 'updateCartItem', cartItemId, updates });
+    const mutationFingerprint = fingerprint(idempotencyInput || { operation: 'updateCartItem', cartItemId, updates });
     const prepared = await prepareItemMutation({ cartId, owner, expectedCartVersion, mutationId, mutationFingerprint, result: { cartItemId } });
     if (prepared.replay) return getCartItem(cartId, cartItemId);
     const at = now();
     try {
-      await client.send(new TransactWriteCommand({ TransactItems: [itemMutationCartUpdate({ cartId: requiredString(cartId, 'cartId'), owner, expectedCartVersion, at, idempotencyRecords: prepared.records }), { Update: { TableName: CART_ITEMS_TABLE, Key: { cartId, cartItemId: requiredString(cartItemId, 'cartItemId') }, UpdateExpression: `SET ${sets.join(', ')}`, ConditionExpression: 'attribute_exists(#cartId) AND attribute_exists(#cartItemId) AND #version = :expectedItemVersion', ExpressionAttributeNames: names, ExpressionAttributeValues: values } }] }));
+      await client.send(new TransactWriteCommand({ TransactItems: [itemMutationCartUpdate({ cartId: requiredString(cartId, 'cartId'), owner, expectedCartVersion, at, idempotencyRecords: prepared.records, cartUpdates }), { Update: { TableName: CART_ITEMS_TABLE, Key: { cartId, cartItemId: requiredString(cartItemId, 'cartItemId') }, UpdateExpression: `SET ${sets.join(', ')}`, ConditionExpression: 'attribute_exists(#cartId) AND attribute_exists(#cartItemId) AND #version = :expectedItemVersion', ExpressionAttributeNames: names, ExpressionAttributeValues: values } }] }));
       return { cartId, cartItemId, ...updates, version: expectedItemVersion + 1, updatedAt: at.toISOString() };
     } catch (error) { throw translate(error); }
   }
 
-  async function deleteCartItem({ cartId, cartItemId, owner, expectedCartVersion, expectedItemVersion, mutationId }) {
+  async function deleteCartItem({ cartId, cartItemId, owner, expectedCartVersion, expectedItemVersion, mutationId, cartUpdates = {}, idempotencyInput }) {
     const at = now();
-    const mutationFingerprint = fingerprint({ operation: 'deleteCartItem', cartItemId });
+    const mutationFingerprint = fingerprint(idempotencyInput || { operation: 'deleteCartItem', cartItemId });
     const prepared = await prepareItemMutation({ cartId, owner, expectedCartVersion, mutationId, mutationFingerprint, result: { cartItemId, deleted: true } });
     if (prepared.replay) return true;
     try {
-      await client.send(new TransactWriteCommand({ TransactItems: [itemMutationCartUpdate({ cartId: requiredString(cartId, 'cartId'), owner, expectedCartVersion, at, idempotencyRecords: prepared.records }), { Delete: { TableName: CART_ITEMS_TABLE, Key: { cartId, cartItemId: requiredString(cartItemId, 'cartItemId') }, ConditionExpression: 'attribute_exists(#cartId) AND attribute_exists(#cartItemId) AND #version = :expectedItemVersion', ExpressionAttributeNames: { '#cartId': 'cartId', '#cartItemId': 'cartItemId', '#version': 'version' }, ExpressionAttributeValues: { ':expectedItemVersion': integer(expectedItemVersion, 'expectedItemVersion', { min: 1 }) } } }] }));
+      await client.send(new TransactWriteCommand({ TransactItems: [itemMutationCartUpdate({ cartId: requiredString(cartId, 'cartId'), owner, expectedCartVersion, at, idempotencyRecords: prepared.records, cartUpdates }), { Delete: { TableName: CART_ITEMS_TABLE, Key: { cartId, cartItemId: requiredString(cartItemId, 'cartItemId') }, ConditionExpression: 'attribute_exists(#cartId) AND attribute_exists(#cartItemId) AND #version = :expectedItemVersion', ExpressionAttributeNames: { '#cartId': 'cartId', '#cartItemId': 'cartItemId', '#version': 'version' }, ExpressionAttributeValues: { ':expectedItemVersion': integer(expectedItemVersion, 'expectedItemVersion', { min: 1 }) } } }] }));
       return true;
     } catch (error) { throw translate(error); }
   }
@@ -393,7 +414,7 @@ function createCartRepository({ client = docClient, now = () => new Date(), gene
     } catch (error) { throw translate(error); }
   }
 
-  return { createCart, getCart, findActiveCustomerCart, findAnonymousCartByHash, queryExpiringCarts, mutateCart, transitionExpiredCart, listCartItems, getCartItem, findCartItemsByProduct, createCartItem, updateCartItem, deleteCartItem, executeTransaction };
+  return { createCart, getCart, findActiveCustomerCart, findAnonymousCartByHash, queryExpiringCarts, mutateCart, transitionExpiredCart, listCartItems, getCartItem, findCartItemsByProduct, getMutationReplay, createCartItem, updateCartItem, deleteCartItem, executeTransaction };
 }
 
 module.exports = { createCartRepository, CartRepositoryError, constants: { CARTS_TABLE, CART_ITEMS_TABLE, CUSTOMER_INDEX, ANONYMOUS_INDEX, EXPIRY_INDEX, PRODUCT_INDEX, ANONYMOUS_TTL_SECONDS, CUSTOMER_TTL_SECONDS, MAX_IDEMPOTENCY_RECORDS }, fingerprint };
