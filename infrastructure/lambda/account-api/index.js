@@ -1,25 +1,16 @@
 /**
- * Divine Printing — Account API
+ * Divine Printing account API.
  *
- * Authenticated endpoints for customers to fetch their orders and profile.
- * Expects Authorization: Bearer <sessionToken> header.
- *
- * Routes (via API Gateway):
- *   GET /account/orders  — list customer orders
- *   GET /account/profile — get customer profile
- *
- * AWS SDK v3 — Node.js 20.x
+ * API Gateway verifies Cognito access-token signatures through its JWT
+ * authorizer. This Lambda accepts identity only from the verified authorizer
+ * claims and performs defense-in-depth Cognito claim checks before accessing
+ * customer data.
  */
 
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import { DynamoDBDocumentClient, QueryCommand, GetCommand } from '@aws-sdk/lib-dynamodb';
-import { createHmac } from 'node:crypto';
 
-const ddb = DynamoDBDocumentClient.from(new DynamoDBClient({}));
-
-const ORDERS_TABLE      = process.env.ORDERS_TABLE      || 'divine-printing-orders';
-const CUSTOMERS_TABLE   = process.env.CUSTOMERS_TABLE   || 'divine-printing-customers';
-const MAGIC_LINK_SECRET = process.env.MAGIC_LINK_SECRET || '';
+const defaultDdb = DynamoDBDocumentClient.from(new DynamoDBClient({}));
 
 const CORS_HEADERS = {
   'Content-Type': 'application/json',
@@ -31,88 +22,102 @@ function respond(statusCode, body) {
   return { statusCode, headers: CORS_HEADERS, body: JSON.stringify(body) };
 }
 
+function authFailure(statusCode, code, error) {
+  return { ok: false, response: respond(statusCode, { error, code }) };
+}
+
 /**
- * Verify the session token from Authorization header.
- * Returns { email, exp } or null.
+ * Reads identity exclusively from API Gateway's verified JWT authorizer.
+ * Raw Authorization headers and client-supplied identity are never inspected.
  */
-function verifySession(event) {
-  const authHeader = event.headers?.authorization || event.headers?.Authorization || '';
-  const token = authHeader.replace(/^Bearer\s+/i, '').trim();
-
-  if (!token || !token.includes('.')) return null;
-
-  const [payload, sig] = token.split('.');
-  const expectedSig = createHmac('sha256', MAGIC_LINK_SECRET).update(payload).digest('hex');
-
-  if (sig !== expectedSig) return null;
-
-  try {
-    const data = JSON.parse(Buffer.from(payload, 'base64url').toString());
-    if (data.exp && data.exp < Math.floor(Date.now() / 1000)) return null;
-    return data;
-  } catch {
-    return null;
+export function getTrustedIdentity(event, env = process.env, nowSeconds = Math.floor(Date.now() / 1000)) {
+  const claims = event.requestContext?.authorizer?.jwt?.claims;
+  if (!claims) {
+    return authFailure(401, 'MISSING_TOKEN', 'A valid Cognito access token is required.');
   }
+
+  const expectedIssuer = env.COGNITO_ISSUER;
+  const expectedClientId = env.COGNITO_CLIENT_ID;
+
+  if (!expectedIssuer || !expectedClientId) {
+    return authFailure(500, 'AUTH_CONFIGURATION_ERROR', 'Authentication is unavailable.');
+  }
+  if (claims.iss !== expectedIssuer) {
+    return authFailure(403, 'INVALID_ISSUER', 'Token issuer is invalid.');
+  }
+  if (claims.client_id !== expectedClientId) {
+    return authFailure(403, 'INVALID_CLIENT_ID', 'Token client is invalid.');
+  }
+  if (claims.token_use !== 'access') {
+    return authFailure(403, 'INVALID_TOKEN_USE', 'An access token is required.');
+  }
+  if (!claims.exp || Number(claims.exp) <= nowSeconds) {
+    return authFailure(401, 'TOKEN_EXPIRED', 'Token has expired.');
+  }
+  if (!claims.sub || typeof claims.email !== 'string' || !claims.email.trim()) {
+    return authFailure(403, 'MISSING_CLAIMS', 'Required identity claims are missing.');
+  }
+
+  return {
+    ok: true,
+    identity: {
+      sub: claims.sub,
+      email: claims.email.trim().toLowerCase(),
+    },
+  };
 }
 
-export async function handler(event) {
-  // Handle CORS preflight
-  if (event.requestContext?.http?.method === 'OPTIONS') {
-    return respond(200, {});
-  }
+export function createHandler({
+  ddb = defaultDdb,
+  env = process.env,
+  now = () => Math.floor(Date.now() / 1000),
+} = {}) {
+  const ordersTable = env.ORDERS_TABLE || 'divine-printing-orders';
+  const customersTable = env.CUSTOMERS_TABLE || 'divine-printing-customers';
 
-  // Authenticate
-  const session = verifySession(event);
-  if (!session) {
-    return respond(401, { error: 'Unauthorized — please sign in' });
-  }
+  return async function accountApiHandler(event) {
+    if (event.requestContext?.http?.method === 'OPTIONS') {
+      return respond(200, {});
+    }
 
-  const email = session.email;
-  const routeKey = event.routeKey || event.requestContext?.http?.path || '';
+    const auth = getTrustedIdentity(event, env, now());
+    if (!auth.ok) return auth.response;
 
-  // Route: GET /account/orders
-  if (routeKey.includes('/account/orders')) {
-    return await getOrders(email);
-  }
-
-  // Route: GET /account/profile
-  if (routeKey.includes('/account/profile')) {
-    return await getProfile(email);
-  }
-
-  return respond(404, { error: 'Not found' });
+    const routeKey = event.routeKey || event.requestContext?.http?.path || '';
+    if (routeKey.includes('/account/orders')) {
+      return getOrders(ddb, ordersTable, auth.identity.email);
+    }
+    if (routeKey.includes('/account/profile')) {
+      return getProfile(ddb, customersTable, auth.identity.email);
+    }
+    return respond(404, { error: 'Not found' });
+  };
 }
 
-// ---------------------------------------------------------------------------
-// Route handlers
-// ---------------------------------------------------------------------------
-
-async function getOrders(email) {
+async function getOrders(ddb, ordersTable, email) {
   try {
     const result = await ddb.send(new QueryCommand({
-      TableName: ORDERS_TABLE,
+      TableName: ordersTable,
       IndexName: 'CustomerEmailIndex',
       KeyConditionExpression: 'customerEmail = :email',
       ExpressionAttributeValues: { ':email': email },
-      ScanIndexForward: false, // newest first
+      ScanIndexForward: false,
     }));
 
-    const orders = (result.Items || []).map((order) => ({
-      orderId:       order.orderId,
-      items:         order.items || [],
-      subtotal:      order.subtotal,
-      taxesTotal:    order.taxesTotal,
+    const orders = (result.Items || []).map(order => ({
+      orderId: order.orderId,
+      items: order.items || [],
+      subtotal: order.subtotal,
+      taxesTotal: order.taxesTotal,
       shippingTotal: order.shippingTotal,
-      total:         order.total,
-      currency:      order.currency,
-      status:        order.status,
+      total: order.total,
+      currency: order.currency,
+      status: order.status,
       shippingAddress: order.shippingAddress || {},
-      createdAt:     order.createdAt,
+      createdAt: order.createdAt,
     }));
 
-    // Compute summary stats
-    const totalSpent = orders.reduce((sum, o) => sum + (o.total || 0), 0);
-
+    const totalSpent = orders.reduce((sum, order) => sum + (order.total || 0), 0);
     return respond(200, {
       orders,
       summary: {
@@ -120,34 +125,32 @@ async function getOrders(email) {
         totalSpent: Math.round(totalSpent * 100) / 100,
       },
     });
-  } catch (err) {
-    console.error('Error fetching orders:', err);
+  } catch (_error) {
     return respond(500, { error: 'Failed to fetch orders' });
   }
 }
 
-async function getProfile(email) {
+async function getProfile(ddb, customersTable, email) {
   try {
     const result = await ddb.send(new GetCommand({
-      TableName: CUSTOMERS_TABLE,
+      TableName: customersTable,
       Key: { email },
     }));
 
-    if (!result.Item) {
-      return respond(404, { error: 'Customer not found' });
-    }
+    if (!result.Item) return respond(404, { error: 'Customer not found' });
 
     return respond(200, {
       customer: {
-        email:      result.Item.email,
-        name:       result.Item.name || '',
+        email: result.Item.email,
+        name: result.Item.name || '',
         orderCount: result.Item.orderCount || 0,
-        createdAt:  result.Item.createdAt || '',
+        createdAt: result.Item.createdAt || '',
         lastOrderAt: result.Item.lastOrderAt || '',
       },
     });
-  } catch (err) {
-    console.error('Error fetching profile:', err);
+  } catch (_error) {
     return respond(500, { error: 'Failed to fetch profile' });
   }
 }
+
+export const handler = createHandler();

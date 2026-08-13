@@ -370,6 +370,27 @@ describe('bootstrapCustomer', () => {
     });
   });
 
+  describe('blocked existing account rejection', () => {
+    const blocked = [
+      ['disabled', DomainErrors.ACCOUNT_DISABLED],
+      ['deletion_requested', DomainErrors.DELETION_REQUESTED],
+      ['deleted', DomainErrors.ACCOUNT_DELETED],
+      ['merged', DomainErrors.ACCOUNT_MERGED],
+    ];
+
+    test.each(blocked)('rejects accountStatus=%s with %s', async (accountStatus, expectedCode) => {
+      const repo = makeMockRepo({
+        getCustomerById: jest.fn().mockResolvedValue(makeStoredCustomer({ accountStatus })),
+      });
+
+      const error = await bootstrapCustomer(makeAuth(), repo).catch(err => err);
+
+      expect(error.code).toBe(expectedCode);
+      expect(error.status).toBe(403);
+      expect(repo.updateCustomer).not.toHaveBeenCalled();
+    });
+  });
+
   // =========================================================================
   // IDs derived from sub — NEVER from body
   // =========================================================================

@@ -1,179 +1,175 @@
 /**
- * Divine Printing — Account Auth Client
+ * account-auth.js — Divine Printing Account Auth Client (Task 4.4)
  *
- * Handles magic-link sign-in flow, session management (localStorage),
- * and authenticated API calls to the account backend.
+ * LEGACY NOTICE: This file previously implemented a magic-link sign-in flow
+ * and localStorage-based session management. Both have been REMOVED as they
+ * are architecturally incompatible with the approved Cognito Hosted UI + PKCE
+ * authentication architecture.
  *
- * Usage:
- *   <script src="/js/account-auth.js"></script>
- *   <script>
- *     // Set API URL before using (from Terraform output)
- *     DivinePrintingAuth.init('https://xxxxx.execute-api.us-east-1.amazonaws.com');
- *   </script>
+ * Removed features:
+ *   - Magic-link email sending (POST /auth/send-magic-link)
+ *   - Magic-link token validation (POST /auth/validate)
+ *   - localStorage session token storage (dp_session_token, dp_customer)
+ *   - DivinePrintingAuth.init() token-in-URL handler
+ *
+ * The canonical authentication flow is now:
+ *   1. User clicks "Sign In" → Redirected to Cognito Hosted UI (cognito-auth.js)
+ *   2. Cognito redirects back with authorization code (PKCE)
+ *   3. cognito-auth.js exchanges code for tokens (Access, ID, Refresh)
+ *   4. Access Token is stored in sessionStorage (never localStorage)
+ *   5. ID Token is used ONLY for display info on the frontend
+ *   6. Refresh Token remains frontend-to-Cognito in sessionStorage only
+ *   7. cognito-auth.js calls POST /api/customers/bootstrap automatically
+ *
+ * Retained for compatibility:
+ *   - DivinePrintingAuth.isSignedIn() → delegates to cognito-auth.js getCurrentUser()
+ *   - DivinePrintingAuth.signOut()    → delegates to cognito-auth.js logout()
+ *   - DivinePrintingAuth.getCustomer() → delegates to cognito-auth.js getCurrentUser()
+ *
+ * Pages that previously called DivinePrintingAuth.init() should instead
+ * ensure cognito-auth.js is loaded; it auto-initializes on DOMContentLoaded.
  */
 
+'use strict';
+
 (function (root) {
-  'use strict';
 
-  var STORAGE_SESSION_KEY  = 'dp_session_token';
-  var STORAGE_CUSTOMER_KEY = 'dp_customer';
-  var apiBaseUrl = '';
+  // -------------------------------------------------------------------------
+  // Public API (compatibility shim — delegates to cognito-auth.js)
+  // -------------------------------------------------------------------------
 
-  // ---------------------------------------------------------------------------
-  // Init
-  // ---------------------------------------------------------------------------
+  /**
+   * init() is now a no-op. Authentication is initialized automatically by
+   * cognito-auth.js on DOMContentLoaded.
+   *
+   * Previously: accepted a base URL and handled magic-link ?token= params.
+   * Now: REMOVED — magic-link flow is disabled per approved architecture.
+   *
+   * @deprecated No-op. Kept for backward compatibility of callers.
+   */
+  function init() {
+    // No-op. cognito-auth.js handles initialization automatically.
+    // Magic-link ?token= handling has been permanently removed.
+  }
 
-  function init(baseUrl) {
-    apiBaseUrl = (baseUrl || '').replace(/\/+$/, '');
-
-    // Check for magic link token in URL
-    var urlParams = new URLSearchParams(window.location.search);
-    var token = urlParams.get('token');
-    if (token) {
-      validateToken(token);
+  /**
+   * Returns whether the user is currently signed in.
+   * Delegates to cognito-auth.js getCurrentUser() (sessionStorage/in-memory check).
+   *
+   * @returns {boolean}
+   */
+  function isSignedIn() {
+    if (typeof getCurrentUser === 'function') {
+      return getCurrentUser() !== null;
+    }
+    // Fallback: check sessionStorage directly if cognito-auth.js is not loaded
+    try {
+      return !!sessionStorage.getItem('dp_access_token');
+    } catch (_e) {
+      return false;
     }
   }
 
-  // ---------------------------------------------------------------------------
-  // Session management
-  // ---------------------------------------------------------------------------
-
-  function getSession() {
-    try {
-      var token = localStorage.getItem(STORAGE_SESSION_KEY);
-      var customer = JSON.parse(localStorage.getItem(STORAGE_CUSTOMER_KEY) || 'null');
-      if (token && customer) {
-        // Check client-side expiry (token is base64url payload + sig)
-        var parts = token.split('.');
-        if (parts.length === 2) {
-          var payload = JSON.parse(atob(parts[0].replace(/-/g, '+').replace(/_/g, '/')));
-          if (payload.exp && payload.exp < Math.floor(Date.now() / 1000)) {
-            signOut();
-            return null;
-          }
-        }
-        return { token: token, customer: customer };
-      }
-    } catch (e) {
-      console.warn('Session parse error:', e);
+  /**
+   * Returns the current user object (from ID Token — display purposes only).
+   * Delegates to cognito-auth.js getCurrentUser().
+   *
+   * @returns {{email: string, name: string, sub: string, emailVerified: boolean}|null}
+   */
+  function getCustomer() {
+    if (typeof getCurrentUser === 'function') {
+      return getCurrentUser();
     }
     return null;
   }
 
-  function isSignedIn() {
-    return getSession() !== null;
-  }
-
-  function getCustomer() {
-    var session = getSession();
-    return session ? session.customer : null;
-  }
-
+  /**
+   * Signs the user out. Delegates to cognito-auth.js logout().
+   * Clears sessionStorage, in-memory tokens, and redirects to Cognito logout.
+   */
   function signOut() {
-    localStorage.removeItem(STORAGE_SESSION_KEY);
-    localStorage.removeItem(STORAGE_CUSTOMER_KEY);
-  }
-
-  // ---------------------------------------------------------------------------
-  // Auth flow
-  // ---------------------------------------------------------------------------
-
-  /**
-   * Request a magic link email.
-   * Returns a promise that resolves with { message } or rejects.
-   */
-  function sendMagicLink(email) {
-    return fetch(apiBaseUrl + '/auth/send-magic-link', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email: email }),
-    }).then(function (res) {
-      return res.json();
-    });
-  }
-
-  /**
-   * Validate a magic-link token (called automatically when ?token= is in URL).
-   * On success, stores session + customer in localStorage and reloads page.
-   */
-  function validateToken(token) {
-    fetch(apiBaseUrl + '/auth/validate', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ token: token }),
-    })
-    .then(function (res) { return res.json(); })
-    .then(function (data) {
-      if (data.sessionToken && data.customer) {
-        localStorage.setItem(STORAGE_SESSION_KEY, data.sessionToken);
-        localStorage.setItem(STORAGE_CUSTOMER_KEY, JSON.stringify(data.customer));
-
-        // Clean the URL (remove token param) and reload
-        var url = new URL(window.location.href);
-        url.searchParams.delete('token');
-        window.location.replace(url.pathname + url.search + url.hash);
-      } else {
-        console.error('Token validation failed:', data);
-        showTokenError(data.error || 'Invalid or expired link. Please request a new one.');
-      }
-    })
-    .catch(function (err) {
-      console.error('Token validation error:', err);
-      showTokenError('Something went wrong. Please try again.');
-    });
-  }
-
-  function showTokenError(message) {
-    // Dispatch a custom event so the page can display the error
-    window.dispatchEvent(new CustomEvent('dp-auth-error', { detail: { message: message } }));
-  }
-
-  // ---------------------------------------------------------------------------
-  // Authenticated API calls
-  // ---------------------------------------------------------------------------
-
-  function authFetch(path, options) {
-    var session = getSession();
-    if (!session) {
-      return Promise.reject(new Error('Not signed in'));
+    if (typeof logout === 'function') {
+      logout();
+      return;
     }
-
-    options = options || {};
-    options.headers = options.headers || {};
-    options.headers['Authorization'] = 'Bearer ' + session.token;
-
-    return fetch(apiBaseUrl + path, options).then(function (res) {
-      if (res.status === 401) {
-        // Session expired
-        signOut();
-        window.location.reload();
-        return Promise.reject(new Error('Session expired'));
-      }
-      return res.json();
-    });
+    // Fallback if cognito-auth.js is not loaded
+    try {
+      sessionStorage.removeItem('dp_access_token');
+      sessionStorage.removeItem('dp_id_token');
+      sessionStorage.removeItem('dp_refresh_token');
+      // Clean up any legacy localStorage tokens
+      localStorage.removeItem('dp_token');
+      localStorage.removeItem('dp_customer');
+      localStorage.removeItem('dp_session_token');
+      localStorage.removeItem('dp_access_token');
+      localStorage.removeItem('dp_id_token');
+      localStorage.removeItem('dp_refresh_token');
+    } catch (_e) {
+      // Storage unavailable
+    }
+    window.location.reload();
   }
 
+  // -------------------------------------------------------------------------
+  // Explicitly removed functions (throw safe errors if accidentally called)
+  // -------------------------------------------------------------------------
+
+  /**
+   * @deprecated REMOVED. Magic-link flow is incompatible with Cognito PKCE architecture.
+   * @throws {Error}
+   */
+  function sendMagicLink() {
+    throw new Error(
+      'sendMagicLink has been removed. Use the Cognito Hosted UI login flow (cognito-auth.js).'
+    );
+  }
+
+  /**
+   * @deprecated REMOVED. Legacy backend session fetch is removed.
+   * @throws {Error}
+   */
   function fetchOrders() {
-    return authFetch('/account/orders');
+    throw new Error(
+      'fetchOrders on DivinePrintingAuth has been removed. ' +
+      'Use authenticatedFetch from cognito-auth.js instead.'
+    );
   }
 
+  /**
+   * @deprecated REMOVED. Legacy backend profile fetch is removed.
+   * @throws {Error}
+   */
   function fetchProfile() {
-    return authFetch('/account/profile');
+    throw new Error(
+      'fetchProfile on DivinePrintingAuth has been removed. ' +
+      'Profile data is derived from the Cognito ID Token via getCurrentUser().'
+    );
   }
 
-  // ---------------------------------------------------------------------------
+  // -------------------------------------------------------------------------
   // Export
-  // ---------------------------------------------------------------------------
+  // -------------------------------------------------------------------------
 
   root.DivinePrintingAuth = {
-    init:           init,
-    getSession:     getSession,
-    isSignedIn:     isSignedIn,
-    getCustomer:    getCustomer,
-    signOut:        signOut,
-    sendMagicLink:  sendMagicLink,
-    fetchOrders:    fetchOrders,
-    fetchProfile:   fetchProfile,
+    init,
+    isSignedIn,
+    getCustomer,
+    signOut,
+    // Removed functions (kept as stubs for safe failure)
+    sendMagicLink,
+    fetchOrders,
+    fetchProfile,
   };
 
-})(window);
+})(typeof window !== 'undefined' ? window : (typeof global !== 'undefined' ? global : this));
+
+// ---------------------------------------------------------------------------
+// Exports (for testing)
+// ---------------------------------------------------------------------------
+
+if (typeof module !== 'undefined' && module.exports) {
+  // Re-export the DivinePrintingAuth object for Node.js test access
+  module.exports = {
+    DivinePrintingAuth: (typeof window !== 'undefined' ? window.DivinePrintingAuth : null),
+  };
+}

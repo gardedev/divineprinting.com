@@ -35,6 +35,10 @@ const DomainErrors = {
   MISSING_CLAIMS: 'MISSING_CLAIMS',
   EMAIL_UNVERIFIED: 'EMAIL_UNVERIFIED',
   ACCOUNT_EMAIL_CONFLICT: 'ACCOUNT_EMAIL_CONFLICT',
+  ACCOUNT_DISABLED: 'ACCOUNT_DISABLED',
+  DELETION_REQUESTED: 'DELETION_REQUESTED',
+  ACCOUNT_DELETED: 'ACCOUNT_DELETED',
+  ACCOUNT_MERGED: 'ACCOUNT_MERGED',
   CUSTOMER_BOOTSTRAP_FAILED: 'CUSTOMER_BOOTSTRAP_FAILED',
   CONCURRENT_MODIFICATION: 'CONCURRENT_MODIFICATION',
 };
@@ -158,6 +162,21 @@ async function bootstrapCustomer(trustedAuth, _repo) {
   const existing = await repo.getCustomerById(customerId);
 
   if (existing) {
+    const blockedStatusErrors = {
+      disabled: DomainErrors.ACCOUNT_DISABLED,
+      deletion_requested: DomainErrors.DELETION_REQUESTED,
+      deleted: DomainErrors.ACCOUNT_DELETED,
+      merged: DomainErrors.ACCOUNT_MERGED,
+    };
+    const blockedCode = blockedStatusErrors[existing.accountStatus];
+    if (blockedCode) {
+      throw createDomainError(
+        blockedCode,
+        'This account is not eligible for application access.',
+        403
+      );
+    }
+
     // Idempotent update — record already exists for this sub.
     // Update mutable fields that may have changed (e.g., email sync from Cognito).
     const updates = {

@@ -2,7 +2,7 @@
 const express = require('express');
 const cors = require('cors');
 const crypto = require('crypto');
-const { GetCommand, PutCommand, QueryCommand } = require('@aws-sdk/lib-dynamodb');
+const { PutCommand } = require('@aws-sdk/lib-dynamodb');
 
 const logger = require('./utils/logger');
 
@@ -15,6 +15,7 @@ const publicProductRoutes = require('./products/publicProductRoutes');
 
 // Customer registration (Task 4.3)
 const { createCustomerRegistrationRouter } = require('./api/customerRegistrationApi');
+const { createCustomerOrdersRouter } = require('./api/customerOrdersApi');
 const { jwtAuth } = require('./middleware/jwtAuth');
 
 const app = express();
@@ -36,11 +37,25 @@ app.use('/api/products', publicProductRoutes);
 // Identity is derived exclusively from the verified Cognito JWT; no passwords are
 // accepted or stored.
 app.use('/api/customers', createCustomerRegistrationRouter(jwtAuth));
+app.use('/api/orders', createCustomerOrdersRouter(jwtAuth, docClient, ORDERS_TABLE));
 
-// Legacy /api/auth/register endpoint has been permanently disabled.
-// It previously accepted plaintext passwords and generated random UUIDs — both
-// security anti-patterns. All customer creation now flows through
-// POST /api/customers/bootstrap (Cognito-backed, JWT-authenticated).
+// ---------------------------------------------------------------------------
+// Legacy auth endpoints — PERMANENTLY DISABLED (Task 4.4)
+//
+// POST /api/auth/register — removed in Task 4.3/4.4.
+//   Previously accepted plaintext passwords and generated random UUIDs.
+//   All customer creation now flows through POST /api/customers/bootstrap
+//   (Cognito-backed, JWT-authenticated, no passwords accepted or stored).
+//
+// POST /api/auth/login — removed in Task 4.4.
+//   Previously accepted email + password and returned a homegrown session token.
+//   Authentication is now exclusively via Cognito Hosted UI + PKCE.
+//   The backend is stateless; no session tokens are issued or stored.
+//
+// Both endpoints return 404 ENDPOINT_REMOVED. The backend MUST NOT expose
+// any password-based login or registration endpoint.
+// ---------------------------------------------------------------------------
+
 app.post('/api/auth/register', (req, res) => {
   return res.status(404).json({
     error: 'This endpoint has been removed. Customer registration is now handled by Cognito.',
@@ -48,114 +63,23 @@ app.post('/api/auth/register', (req, res) => {
   });
 });
 
+app.post('/api/auth/login', (req, res) => {
+  return res.status(404).json({
+    error: 'This endpoint has been removed. Authentication is now handled exclusively by Cognito Hosted UI.',
+    code: 'ENDPOINT_REMOVED',
+  });
+});
+
+app.post('/api/auth/verify', (req, res) => {
+  return res.status(404).json({
+    error: 'This endpoint has been removed. Token verification is performed by the jwtAuth middleware.',
+    code: 'ENDPOINT_REMOVED',
+  });
+});
+
 // Health check
 app.get('/', (req, res) => {
   res.json({ status: 'ok', service: 'divine-printing-api' });
-});
-
-function generateToken(email) {
-  const payload = { email, exp: Date.now() + (7 * 24 * 60 * 60 * 1000) };
-  return Buffer.from(JSON.stringify(payload)).toString('base64');
-}
-
-function verifyToken(token) {
-  try {
-    const payload = JSON.parse(Buffer.from(token, 'base64').toString());
-    if (payload.exp < Date.now()) return null;
-    return payload;
-  } catch {
-    return null;
-  }
-}
-
-// Login
-app.post('/api/auth/login', async (req, res) => {
-  try {
-    const { email, password } = req.body;
-
-    const result = await docClient.send(new GetCommand({
-      TableName: CUSTOMERS_TABLE,
-      Key: { email: email.toLowerCase() },
-    }));
-
-    const customer = result.Item;
-
-    if (!customer || customer.passwordHash !== hashPassword(password)) {
-      return res.status(401).json({ error: 'Invalid credentials' });
-    }
-
-    res.json({ 
-      success: true, 
-      token: generateToken(email),
-      customer: {
-        email: customer.email,
-        name: customer.name,
-      }
-    });
-  } catch (error) {
-    logger.error('Login error', error, { route: 'POST /api/auth/login' });
-    res.status(500).json({ error: 'Server error' });
-  }
-});
-
-// Verify token
-app.post('/api/auth/verify', async (req, res) => {
-  try {
-    const { token } = req.body;
-    const payload = verifyToken(token);
-    
-    if (!payload) {
-      return res.status(401).json({ error: 'Invalid token' });
-    }
-
-    const result = await docClient.send(new GetCommand({
-      TableName: CUSTOMERS_TABLE,
-      Key: { email: payload.email },
-    }));
-
-    if (!result.Item) {
-      return res.status(404).json({ error: 'Customer not found' });
-    }
-
-    res.json({ 
-      valid: true,
-      customer: {
-        email: result.Item.email,
-        name: result.Item.name,
-      }
-    });
-  } catch (error) {
-    logger.error('Verify error', error, { route: 'POST /api/auth/verify' });
-    res.status(500).json({ error: 'Server error' });
-  }
-});
-
-// Get orders
-app.get('/api/orders', async (req, res) => {
-  try {
-    const email = req.query.email?.toLowerCase();
-    
-    if (!email) {
-      return res.status(400).json({ error: 'Email required' });
-    }
-
-    const result = await docClient.send(new QueryCommand({
-      TableName: ORDERS_TABLE,
-      KeyConditionExpression: 'email = :email',
-      ExpressionAttributeValues: {
-        ':email': email,
-      },
-      ScanIndexForward: false,
-    }));
-
-    res.json({ 
-      orders: result.Items || [],
-      count: result.Count || 0,
-    });
-  } catch (error) {
-    logger.error('Orders error', error, { route: 'GET /api/orders' });
-    res.status(500).json({ error: 'Server error' });
-  }
 });
 
 // Snipcart webhook

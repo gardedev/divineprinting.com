@@ -40,15 +40,14 @@ variable "ses_sender_email" {
   default     = "noreply@divineprinting.com"
 }
 
-variable "magic_link_base_url" {
-  description = "Base URL for magic link redirects"
-  default     = "https://www.divineprinting.com"
+variable "cognito_user_pool_id" {
+  description = "Cognito user pool ID used to validate customer access tokens"
+  type        = string
 }
 
-variable "magic_link_secret" {
-  description = "HMAC secret for signing magic link tokens"
+variable "cognito_client_id" {
+  description = "Cognito app client ID accepted by the account API"
   type        = string
-  sensitive   = true
 }
 
 # ---------------------------------------------------------------------------
@@ -104,27 +103,6 @@ resource "aws_dynamodb_table" "customers" {
   }
 }
 
-resource "aws_dynamodb_table" "auth_tokens" {
-  name         = "divine-printing-auth-tokens"
-  billing_mode = "PAY_PER_REQUEST"
-  hash_key     = "token"
-
-  attribute {
-    name = "token"
-    type = "S"
-  }
-
-  ttl {
-    attribute_name = "expiresAt"
-    enabled        = true
-  }
-
-  tags = {
-    Project     = "divine-printing"
-    Environment = var.environment
-  }
-}
-
 # ---------------------------------------------------------------------------
 # IAM Role for Lambda Functions
 # ---------------------------------------------------------------------------
@@ -161,7 +139,6 @@ resource "aws_iam_role_policy" "lambda_policy" {
           aws_dynamodb_table.orders.arn,
           "${aws_dynamodb_table.orders.arn}/index/*",
           aws_dynamodb_table.customers.arn,
-          aws_dynamodb_table.auth_tokens.arn,
         ]
       },
       {
@@ -209,66 +186,6 @@ resource "aws_lambda_function" "webhook" {
 }
 
 # ---------------------------------------------------------------------------
-# Lambda: Send Magic Link
-# ---------------------------------------------------------------------------
-
-data "archive_file" "auth_send_zip" {
-  type        = "zip"
-  source_dir  = "${path.module}/../lambda/auth-send-magic-link"
-  output_path = "${path.module}/.build/auth-send-magic-link.zip"
-}
-
-resource "aws_lambda_function" "auth_send" {
-  function_name    = "divine-printing-auth-send"
-  role             = aws_iam_role.lambda_role.arn
-  handler          = "index.handler"
-  runtime          = "nodejs20.x"
-  timeout          = 10
-  memory_size      = 256
-  filename         = data.archive_file.auth_send_zip.output_path
-  source_code_hash = data.archive_file.auth_send_zip.output_base64sha256
-
-  environment {
-    variables = {
-      CUSTOMERS_TABLE  = aws_dynamodb_table.customers.name
-      TOKENS_TABLE     = aws_dynamodb_table.auth_tokens.name
-      SES_SENDER_EMAIL = var.ses_sender_email
-      MAGIC_LINK_BASE  = var.magic_link_base_url
-      MAGIC_LINK_SECRET = var.magic_link_secret
-    }
-  }
-}
-
-# ---------------------------------------------------------------------------
-# Lambda: Validate Token
-# ---------------------------------------------------------------------------
-
-data "archive_file" "auth_validate_zip" {
-  type        = "zip"
-  source_dir  = "${path.module}/../lambda/auth-validate-token"
-  output_path = "${path.module}/.build/auth-validate-token.zip"
-}
-
-resource "aws_lambda_function" "auth_validate" {
-  function_name    = "divine-printing-auth-validate"
-  role             = aws_iam_role.lambda_role.arn
-  handler          = "index.handler"
-  runtime          = "nodejs20.x"
-  timeout          = 10
-  memory_size      = 256
-  filename         = data.archive_file.auth_validate_zip.output_path
-  source_code_hash = data.archive_file.auth_validate_zip.output_base64sha256
-
-  environment {
-    variables = {
-      CUSTOMERS_TABLE   = aws_dynamodb_table.customers.name
-      TOKENS_TABLE      = aws_dynamodb_table.auth_tokens.name
-      MAGIC_LINK_SECRET = var.magic_link_secret
-    }
-  }
-}
-
-# ---------------------------------------------------------------------------
 # Lambda: Account API (fetch orders for customer)
 # ---------------------------------------------------------------------------
 
@@ -292,8 +209,8 @@ resource "aws_lambda_function" "account_api" {
     variables = {
       ORDERS_TABLE      = aws_dynamodb_table.orders.name
       CUSTOMERS_TABLE   = aws_dynamodb_table.customers.name
-      TOKENS_TABLE      = aws_dynamodb_table.auth_tokens.name
-      MAGIC_LINK_SECRET = var.magic_link_secret
+      COGNITO_ISSUER    = "https://cognito-idp.${var.aws_region}.amazonaws.com/${var.cognito_user_pool_id}"
+      COGNITO_CLIENT_ID = var.cognito_client_id
     }
   }
 }
@@ -320,6 +237,18 @@ resource "aws_apigatewayv2_stage" "default" {
   auto_deploy = true
 }
 
+resource "aws_apigatewayv2_authorizer" "customer_cognito" {
+  api_id           = aws_apigatewayv2_api.api.id
+  authorizer_type  = "JWT"
+  identity_sources = ["$request.header.Authorization"]
+  name             = "customer-cognito-access-token"
+
+  jwt_configuration {
+    audience = [var.cognito_client_id]
+    issuer   = "https://cognito-idp.${var.aws_region}.amazonaws.com/${var.cognito_user_pool_id}"
+  }
+}
+
 # --- Webhook integration ---
 resource "aws_apigatewayv2_integration" "webhook" {
   api_id                 = aws_apigatewayv2_api.api.id
@@ -341,48 +270,6 @@ resource "aws_lambda_permission" "webhook_apigw" {
   source_arn    = "${aws_apigatewayv2_api.api.execution_arn}/*/*"
 }
 
-# --- Auth: Send magic link ---
-resource "aws_apigatewayv2_integration" "auth_send" {
-  api_id                 = aws_apigatewayv2_api.api.id
-  integration_type       = "AWS_PROXY"
-  integration_uri        = aws_lambda_function.auth_send.invoke_arn
-  payload_format_version = "2.0"
-}
-
-resource "aws_apigatewayv2_route" "auth_send" {
-  api_id    = aws_apigatewayv2_api.api.id
-  route_key = "POST /auth/send-magic-link"
-  target    = "integrations/${aws_apigatewayv2_integration.auth_send.id}"
-}
-
-resource "aws_lambda_permission" "auth_send_apigw" {
-  action        = "lambda:InvokeFunction"
-  function_name = aws_lambda_function.auth_send.function_name
-  principal     = "apigateway.amazonaws.com"
-  source_arn    = "${aws_apigatewayv2_api.api.execution_arn}/*/*"
-}
-
-# --- Auth: Validate token ---
-resource "aws_apigatewayv2_integration" "auth_validate" {
-  api_id                 = aws_apigatewayv2_api.api.id
-  integration_type       = "AWS_PROXY"
-  integration_uri        = aws_lambda_function.auth_validate.invoke_arn
-  payload_format_version = "2.0"
-}
-
-resource "aws_apigatewayv2_route" "auth_validate" {
-  api_id    = aws_apigatewayv2_api.api.id
-  route_key = "POST /auth/validate"
-  target    = "integrations/${aws_apigatewayv2_integration.auth_validate.id}"
-}
-
-resource "aws_lambda_permission" "auth_validate_apigw" {
-  action        = "lambda:InvokeFunction"
-  function_name = aws_lambda_function.auth_validate.function_name
-  principal     = "apigateway.amazonaws.com"
-  source_arn    = "${aws_apigatewayv2_api.api.execution_arn}/*/*"
-}
-
 # --- Account API ---
 resource "aws_apigatewayv2_integration" "account_api" {
   api_id                 = aws_apigatewayv2_api.api.id
@@ -392,15 +279,19 @@ resource "aws_apigatewayv2_integration" "account_api" {
 }
 
 resource "aws_apigatewayv2_route" "account_orders" {
-  api_id    = aws_apigatewayv2_api.api.id
-  route_key = "GET /account/orders"
-  target    = "integrations/${aws_apigatewayv2_integration.account_api.id}"
+  api_id             = aws_apigatewayv2_api.api.id
+  route_key          = "GET /account/orders"
+  target             = "integrations/${aws_apigatewayv2_integration.account_api.id}"
+  authorization_type = "JWT"
+  authorizer_id      = aws_apigatewayv2_authorizer.customer_cognito.id
 }
 
 resource "aws_apigatewayv2_route" "account_profile" {
-  api_id    = aws_apigatewayv2_api.api.id
-  route_key = "GET /account/profile"
-  target    = "integrations/${aws_apigatewayv2_integration.account_api.id}"
+  api_id             = aws_apigatewayv2_api.api.id
+  route_key          = "GET /account/profile"
+  target             = "integrations/${aws_apigatewayv2_integration.account_api.id}"
+  authorization_type = "JWT"
+  authorizer_id      = aws_apigatewayv2_authorizer.customer_cognito.id
 }
 
 resource "aws_lambda_permission" "account_api_apigw" {
@@ -428,8 +319,4 @@ output "orders_table_name" {
 
 output "customers_table_name" {
   value = aws_dynamodb_table.customers.name
-}
-
-output "auth_tokens_table_name" {
-  value = aws_dynamodb_table.auth_tokens.name
 }
