@@ -34,6 +34,8 @@ beforeEach(() => {
     session.dp_refresh_token = token;
   });
   global.getAccessToken = jest.fn(() => session.dp_access_token || null);
+  global.getRefreshToken = jest.fn(() => session.dp_refresh_token || null);
+  global.ensureFreshAccessToken = jest.fn(async () => global.getAccessToken());
   global.clearAllAuthState = jest.fn(() => {
     Object.keys(session).forEach(key => delete session[key]);
     stored = {};
@@ -96,6 +98,26 @@ describe('Task 4.5 admin frontend auth', () => {
     expect(await adminAuth.initAdminAuth()).toBe(false);
     expect(global.clearAllAuthState).toHaveBeenCalled();
     expect(session.dp_refresh_token).toBeUndefined();
+  });
+
+  it('re-evaluates admin membership from a refreshed access token', async () => {
+    session.dp_access_token = jwt({ 'cognito:groups': ['admin'] });
+    session.dp_refresh_token = 'refresh-token';
+    global.ensureFreshAccessToken.mockImplementation(async () => {
+      session.dp_access_token = jwt({ 'cognito:groups': ['customer'] });
+      return session.dp_access_token;
+    });
+    expect(await adminAuth.initAdminAuth()).toBe(false);
+    expect(global.clearAllAuthState).toHaveBeenCalled();
+    expect(global.authenticatedFetch).not.toHaveBeenCalled();
+  });
+
+  it('retains a retryable refresh credential when admin restoration is offline', async () => {
+    session.dp_refresh_token = 'refresh-token';
+    global.ensureFreshAccessToken.mockResolvedValue(null);
+    expect(await adminAuth.initAdminAuth()).toBe(false);
+    expect(global.clearAllAuthState).not.toHaveBeenCalled();
+    expect(session.dp_refresh_token).toBe('refresh-token');
   });
 
   it('uses shared login after clearing any customer/admin session', async () => {

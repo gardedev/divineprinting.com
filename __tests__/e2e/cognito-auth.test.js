@@ -85,6 +85,15 @@ global.document = {
 // Clear Node module cache to ensure fresh load.
 let cognitoAuth;
 
+function makeToken(payload = {}) {
+  const header = Buffer.from(JSON.stringify({ alg: 'RS256' })).toString('base64url');
+  const body = Buffer.from(JSON.stringify({
+    exp: Math.floor(Date.now() / 1000) + 3600,
+    ...payload,
+  })).toString('base64url');
+  return `${header}.${body}.signature`;
+}
+
 beforeEach(() => {
   jest.resetModules();
   jest.clearAllMocks();
@@ -321,7 +330,7 @@ describe('Token Storage: storeRefreshToken', () => {
 
 describe('authenticatedFetch: sends Access Token as Bearer', () => {
   beforeEach(() => {
-    _sessionStore['dp_access_token'] = 'test-access-token';
+    _sessionStore['dp_access_token'] = makeToken({ token_use: 'access' });
     global.fetch = jest.fn().mockResolvedValue({
       ok: true,
       json: () => Promise.resolve({ orders: [] }),
@@ -331,7 +340,7 @@ describe('authenticatedFetch: sends Access Token as Bearer', () => {
   it('sends Authorization: Bearer <access_token> header', async () => {
     await cognitoAuth.authenticatedFetch('/api/orders');
     const [, options] = global.fetch.mock.calls[0];
-    expect(options.headers['Authorization']).toBe('Bearer test-access-token');
+    expect(options.headers['Authorization']).toBe(`Bearer ${_sessionStore.dp_access_token}`);
   });
 
   it('does NOT send the ID Token in the Authorization header', async () => {
@@ -339,7 +348,7 @@ describe('authenticatedFetch: sends Access Token as Bearer', () => {
     await cognitoAuth.authenticatedFetch('/api/orders');
     const [, options] = global.fetch.mock.calls[0];
     // Authorization header must contain Access Token, not ID Token
-    expect(options.headers['Authorization']).toBe('Bearer test-access-token');
+    expect(options.headers['Authorization']).toBe(`Bearer ${_sessionStore.dp_access_token}`);
     expect(options.headers['Authorization']).not.toContain('test-id-token');
   });
 
@@ -921,7 +930,7 @@ describe('getCurrentUser: ID Token decode for display', () => {
     expect(user.emailVerified).toBe(true);
   });
 
-  it('returns null and clears state for expired ID Token', () => {
+  it('returns null without destroying a still-refreshable session for expired ID Token', () => {
     const payload = {
       sub: 'user-sub',
       email: 'user@example.com',
@@ -932,14 +941,162 @@ describe('getCurrentUser: ID Token decode for display', () => {
 
     const user = cognitoAuth.getCurrentUser();
     expect(user).toBeNull();
-    // Tokens should be cleared
-    expect(_sessionStore['dp_access_token']).toBeUndefined();
+    expect(_sessionStore['dp_access_token']).toBe('some-access-tok');
   });
 
   it('returns null when no ID Token is stored', () => {
     delete _sessionStore['dp_id_token'];
     const user = cognitoAuth.getCurrentUser();
     expect(user).toBeNull();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Task 4.7 — Session refresh and retry lifecycle
+// ---------------------------------------------------------------------------
+
+describe('Task 4.7 session refresh lifecycle', () => {
+  const refreshedAccess = () => makeToken({ token_use: 'access', 'cognito:groups': ['customer'] });
+  const refreshedId = () => makeToken({ token_use: 'id', email: 'user@example.com' });
+
+  beforeEach(() => {
+    _sessionStore.dp_access_token = makeToken({ exp: 1, token_use: 'access' });
+    _sessionStore.dp_id_token = makeToken({ exp: 1, token_use: 'id' });
+    _sessionStore.dp_refresh_token = 'cognito-only-refresh';
+  });
+
+  it('refreshes expired tokens directly with Cognito and stores the replacement pair', async () => {
+    global.fetch = jest.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => ({ access_token: refreshedAccess(), id_token: refreshedId() }),
+    });
+    const result = await cognitoAuth.refreshSession();
+    expect(result.success).toBe(true);
+    const [url, options] = global.fetch.mock.calls[0];
+    expect(url).toBe('https://login.divineprinting.com/oauth2/token');
+    const body = new URLSearchParams(options.body);
+    expect(body.get('grant_type')).toBe('refresh_token');
+    expect(body.get('refresh_token')).toBe('cognito-only-refresh');
+    expect(url).not.toContain('/api/');
+    expect(_sessionStore.dp_access_token).toBe(result.accessToken);
+  });
+
+  it('deduplicates simultaneous refresh requests within the tab', async () => {
+    let resolveRefresh;
+    global.fetch = jest.fn(() => new Promise(resolve => { resolveRefresh = resolve; }));
+    const first = cognitoAuth.ensureFreshAccessToken();
+    const second = cognitoAuth.ensureFreshAccessToken();
+    expect(global.fetch).toHaveBeenCalledTimes(1);
+    resolveRefresh({
+      ok: true, status: 200,
+      json: async () => ({ access_token: refreshedAccess(), id_token: refreshedId() }),
+    });
+    const [firstToken, secondToken] = await Promise.all([first, second]);
+    expect(firstToken).toBe(secondToken);
+  });
+
+  it('clears all authentication state when Cognito rejects the refresh credential', async () => {
+    global.fetch = jest.fn().mockResolvedValue({ ok: false, status: 400 });
+    await expect(cognitoAuth.refreshSession()).resolves.toEqual({
+      success: false, code: 'REFRESH_FAILED',
+    });
+    expect(_sessionStore.dp_access_token).toBeUndefined();
+    expect(_sessionStore.dp_id_token).toBeUndefined();
+    expect(_sessionStore.dp_refresh_token).toBeUndefined();
+  });
+
+  it('fails closed but preserves only the refresh credential after a retryable network failure', async () => {
+    global.fetch = jest.fn().mockRejectedValue(new Error('offline'));
+    await expect(cognitoAuth.refreshSession()).resolves.toEqual({
+      success: false, code: 'REFRESH_NETWORK_ERROR',
+    });
+    expect(_sessionStore.dp_access_token).toBeUndefined();
+    expect(_sessionStore.dp_id_token).toBeUndefined();
+    expect(_sessionStore.dp_refresh_token).toBe('cognito-only-refresh');
+  });
+
+  it('retries an API request once after a 401 and uses the refreshed access token', async () => {
+    const original = makeToken({ token_use: 'access' });
+    const replacement = refreshedAccess();
+    _sessionStore.dp_access_token = original;
+    global.fetch = jest.fn()
+      .mockResolvedValueOnce({ ok: false, status: 401 })
+      .mockResolvedValueOnce({
+        ok: true, status: 200,
+        json: async () => ({ access_token: replacement, id_token: refreshedId() }),
+      })
+      .mockResolvedValueOnce({ ok: true, status: 200 });
+    const response = await cognitoAuth.authenticatedFetch('/api/orders');
+    expect(response.status).toBe(200);
+    expect(global.fetch).toHaveBeenCalledTimes(3);
+    expect(global.fetch.mock.calls[2][1].headers.Authorization).toBe(`Bearer ${replacement}`);
+  });
+
+  it('never retries the original API request more than once', async () => {
+    _sessionStore.dp_access_token = makeToken({ token_use: 'access' });
+    global.fetch = jest.fn()
+      .mockResolvedValueOnce({ ok: false, status: 401 })
+      .mockResolvedValueOnce({
+        ok: true, status: 200,
+        json: async () => ({ access_token: refreshedAccess(), id_token: refreshedId() }),
+      })
+      .mockResolvedValueOnce({ ok: false, status: 401 });
+    const response = await cognitoAuth.authenticatedFetch('/api/orders');
+    expect(response.status).toBe(401);
+    expect(global.fetch).toHaveBeenCalledTimes(3);
+    expect(_sessionStore.dp_access_token).toBeUndefined();
+    expect(_sessionStore.dp_refresh_token).toBeUndefined();
+  });
+
+  it('restores a customer session only after refresh and bootstrap revalidation', async () => {
+    const loggedOut = { style: {} };
+    const loggedIn = { style: {} };
+    global.document.getElementById.mockImplementation(id => ({
+      loggedOutContent: loggedOut,
+      loggedInContent: loggedIn,
+      logoutBtn: { style: {} },
+    })[id] || null);
+    global.fetch = jest.fn()
+      .mockResolvedValueOnce({
+        ok: true, status: 200,
+        json: async () => ({
+          access_token: refreshedAccess(),
+          id_token: makeToken({
+            token_use: 'id', sub: 'customer-sub', email: 'user@example.com', email_verified: true,
+          }),
+        }),
+      })
+      .mockResolvedValueOnce({ ok: true, status: 200, json: async () => ({ customer: {} }) });
+    await cognitoAuth.initAuth();
+    expect(global.fetch.mock.calls[1][0]).toContain('/api/customers/bootstrap');
+    expect(loggedIn.style.display).toBe('block');
+    expect(loggedOut.style.display).toBe('none');
+  });
+
+  it('clears restored state when refreshed customer authorization is denied', async () => {
+    global.fetch = jest.fn()
+      .mockResolvedValueOnce({
+        ok: true, status: 200,
+        json: async () => ({
+          access_token: makeToken({ token_use: 'access', 'cognito:groups': ['admin'] }),
+          id_token: refreshedId(),
+        }),
+      })
+      .mockResolvedValueOnce({
+        ok: false, status: 403, json: async () => ({ code: 'CUSTOMER_REQUIRED' }),
+      });
+    await cognitoAuth.initAuth();
+    expect(_sessionStore.dp_access_token).toBeUndefined();
+    expect(_sessionStore.dp_id_token).toBeUndefined();
+    expect(_sessionStore.dp_refresh_token).toBeUndefined();
+  });
+
+  it('registers back-forward cache handling without cross-tab token synchronization', () => {
+    expect(window.addEventListener).toHaveBeenCalledWith('pageshow', expect.any(Function));
+    const source = require('fs').readFileSync(require.resolve('../../js/cognito-auth'), 'utf8');
+    expect(source).not.toContain("localStorage.setItem('dp_access_token'");
+    expect(source).not.toContain('BroadcastChannel');
   });
 });
 

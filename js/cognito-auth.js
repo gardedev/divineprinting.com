@@ -33,6 +33,7 @@ const BOOTSTRAP_PATH = '/api/customers/bootstrap';
 // Bootstrap retry configuration
 const BOOTSTRAP_MAX_RETRIES = 3;
 const BOOTSTRAP_RETRY_BASE_MS = 500; // Base delay for exponential backoff
+const ACCESS_TOKEN_REFRESH_SKEW_SECONDS = 60;
 
 /**
  * Returns the correct OAuth redirect URI based on the current hostname.
@@ -78,6 +79,11 @@ const _tokenStore = {
   accessToken: null,
   idToken: null,
 };
+
+// All callers in this tab share one Cognito refresh operation. This prevents
+// parallel API calls from creating a refresh storm.
+let _refreshPromise = null;
+let _lastRefreshFailureCode = null;
 
 // ---------------------------------------------------------------------------
 // PKCE helpers
@@ -154,6 +160,26 @@ function storeRefreshToken(refreshToken) {
   }
 }
 
+function getRefreshToken() {
+  try {
+    return sessionStorage.getItem('dp_refresh_token');
+  } catch (_e) {
+    return null;
+  }
+}
+
+function clearSessionTokens({ preserveRefreshToken = false } = {}) {
+  _tokenStore.accessToken = null;
+  _tokenStore.idToken = null;
+  try {
+    sessionStorage.removeItem('dp_access_token');
+    sessionStorage.removeItem('dp_id_token');
+    if (!preserveRefreshToken) sessionStorage.removeItem('dp_refresh_token');
+  } catch (_e) {
+    // Storage unavailable.
+  }
+}
+
 /**
  * Retrieves the current access token from in-memory store or sessionStorage.
  * Falls back to sessionStorage after a page navigation (e.g., Cognito redirect).
@@ -198,12 +224,8 @@ function getIdToken() {
  * Clears all auth state from in-memory store and sessionStorage.
  */
 function clearAllAuthState() {
-  _tokenStore.accessToken = null;
-  _tokenStore.idToken = null;
+  clearSessionTokens();
   try {
-    sessionStorage.removeItem('dp_access_token');
-    sessionStorage.removeItem('dp_id_token');
-    sessionStorage.removeItem('dp_refresh_token');
     sessionStorage.removeItem('pkce_verifier');
     sessionStorage.removeItem('oauth_state');
   } catch (_e) {
@@ -238,6 +260,8 @@ const AUTH_ERRORS = {
   MFA_REQUIRED: 'MFA_REQUIRED',
   CONFIRMATION_REQUIRED: 'CONFIRMATION_REQUIRED',
   OAUTH_ERROR: 'OAUTH_ERROR',                  // Generic mapped OAuth error from Cognito
+  REFRESH_FAILED: 'REFRESH_FAILED',
+  REFRESH_NETWORK_ERROR: 'REFRESH_NETWORK_ERROR',
 };
 
 const BOOTSTRAP_AUTHORIZATION_DENIALS = new Set([
@@ -417,6 +441,87 @@ function decodeJwtPayload(token) {
   }
 }
 
+function isTokenExpired(token, skewSeconds = ACCESS_TOKEN_REFRESH_SKEW_SECONDS) {
+  const claims = decodeJwtPayload(token);
+  if (!claims || typeof claims.exp !== 'number') return true;
+  return claims.exp <= Math.floor(Date.now() / 1000) + skewSeconds;
+}
+
+/**
+ * Refreshes browser tokens directly with Cognito. Refresh credentials never
+ * cross the DivinePrinting API boundary. Concurrent callers share one promise.
+ */
+function refreshSession() {
+  if (_refreshPromise) return _refreshPromise;
+
+  _refreshPromise = (async () => {
+    _lastRefreshFailureCode = null;
+    const refreshToken = getRefreshToken();
+    if (!refreshToken) {
+      clearAllAuthState();
+      _lastRefreshFailureCode = AUTH_ERRORS.REFRESH_FAILED;
+      return { success: false, code: AUTH_ERRORS.REFRESH_FAILED };
+    }
+
+    const params = new URLSearchParams({
+      grant_type: 'refresh_token',
+      client_id: CLIENT_ID,
+      refresh_token: refreshToken,
+    });
+
+    try {
+      const response = await fetch(`${COGNITO_DOMAIN}/oauth2/token`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: params,
+      });
+      if (!response.ok) {
+        // Cognito 4xx responses mean the refresh credential is no longer usable.
+        if (response.status >= 400 && response.status < 500) clearAllAuthState();
+        else clearSessionTokens({ preserveRefreshToken: true });
+        const code = response.status >= 500
+          ? AUTH_ERRORS.REFRESH_NETWORK_ERROR
+          : AUTH_ERRORS.REFRESH_FAILED;
+        _lastRefreshFailureCode = code;
+        return {
+          success: false,
+          code,
+        };
+      }
+
+      const tokens = await response.json();
+      if (!tokens.access_token || !tokens.id_token) {
+        clearAllAuthState();
+        _lastRefreshFailureCode = AUTH_ERRORS.REFRESH_FAILED;
+        return { success: false, code: AUTH_ERRORS.REFRESH_FAILED };
+      }
+      storeSessionTokens(tokens.access_token, tokens.id_token);
+      if (tokens.refresh_token) storeRefreshToken(tokens.refresh_token);
+      return {
+        success: true,
+        accessToken: tokens.access_token,
+        idToken: tokens.id_token,
+      };
+    } catch (_error) {
+      // Keep only the refresh credential so a later navigation/request can retry.
+      clearSessionTokens({ preserveRefreshToken: true });
+      _lastRefreshFailureCode = AUTH_ERRORS.REFRESH_NETWORK_ERROR;
+      return { success: false, code: AUTH_ERRORS.REFRESH_NETWORK_ERROR };
+    }
+  })().finally(() => {
+    _refreshPromise = null;
+  });
+
+  return _refreshPromise;
+}
+
+async function ensureFreshAccessToken() {
+  const accessToken = getAccessToken();
+  if (accessToken && !isTokenExpired(accessToken)) return accessToken;
+  const result = await refreshSession();
+  return result.success ? result.accessToken : null;
+}
+
 // ---------------------------------------------------------------------------
 // Customer bootstrap (Task 4.3 integration)
 // ---------------------------------------------------------------------------
@@ -505,9 +610,8 @@ function getCurrentUser() {
   const decoded = decodeJwtPayload(idToken);
   if (!decoded) return null;
 
-  // Check if token is expired (client-side pre-check only)
+  // Expired display data is not a reason to destroy a still-refreshable session.
   if (decoded.exp && decoded.exp * 1000 < Date.now()) {
-    clearAllAuthState();
     return null;
   }
 
@@ -533,22 +637,38 @@ function getCurrentUser() {
  * @returns {Promise<Response>}
  */
 async function authenticatedFetch(path, options = {}) {
-  const accessToken = getAccessToken();
+  const accessToken = await ensureFreshAccessToken();
   if (!accessToken) {
-    throw new Error('Not authenticated');
+    const error = new Error('Not authenticated');
+    error.code = _lastRefreshFailureCode || AUTH_ERRORS.REFRESH_FAILED;
+    throw error;
   }
 
-  const headers = {
-    'Content-Type': 'application/json',
-    ...options.headers,
-    // Always send Access Token — NEVER the ID Token — for backend authorization
-    'Authorization': `Bearer ${accessToken}`,
-  };
-
-  return fetch(`${API_BASE}${path}`, {
+  const performRequest = token => fetch(`${API_BASE}${path}`, {
     ...options,
-    headers,
+    headers: {
+      'Content-Type': 'application/json',
+      ...options.headers,
+      // Always send Access Token — NEVER the ID Token — for backend authorization
+      'Authorization': `Bearer ${token}`,
+    },
   });
+
+  const response = await performRequest(accessToken);
+  if (response.status !== 401) return response;
+
+  // If another request already refreshed this tab, use its token. Otherwise
+  // perform one shared refresh. The original API call is retried at most once.
+  const currentToken = getAccessToken();
+  let retryToken = currentToken && currentToken !== accessToken ? currentToken : null;
+  if (!retryToken) {
+    const refreshed = await refreshSession();
+    retryToken = refreshed.success ? refreshed.accessToken : null;
+  }
+  if (!retryToken) return response;
+  const retryResponse = await performRequest(retryToken);
+  if (retryResponse.status === 401) clearAllAuthState();
+  return retryResponse;
 }
 
 /**
@@ -716,13 +836,44 @@ async function initAuth() {
     return;
   }
 
-  // Step 4: Check if already authenticated via sessionStorage
-  const user = getCurrentUser();
-  if (user) {
-    showDashboard(user);
-  } else {
+  // Step 4: Restore and revalidate a same-tab session. Customer bootstrap is
+  // deliberately repeated so account/group/status changes cannot leave stale UI.
+  const accessToken = await ensureFreshAccessToken();
+  if (!accessToken) {
     showLoginPrompt();
+    return;
   }
+
+  let user = getCurrentUser();
+  if (!user) {
+    const refreshed = await refreshSession();
+    if (!refreshed.success) {
+      showLoginPrompt();
+      return;
+    }
+    user = getCurrentUser();
+  }
+  if (!user) {
+    clearAllAuthState();
+    showLoginPrompt();
+    return;
+  }
+
+  const bootstrapResult = await callBootstrap(getAccessToken());
+  if (!bootstrapResult.success && bootstrapResult.authorizationDenied) {
+    clearAllAuthState();
+    showLoginPrompt();
+    const eventName = bootstrapResult.code === AUTH_ERRORS.EMAIL_UNVERIFIED
+      ? 'auth:email-unverified'
+      : 'auth:access-denied';
+    _dispatchAuthEvent(eventName, { code: bootstrapResult.code });
+    return;
+  }
+  if (!bootstrapResult.success) {
+    _dispatchAuthEvent('auth:bootstrap-warning', { code: bootstrapResult.code });
+  }
+  showDashboard(user);
+  _dispatchAuthEvent('auth:session-restored', { user, bootstrapped: bootstrapResult.success });
 }
 
 // ---------------------------------------------------------------------------
@@ -845,6 +996,13 @@ document.addEventListener('DOMContentLoaded', () => {
   if (logoutBtn) logoutBtn.addEventListener('click', logout);
 });
 
+// A page restored from the browser back/forward cache can contain stale UI.
+// Reload it so the appropriate customer/admin initializer revalidates tokens,
+// groups, and backend authorization from current sessionStorage state.
+window.addEventListener('pageshow', event => {
+  if (event.persisted) window.location.reload();
+});
+
 // ---------------------------------------------------------------------------
 // Exports (for testing and inter-module use)
 // ---------------------------------------------------------------------------
@@ -862,7 +1020,12 @@ if (typeof module !== 'undefined' && module.exports) {
     getIdToken,
     storeSessionTokens,
     storeRefreshToken,
+    getRefreshToken,
+    clearSessionTokens,
     clearAllAuthState,
+    isTokenExpired,
+    refreshSession,
+    ensureFreshAccessToken,
     // PKCE
     generateCodeVerifier,
     generateCodeChallenge,

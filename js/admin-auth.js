@@ -51,8 +51,15 @@ async function initAdminAuth() {
     if (tokens.refreshToken) storeRefreshToken(tokens.refreshToken);
   }
 
-  const accessToken = getAccessToken();
-  if (!accessToken || !accessTokenHasAdminGroup(accessToken)) {
+  const accessToken = await ensureFreshAccessToken();
+  if (!accessToken) {
+    // Retryable refresh-network failures retain only the tab-scoped refresh
+    // credential. Invalid/expired refresh credentials were already cleared.
+    if (!getRefreshToken()) clearAllAuthState();
+    showAdminError('AUTH_INVALID_TOKEN');
+    return false;
+  }
+  if (!accessTokenHasAdminGroup(accessToken)) {
     clearAllAuthState();
     showAdminError(ADMIN_REQUIRED);
     return false;
@@ -66,8 +73,8 @@ async function initAdminAuth() {
       return false;
     }
     return true;
-  } catch (_error) {
-    clearAllAuthState();
+  } catch (error) {
+    if (!error || error.code !== 'REFRESH_NETWORK_ERROR') clearAllAuthState();
     showAdminError('AUTH_INVALID_TOKEN');
     return false;
   }
