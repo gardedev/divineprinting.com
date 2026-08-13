@@ -47,7 +47,7 @@ jest.mock('uuid', () => ({
 // Now require the modules – mocks are already in place.
 // ---------------------------------------------------------------------------
 const { __mockSend: mockSend } = require('@aws-sdk/lib-dynamodb');
-const { createProduct, getProductById, getProductBySlug, listProducts, updateProduct } = require('../productRepository');
+const { createProduct, createProductWithId, getProductById, getProductBySlug, listProducts, updateProduct } = require('../productRepository');
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -64,6 +64,13 @@ const VALID_PRODUCT_DATA = {
 describe('productRepository', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+  });
+
+  it('conditionally creates a seed product with its stable manifest ID', async () => {
+    mockSend.mockResolvedValueOnce({});
+    const result = await createProductWithId({ productId: 'stable-id', name: 'Seeded', basePrice: 100 });
+    expect(result.productId).toBe('stable-id');
+    expect(mockSend.mock.calls[0][0].input.ConditionExpression).toBe('attribute_not_exists(productId)');
   });
 
   // =========================================================================

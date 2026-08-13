@@ -17,6 +17,7 @@
 // preventing uuid / DynamoDB SDK ESM-only imports from being evaluated.
 jest.mock('../productRepository', () => ({
   createProduct: jest.fn(),
+  createProductWithId: jest.fn(),
   getProductById: jest.fn(),
   getProductBySlug: jest.fn(),
   listProducts: jest.fn(),
@@ -49,6 +50,8 @@ const {
   deleteProduct,
   generateSlug,
   resolveUniqueSlug,
+  validateSeedProduct,
+  createSeedProduct,
 } = require('../productService');
 
 // ---------------------------------------------------------------------------
@@ -59,6 +62,7 @@ const {
 function makeMockRepo(overrides = {}) {
   return {
     createProduct: jest.fn(),
+    createProductWithId: jest.fn(),
     getProductById: jest.fn(),
     getProductBySlug: jest.fn(),
     listProducts: jest.fn(),
@@ -72,6 +76,34 @@ const VALID_INPUT = {
   description: 'High-quality outdoor vinyl banner',
   basePrice: 4999, // $49.99 in cents
 };
+
+const VALID_SEED_PRODUCT = {
+  productId: '11111111-1111-4111-8111-111111111111', name: 'Seed Product', slug: 'seed-product',
+  basePrice: 1000, currency: 'USD', status: 'active', version: 1, pricingVersion: 1,
+  sourcePage: 'products/seed-product.html', supportedSkus: ['SKU-1'], options: [], variants: [], requiresReview: false,
+};
+
+describe('seed product contract', () => {
+  it('validates a reviewed cart-facing product', () => {
+    expect(validateSeedProduct(VALID_SEED_PRODUCT)).toMatchObject(VALID_SEED_PRODUCT);
+  });
+
+  it.each([
+    [{ name: undefined }, 'name is required'],
+    [{ basePrice: 10.5 }, 'basePrice'],
+    [{ currency: 'EUR' }, 'currency must be USD'],
+    [{ status: 'draft' }, 'must be active'],
+    [{ requiresReview: true }, 'cannot be activated'],
+  ])('rejects invalid seed contract data', (change, message) => {
+    expect(() => validateSeedProduct({ ...VALID_SEED_PRODUCT, ...change })).toThrow(message);
+  });
+
+  it('creates through the repository with the permanent manifest productId', async () => {
+    const repo = makeMockRepo({ createProductWithId: jest.fn().mockResolvedValue(VALID_SEED_PRODUCT) });
+    await expect(createSeedProduct(VALID_SEED_PRODUCT, repo)).resolves.toMatchObject({ productId: VALID_SEED_PRODUCT.productId });
+    expect(repo.createProductWithId).toHaveBeenCalledWith(expect.objectContaining({ productId: VALID_SEED_PRODUCT.productId }));
+  });
+});
 
 const STORED_PRODUCT = {
   productId: 'test-uuid-1234',

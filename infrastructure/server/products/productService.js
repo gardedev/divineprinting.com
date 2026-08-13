@@ -25,6 +25,7 @@ const ALL_STATUSES = ['active', 'draft', 'archived', 'deleted'];
 
 /** Default status when none is supplied */
 const DEFAULT_STATUS = 'draft';
+const SEED_REQUIRED_FIELDS = ['productId', 'name', 'slug', 'basePrice', 'currency', 'status', 'version', 'pricingVersion', 'sourcePage'];
 
 /**
  * Legal status transitions for explicit lifecycle methods.
@@ -203,6 +204,31 @@ async function getProductBySlug(slug, _repo) {
   }
 
   return repo.getProductBySlug(slug.trim());
+}
+
+function validateSeedProduct(product) {
+  if (!product || typeof product !== 'object' || Array.isArray(product)) throw new Error('Seed product must be an object.');
+  for (const field of SEED_REQUIRED_FIELDS) {
+    if (product[field] === undefined || product[field] === null || product[field] === '') throw new Error(`${field} is required.`);
+  }
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(product.productId)) throw new Error('productId must be an opaque UUID.');
+  if (!Number.isInteger(product.basePrice) || product.basePrice < 0) throw new Error('basePrice must be a non-negative integer representing cents.');
+  if (product.currency !== 'USD') throw new Error('currency must be USD.');
+  if (!VALID_STATUSES.includes(product.status)) throw new Error(`status must be one of: ${VALID_STATUSES.join(', ')}.`);
+  if (product.status !== 'active') throw new Error('Reviewed seed products must be active.');
+  if (!Number.isInteger(product.version) || product.version < 1) throw new Error('version must be a positive integer.');
+  if (!Number.isInteger(product.pricingVersion) || product.pricingVersion < 1) throw new Error('pricingVersion must be a positive integer.');
+  for (const field of ['supportedSkus', 'options', 'variants']) {
+    if (product[field] !== undefined && !Array.isArray(product[field])) throw new Error(`${field} must be an array.`);
+  }
+  if (product.requiresReview === true) throw new Error('Review-required products cannot be activated.');
+  return { ...product, productId: product.productId.trim(), name: product.name.trim(), slug: product.slug.trim() };
+}
+
+async function createSeedProduct(product, _repo) {
+  const repo = _repo || productRepository;
+  const validated = validateSeedProduct(product);
+  return repo.createProductWithId(validated);
 }
 
 /**
@@ -418,6 +444,8 @@ module.exports = {
   createProduct,
   getProduct,
   getProductBySlug,
+  validateSeedProduct,
+  createSeedProduct,
   listProducts,
   updateProduct,
   publishProduct,

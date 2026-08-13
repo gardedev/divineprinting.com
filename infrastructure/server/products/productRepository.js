@@ -60,6 +60,26 @@ async function createProduct(productData) {
   return item;
 }
 
+/** Conditionally creates a reviewed seed record with its permanent manifest ID. */
+async function createProductWithId(productData) {
+  if (!productData || typeof productData.productId !== 'string' || !productData.productId.trim()) {
+    throw new Error('productId is required for seeded products.');
+  }
+  const now = new Date().toISOString();
+  const item = {
+    ...productData,
+    productId: productData.productId.trim(),
+    createdAt: productData.createdAt || now,
+    updatedAt: productData.updatedAt || now,
+  };
+  await docClient.send(new PutCommand({
+    TableName: TABLE_NAME,
+    Item: item,
+    ConditionExpression: 'attribute_not_exists(productId)',
+  }));
+  return item;
+}
+
 /**
  * Retrieves a product by its unique ID.
  *
@@ -246,6 +266,7 @@ async function updateProduct(productId, updates) {
 
 module.exports = {
   createProduct,
+  createProductWithId,
   getProductById,
   getProductBySlug,
   listProducts,
