@@ -52,6 +52,7 @@ const {
   resolveUniqueSlug,
   validateSeedProduct,
   createSeedProduct,
+  evaluateCartConfiguration,
 } = require('../productService');
 
 // ---------------------------------------------------------------------------
@@ -102,6 +103,36 @@ describe('seed product contract', () => {
     const repo = makeMockRepo({ createProductWithId: jest.fn().mockResolvedValue(VALID_SEED_PRODUCT) });
     await expect(createSeedProduct(VALID_SEED_PRODUCT, repo)).resolves.toMatchObject({ productId: VALID_SEED_PRODUCT.productId });
     expect(repo.createProductWithId).toHaveBeenCalledWith(expect.objectContaining({ productId: VALID_SEED_PRODUCT.productId }));
+  });
+});
+
+describe('evaluateCartConfiguration', () => {
+  const configured = {
+    productId: 'configured', status: 'active', productType: 'configurable', sku: 'BASE', currency: 'USD', version: 1, pricingVersion: 1,
+    options: [
+      { optionId: 'designSource', required: true, values: ['TEMPLATE'] },
+    ],
+    variants: [{ format: 'standard', surchargeCents: 0 }],
+    quantityPricing: { aggregatableDimensions: ['format'], tiers: [{ minimumQuantity: 1, maximumQuantity: null, baseUnitPriceCents: 100 }] },
+    designSnapshot: { schemaVersion: 'schema-v1', canvasVersion: 'canvas-v1' },
+    designTemplates: [{ templateId: 'template', templateVersion: 1 }],
+  };
+
+  it('loads the product through ProductRepository and returns authoritative evaluation', async () => {
+    const repo = makeMockRepo({ getProductById: jest.fn().mockResolvedValue(configured) });
+    const result = await evaluateCartConfiguration(' configured ', {
+      customerConfiguration: { schemaVersion: 'schema-v1', options: { designSource: 'TEMPLATE' }, designConfiguration: { canvasVersion: 'canvas-v1', templateId: 'template', templateVersion: 1 } },
+      variantAllocations: [{ selections: { format: 'standard' }, quantity: 2 }],
+    }, { repo });
+    expect(repo.getProductById).toHaveBeenCalledWith('configured');
+    expect(result).toMatchObject({ totalQuantity: 2, lineTotalCents: 200, baseSku: 'BASE' });
+  });
+
+  it('fails closed for inactive or unavailable products', async () => {
+    for (const unavailable of [null, { ...configured, status: 'draft' }, { ...configured, availableForSale: false }]) {
+      const repo = makeMockRepo({ getProductById: jest.fn().mockResolvedValue(unavailable) });
+      await expect(evaluateCartConfiguration('configured', {}, { repo })).rejects.toMatchObject({ code: 'CART_PRODUCT_UNAVAILABLE' });
+    }
   });
 });
 

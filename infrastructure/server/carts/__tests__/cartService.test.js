@@ -3,7 +3,7 @@
 jest.mock('../cartRepository', () => ({ createCartRepository: jest.fn(() => ({})) }));
 jest.mock('../../products/productService', () => ({}));
 
-const { createCartService, CartServiceError, dedupeKey } = require('../cartService');
+const { createCartService, CartServiceError, dedupeKey, configuredJobDedupeKey } = require('../cartService');
 
 const customer = { type: 'customer', sub: 'sub-1' };
 const anonymous = { type: 'anonymous', anonymousSessionHash: 'token-hash' };
@@ -145,5 +145,88 @@ describe('cartService', () => {
     repo.getCartItem.mockResolvedValue({ cartItemId: 'original', quantity: 1 });
     await expect(service.addItem({ context: customer, cartId: 'c', expectedCartVersion: 1, mutationId: 'same', item: { productId: 'p1', quantity: 1 } })).resolves.toMatchObject({ cartItemId: 'original' });
     expect(productService.getProduct).not.toHaveBeenCalled(); expect(repo.createCartItem).not.toHaveBeenCalled();
+  });
+
+  describe('configured jobs', () => {
+    const customerConfiguration = {
+      schemaVersion: 'custom-v1',
+      options: { color: 'Black', designSource: 'TEMPLATE' },
+      designConfiguration: { canvasVersion: 'canvas-v1', templateId: 'template', templateVersion: 1 },
+    };
+
+    function evaluator(productId, input) {
+      const allocations = input.variantAllocations.map((entry) => ({ ...entry, variantSurchargeCents: entry.selections.size === '2XL' ? 200 : 0 }));
+      const totalQuantity = allocations.reduce((sum, entry) => sum + entry.quantity, 0);
+      const lineTotalCents = allocations.reduce((sum, entry) => sum + (1000 + entry.variantSurchargeCents) * entry.quantity, 0);
+      return Promise.resolve({
+        baseSku: 'BASE', customerConfiguration: input.customerConfiguration, variantAllocations: allocations,
+        totalQuantity, customerInstructions: input.customerInstructions?.trim() || undefined,
+        pricingSnapshot: { schemaVersion: 'configured-pricing-v1', currency: 'USD', productVersion: 3, pricingVersion: 4, tier: { baseUnitPriceCents: 1000 }, allocations, subtotalCents: lineTotalCents },
+        lineTotalCents, dedupeVersion: 'configured-job-v1',
+      });
+    }
+
+    function configuredSetup(repoOverrides = {}) {
+      return setup({
+        repo: repoOverrides,
+        productService: { evaluateCartConfiguration: jest.fn().mockImplementation(evaluator) },
+      });
+    }
+
+    test('persists generic allocations, derived quantity, configuration, and authoritative pricing snapshot', async () => {
+      const { repo, productService, service } = configuredSetup();
+      repo.getCart.mockResolvedValue({ cartId: 'c', customerId: 'sub-1', status: 'active' });
+      repo.listCartItems.mockResolvedValue([]); repo.createCartItem.mockImplementation(async (input) => input);
+      const result = await service.addItem({
+        context: customer, cartId: 'c', expectedCartVersion: 1, mutationId: 'configured-add',
+        item: { cartItemType: 'CONFIGURED_JOB', productId: 'configured', customerConfiguration, variantAllocations: [{ selections: { size: 'M' }, quantity: 10 }, { selections: { size: '2XL' }, quantity: 5 }], customerInstructions: ' Center text. ' },
+      });
+      expect(productService.evaluateCartConfiguration).toHaveBeenCalledWith('configured', expect.any(Object), { assetVerifier: undefined });
+      expect(result.item).toMatchObject({ cartItemType: 'CONFIGURED_JOB', baseSku: 'BASE', totalQuantity: 15, quantity: 15, customerInstructions: 'Center text.', lineTotalCents: 16000, pricingSnapshot: { pricingVersion: 4 } });
+      expect(result.item).not.toHaveProperty('fulfillment');
+      expect(result.cartUpdates).toMatchObject({ subtotalCents: 16000, totalCents: 16000 });
+    });
+
+    test('rejects client authoritative pricing and fulfillment fields', async () => {
+      const { repo, productService, service } = configuredSetup();
+      repo.getCart.mockResolvedValue({ cartId: 'c', customerId: 'sub-1', status: 'active' });
+      for (const unsafe of [{ unitPriceCents: 1 }, { pricingSnapshot: {} }, { fulfillment: { productionMethod: 'DTG' } }]) {
+        await expect(service.addItem({ context: customer, cartId: 'c', expectedCartVersion: 1, mutationId: `bad-${JSON.stringify(unsafe)}`, item: { cartItemType: 'CONFIGURED_JOB', productId: 'configured', customerConfiguration, variantAllocations: [{ selections: { size: 'M' }, quantity: 1 }], ...unsafe } })).rejects.toMatchObject({ code: 'CART_INVALID_INPUT' });
+      }
+      expect(productService.evaluateCartConfiguration).not.toHaveBeenCalled();
+    });
+
+    test('dedupe excludes allocations and instructions but includes shared configuration', () => {
+      const common = { productId: 'configured', baseSku: 'BASE', customerConfiguration };
+      expect(configuredJobDedupeKey({ ...common, variantAllocations: [{ selections: { size: 'M' }, quantity: 1 }], customerInstructions: 'A' }))
+        .toBe(configuredJobDedupeKey({ ...common, variantAllocations: [{ selections: { size: 'L' }, quantity: 20 }], customerInstructions: 'B' }));
+      expect(configuredJobDedupeKey(common)).not.toBe(configuredJobDedupeKey({ ...common, customerConfiguration: { ...customerConfiguration, options: { ...customerConfiguration.options, color: 'White' } } }));
+    });
+
+    test('merges allocations, preserves a nonempty instruction, and reprices the whole job', async () => {
+      const key = configuredJobDedupeKey({ productId: 'configured', baseSku: 'BASE', customerConfiguration });
+      const existing = { cartItemId: 'existing', cartItemType: 'CONFIGURED_JOB', productId: 'configured', baseSku: 'BASE', customerConfiguration, variantAllocations: [{ selections: { size: 'M' }, quantity: 10, variantSurchargeCents: 0 }], customerInstructions: 'Keep centered', dedupeKey: key, quantity: 10, lineTotalCents: 10000, version: 2 };
+      const { repo, productService, service } = configuredSetup();
+      repo.getCart.mockResolvedValue({ cartId: 'c', customerId: 'sub-1', status: 'active' }); repo.listCartItems.mockResolvedValue([existing]); repo.updateCartItem.mockImplementation(async (input) => input);
+      const result = await service.addItem({ context: customer, cartId: 'c', expectedCartVersion: 2, mutationId: 'merge', item: { cartItemType: 'CONFIGURED_JOB', productId: 'configured', customerConfiguration, variantAllocations: [{ selections: { size: '2XL' }, quantity: 5 }] } });
+      expect(productService.evaluateCartConfiguration).toHaveBeenCalledTimes(2);
+      expect(result.updates).toMatchObject({ totalQuantity: 15, customerInstructions: 'Keep centered', lineTotalCents: 16000 });
+    });
+
+    test('fails safely when matching jobs have different nonempty instructions', async () => {
+      const key = configuredJobDedupeKey({ productId: 'configured', baseSku: 'BASE', customerConfiguration });
+      const existing = { cartItemId: 'existing', cartItemType: 'CONFIGURED_JOB', productId: 'configured', baseSku: 'BASE', customerConfiguration, variantAllocations: [{ selections: { size: 'M' }, quantity: 1 }], customerInstructions: 'Instruction A', dedupeKey: key, quantity: 1, lineTotalCents: 1000, version: 1 };
+      const { repo, service } = configuredSetup(); repo.getCart.mockResolvedValue({ cartId: 'c', customerId: 'sub-1', status: 'active' }); repo.listCartItems.mockResolvedValue([existing]);
+      await expect(service.addItem({ context: customer, cartId: 'c', expectedCartVersion: 1, mutationId: 'conflict', item: { cartItemType: 'CONFIGURED_JOB', productId: 'configured', customerConfiguration, variantAllocations: [{ selections: { size: 'M' }, quantity: 1 }], customerInstructions: 'Instruction B' } })).rejects.toMatchObject({ code: 'CART_INSTRUCTIONS_CONFLICT' });
+      expect(repo.updateCartItem).not.toHaveBeenCalled();
+    });
+
+    test('updates configured allocations through ProductService and rejects scalar quantity updates', async () => {
+      const existing = { cartItemId: 'i', cartItemType: 'CONFIGURED_JOB', productId: 'configured', customerConfiguration, variantAllocations: [{ selections: { size: 'M' }, quantity: 1 }], quantity: 1, lineTotalCents: 1000, version: 2 };
+      const { repo, service } = configuredSetup(); repo.getCart.mockResolvedValue({ cartId: 'c', customerId: 'sub-1', status: 'active' }); repo.getCartItem.mockResolvedValue(existing); repo.listCartItems.mockResolvedValue([existing]); repo.updateCartItem.mockImplementation(async (input) => input);
+      const updated = await service.updateConfiguredJob({ context: customer, cartId: 'c', cartItemId: 'i', expectedCartVersion: 3, expectedItemVersion: 2, mutationId: 'update-configured', variantAllocations: [{ selections: { size: 'M' }, quantity: 100 }] });
+      expect(updated.updates).toMatchObject({ totalQuantity: 100, quantity: 100, lineTotalCents: 100000 });
+      await expect(service.updateItemQuantity({ context: customer, cartId: 'c', cartItemId: 'i', expectedCartVersion: 3, expectedItemVersion: 2, mutationId: 'scalar', quantity: 2 })).rejects.toMatchObject({ code: 'CART_INVALID_INPUT' });
+    });
   });
 });

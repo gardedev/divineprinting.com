@@ -16,6 +16,7 @@
  */
 
 const productRepository = require('./productRepository');
+const { evaluateConfiguredProduct } = require('./configuredProduct');
 
 /** Valid product status values (excluding the internal 'deleted' sentinel) */
 const VALID_STATUSES = ['active', 'draft', 'archived'];
@@ -229,6 +230,17 @@ async function createSeedProduct(product, _repo) {
   const repo = _repo || productRepository;
   const validated = validateSeedProduct(product);
   return repo.createProductWithId(validated);
+}
+
+async function evaluateCartConfiguration(productId, input, { repo = productRepository, assetVerifier, now } = {}) {
+  if (typeof productId !== 'string' || !productId.trim()) throw new Error('productId must be a non-empty string.');
+  const product = await repo.getProductById(productId.trim());
+  if (!product || product.status !== 'active' || product.deletedAt || product.availableForSale === false) {
+    const error = new Error('CART_PRODUCT_UNAVAILABLE');
+    error.code = 'CART_PRODUCT_UNAVAILABLE';
+    throw error;
+  }
+  return evaluateConfiguredProduct(product, input, { assetVerifier, now });
 }
 
 /**
@@ -446,6 +458,7 @@ module.exports = {
   getProductBySlug,
   validateSeedProduct,
   createSeedProduct,
+  evaluateCartConfiguration,
   listProducts,
   updateProduct,
   publishProduct,

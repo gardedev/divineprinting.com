@@ -7,6 +7,8 @@ const defaultProductService = require('../products/productService');
 const USD = 'USD';
 const MIN_QUANTITY = 1;
 const MAX_QUANTITY = 99;
+const CONFIGURED_JOB = 'CONFIGURED_JOB';
+const CONFIGURED_JOB_DEDUPE_VERSION = 'configured-job-v1';
 
 class CartServiceError extends Error {
   constructor(code, message = code) {
@@ -41,6 +43,34 @@ function dedupeKey(input) {
     fulfillment: input.fulfillment,
   });
   return crypto.createHash('sha256').update(JSON.stringify(identity)).digest('hex');
+}
+
+function configuredJobDedupeKey({ productId, baseSku, customerConfiguration }) {
+  return crypto.createHash('sha256').update(JSON.stringify(canonical({
+    dedupeVersion: CONFIGURED_JOB_DEDUPE_VERSION,
+    productId,
+    baseSku,
+    customerConfiguration,
+  }))).digest('hex');
+}
+
+function mergeInstructions(existing, requested) {
+  const left = typeof existing === 'string' ? existing.trim() : '';
+  const right = typeof requested === 'string' ? requested.trim() : '';
+  if (left && right && left !== right) throw new CartServiceError('CART_INSTRUCTIONS_CONFLICT');
+  return right || left || undefined;
+}
+
+function configuredIdempotencyInput(operation, item, extra = {}) {
+  return canonical({
+    operation,
+    productId: item?.productId,
+    cartItemType: CONFIGURED_JOB,
+    customerConfiguration: item?.customerConfiguration,
+    variantAllocations: item?.variantAllocations,
+    customerInstructions: item?.customerInstructions,
+    ...extra,
+  });
 }
 
 function ownerFromContext(context) {
@@ -123,7 +153,7 @@ function translate(error) {
   return error;
 }
 
-function createCartService({ cartRepository = defaultCartRepository, productService = defaultProductService } = {}) {
+function createCartService({ cartRepository = defaultCartRepository, productService = defaultProductService, assetVerifier } = {}) {
   async function getTrustedProduct(productId) {
     const product = await productService.getProduct(requiredString(productId, 'productId'));
     if (!product) throw new CartServiceError('CART_PRODUCT_UNAVAILABLE');
@@ -159,12 +189,64 @@ function createCartService({ cartRepository = defaultCartRepository, productServ
   async function addItem({ context, cartId, expectedCartVersion, mutationId, item }) {
     try {
       const owner = ownerFromContext(context);
-      const idempotencyInput = { operation: 'addItem', productId: item?.productId, sku: item?.sku, variation: canonical(item?.variation), options: canonical(item?.options), personalization: canonical(item?.personalization), designId: item?.designId, uploadId: item?.uploadId, quantity: item?.quantity };
+      const configured = item?.cartItemType === CONFIGURED_JOB;
+      if (configured && ['price', 'unitPriceCents', 'lineTotalCents', 'pricingSnapshot', 'fulfillment', 'productionMethod', 'productionStatus'].some((key) => item[key] !== undefined)) {
+        throw new CartServiceError('CART_INVALID_INPUT');
+      }
+      const idempotencyInput = configured
+        ? configuredIdempotencyInput('addConfiguredJob', item)
+        : { operation: 'addItem', productId: item?.productId, sku: item?.sku, variation: canonical(item?.variation), options: canonical(item?.options), personalization: canonical(item?.personalization), designId: item?.designId, uploadId: item?.uploadId, quantity: item?.quantity };
       const replay = await cartRepository.getMutationReplay({ cartId, owner, mutationId, idempotencyInput });
       if (replay) return cartRepository.getCartItem(cartId, replay.result.cartItemId);
       const cart = await cartRepository.getCart(requiredString(cartId, 'cartId'));
       assertOwned(cart, owner);
       assertMutable(cart);
+      if (configured) {
+        let evaluated = await productService.evaluateCartConfiguration(requiredString(item.productId, 'productId'), {
+          customerConfiguration: item.customerConfiguration,
+          variantAllocations: item.variantAllocations,
+          customerInstructions: item.customerInstructions,
+        }, { assetVerifier });
+        const key = configuredJobDedupeKey({ productId: item.productId, baseSku: evaluated.baseSku, customerConfiguration: evaluated.customerConfiguration });
+        const existingItems = await cartRepository.listCartItems(cartId);
+        const existing = existingItems.find((entry) => entry.cartItemType === CONFIGURED_JOB && entry.dedupeKey === key);
+        if (existing) {
+          const customerInstructions = mergeInstructions(existing.customerInstructions, evaluated.customerInstructions);
+          evaluated = await productService.evaluateCartConfiguration(item.productId, {
+            customerConfiguration: evaluated.customerConfiguration,
+            variantAllocations: [...(existing.variantAllocations || []), ...evaluated.variantAllocations],
+            customerInstructions,
+          }, { assetVerifier });
+        }
+        const inventoryStatus = 'not_checked';
+        const validationStatus = 'warning';
+        const snapshot = {
+          cartItemType: CONFIGURED_JOB,
+          productId: item.productId,
+          baseSku: evaluated.baseSku,
+          customerConfiguration: evaluated.customerConfiguration,
+          variantAllocations: evaluated.variantAllocations,
+          totalQuantity: evaluated.totalQuantity,
+          customerInstructions: evaluated.customerInstructions ?? null,
+          pricingSnapshot: evaluated.pricingSnapshot,
+          dedupeVersion: evaluated.dedupeVersion,
+          dedupeKey: key,
+          quantity: evaluated.totalQuantity,
+          currency: evaluated.pricingSnapshot.currency,
+          unitPriceCents: evaluated.pricingSnapshot.tier.baseUnitPriceCents,
+          lineTotalCents: evaluated.lineTotalCents,
+          productVersion: evaluated.pricingSnapshot.productVersion,
+          pricingVersion: evaluated.pricingSnapshot.pricingVersion,
+          validationStatus,
+          inventoryStatus,
+        };
+        const nextItems = existingItems.filter((entry) => entry.cartItemId !== existing?.cartItemId).concat(snapshot);
+        const cartUpdates = { ...totals(nextItems), validationStatus, ...(cart.status === 'draft' ? { status: 'active' } : {}) };
+        const { productId: immutableProductId, ...itemUpdates } = snapshot;
+        return existing
+          ? await cartRepository.updateCartItem({ cartId, cartItemId: existing.cartItemId, owner, expectedCartVersion, expectedItemVersion: existing.version, mutationId, updates: itemUpdates, cartUpdates, idempotencyInput })
+          : await cartRepository.createCartItem({ cartId, owner, expectedCartVersion, mutationId, item: snapshot, cartUpdates, idempotencyInput });
+      }
       const product = await getTrustedProduct(item?.productId);
       validateProductSelections(product, item || {});
       const requestedQuantity = validateQuantity(item.quantity, product);
@@ -205,6 +287,7 @@ function createCartService({ cartRepository = defaultCartRepository, productServ
       assertMutable(cart);
       const existing = await cartRepository.getCartItem(cartId, requiredString(cartItemId, 'cartItemId'));
       if (!existing) throw new CartServiceError('CART_ITEM_NOT_FOUND');
+      if (existing.cartItemType === CONFIGURED_JOB) throw new CartServiceError('CART_INVALID_INPUT');
       const product = await getTrustedProduct(existing.productId);
       validateQuantity(quantity, product);
       const lineTotalCents = product.basePrice * quantity;
@@ -212,6 +295,49 @@ function createCartService({ cartRepository = defaultCartRepository, productServ
       const updated = { ...existing, quantity, unitPriceCents: product.basePrice, lineTotalCents };
       const cartUpdates = { ...totals(items.map((entry) => entry.cartItemId === cartItemId ? updated : entry)), validationStatus: 'valid' };
       return await cartRepository.updateCartItem({ cartId, cartItemId, owner, expectedCartVersion, expectedItemVersion, mutationId, updates: { quantity, unitPriceCents: product.basePrice, lineTotalCents, productVersion: product.version, pricingVersion: product.pricingVersion, validationStatus: 'valid' }, cartUpdates, idempotencyInput });
+    } catch (error) { throw translate(error); }
+  }
+
+  async function updateConfiguredJob({ context, cartId, cartItemId, expectedCartVersion, expectedItemVersion, mutationId, variantAllocations, customerInstructions }) {
+    try {
+      const owner = ownerFromContext(context);
+      const idempotencyInput = configuredIdempotencyInput('updateConfiguredJob', { variantAllocations, customerInstructions }, { cartItemId });
+      const replay = await cartRepository.getMutationReplay({ cartId, owner, mutationId, idempotencyInput });
+      if (replay) return cartRepository.getCartItem(cartId, replay.result.cartItemId);
+      const cart = await cartRepository.getCart(requiredString(cartId, 'cartId'));
+      assertOwned(cart, owner);
+      assertMutable(cart);
+      const existing = await cartRepository.getCartItem(cartId, requiredString(cartItemId, 'cartItemId'));
+      if (!existing) throw new CartServiceError('CART_ITEM_NOT_FOUND');
+      if (existing.cartItemType !== CONFIGURED_JOB) throw new CartServiceError('CART_INVALID_INPUT');
+      const resolvedInstructions = customerInstructions === undefined
+        ? existing.customerInstructions
+        : (typeof customerInstructions === 'string' ? customerInstructions.trim() || undefined : customerInstructions);
+      const evaluated = await productService.evaluateCartConfiguration(existing.productId, {
+        customerConfiguration: existing.customerConfiguration,
+        variantAllocations,
+        customerInstructions: resolvedInstructions,
+      }, { assetVerifier });
+      const updates = {
+        baseSku: evaluated.baseSku,
+        customerConfiguration: evaluated.customerConfiguration,
+        variantAllocations: evaluated.variantAllocations,
+        totalQuantity: evaluated.totalQuantity,
+        customerInstructions: evaluated.customerInstructions ?? null,
+        pricingSnapshot: evaluated.pricingSnapshot,
+        dedupeVersion: evaluated.dedupeVersion,
+        quantity: evaluated.totalQuantity,
+        currency: evaluated.pricingSnapshot.currency,
+        unitPriceCents: evaluated.pricingSnapshot.tier.baseUnitPriceCents,
+        lineTotalCents: evaluated.lineTotalCents,
+        productVersion: evaluated.pricingSnapshot.productVersion,
+        pricingVersion: evaluated.pricingSnapshot.pricingVersion,
+        validationStatus: 'warning',
+        inventoryStatus: 'not_checked',
+      };
+      const items = await cartRepository.listCartItems(cartId);
+      const cartUpdates = { ...totals(items.map((entry) => entry.cartItemId === cartItemId ? { ...entry, ...updates } : entry)), validationStatus: 'warning' };
+      return cartRepository.updateCartItem({ cartId, cartItemId, owner, expectedCartVersion, expectedItemVersion, mutationId, updates, cartUpdates, idempotencyInput });
     } catch (error) { throw translate(error); }
   }
 
@@ -231,7 +357,7 @@ function createCartService({ cartRepository = defaultCartRepository, productServ
     } catch (error) { throw translate(error); }
   }
 
-  return { createCart, getCurrentCart, addItem, updateItemQuantity, removeItem };
+  return { createCart, getCurrentCart, addItem, updateItemQuantity, updateConfiguredJob, removeItem };
 }
 
-module.exports = { createCartService, CartServiceError, dedupeKey, constants: { USD, MIN_QUANTITY, MAX_QUANTITY } };
+module.exports = { createCartService, CartServiceError, dedupeKey, configuredJobDedupeKey, constants: { USD, MIN_QUANTITY, MAX_QUANTITY, CONFIGURED_JOB } };

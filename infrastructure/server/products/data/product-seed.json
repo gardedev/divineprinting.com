@@ -182,22 +182,409 @@
       "productId": "d204cea4-ce22-4bc5-ad04-530f19fb3878",
       "name": "Custom Church T-Shirts",
       "slug": "church-t-shirt",
-      "sku": null,
-      "supportedSkus": [],
-      "basePrice": null,
+      "sku": "DPT-CHURCH-TSHIRT",
+      "supportedSkus": [
+        "DPT-CHURCH-TSHIRT"
+      ],
+      "basePrice": 2500,
       "currency": "USD",
       "status": "draft",
-      "image": null,
-      "options": [],
-      "variants": [],
+      "image": "../images/2026-04-07-18-55-31-group-wearing-shirts.png",
+      "productType": "configurable",
+      "garment": {
+        "garmentId": "standard-unisex-t-shirt",
+        "displayName": "Standard Unisex T-Shirt",
+        "material": "100% cotton or cotton/poly blend depending on available color/fulfillment",
+        "fit": "unisex",
+        "style": "short-sleeve"
+      },
+      "options": [
+        {
+          "optionId": "color",
+          "required": true,
+          "values": [
+            "Black",
+            "White",
+            "Navy",
+            "Royal Blue",
+            "Red",
+            "Maroon",
+            "Forest Green",
+            "Kelly Green",
+            "Purple",
+            "Orange",
+            "Yellow",
+            "Light Blue",
+            "Light Pink",
+            "Gray",
+            "Charcoal"
+          ]
+        },
+        {
+          "optionId": "placement",
+          "required": true,
+          "minimumSelections": 1,
+          "maximumSelections": 1,
+          "values": [
+            {
+              "placementId": "center-chest",
+              "displayName": "Center Chest"
+            },
+            {
+              "placementId": "left-chest",
+              "displayName": "Left Chest"
+            },
+            {
+              "placementId": "full-back",
+              "displayName": "Full Back"
+            }
+          ]
+        },
+        {
+          "optionId": "designSource",
+          "required": true,
+          "values": [
+            "TEMPLATE",
+            "CUSTOM_ARTWORK"
+          ]
+        }
+      ],
+      "variants": [
+        {
+          "size": "S",
+          "surchargeCents": 0
+        },
+        {
+          "size": "M",
+          "surchargeCents": 0
+        },
+        {
+          "size": "L",
+          "surchargeCents": 0
+        },
+        {
+          "size": "XL",
+          "surchargeCents": 0
+        },
+        {
+          "size": "2XL",
+          "surchargeCents": 200
+        },
+        {
+          "size": "3XL",
+          "surchargeCents": 300
+        },
+        {
+          "size": "4XL",
+          "surchargeCents": 400
+        },
+        {
+          "size": "5XL",
+          "surchargeCents": 500
+        }
+      ],
+      "quantityPricing": {
+        "ruleId": "church-tshirt-mvp-tier-pricing",
+        "ruleVersion": 1,
+        "aggregation": "configured-job",
+        "aggregateAcross": "variantAllocations",
+        "aggregatableDimensions": [
+          "size"
+        ],
+        "sharedConfigurationFields": [
+          "garment",
+          "color",
+          "designSource",
+          "designConfiguration",
+          "personalization",
+          "placement"
+        ],
+        "tiers": [
+          {
+            "minimumQuantity": 1,
+            "maximumQuantity": 5,
+            "baseUnitPriceCents": 2500
+          },
+          {
+            "minimumQuantity": 6,
+            "maximumQuantity": 10,
+            "baseUnitPriceCents": 2200
+          },
+          {
+            "minimumQuantity": 11,
+            "maximumQuantity": 24,
+            "baseUnitPriceCents": 1800
+          },
+          {
+            "minimumQuantity": 25,
+            "maximumQuantity": 49,
+            "baseUnitPriceCents": 1500
+          },
+          {
+            "minimumQuantity": 50,
+            "maximumQuantity": 99,
+            "baseUnitPriceCents": 1300
+          },
+          {
+            "minimumQuantity": 100,
+            "maximumQuantity": null,
+            "baseUnitPriceCents": 1100
+          }
+        ],
+        "formula": "tier base unit price + variant surcharge + approved production/customization surcharges",
+        "includedPrintLocations": 1,
+        "additionalPrintLocationsSupported": false
+      },
+      "designTemplates": [
+        {
+          "templateId": "cross-modern",
+          "templateVersion": 1,
+          "displayName": "Modern Cross"
+        },
+        {
+          "templateId": "cross-celtic",
+          "templateVersion": 1,
+          "displayName": "Celtic Cross"
+        },
+        {
+          "templateId": "cross-flame",
+          "templateVersion": 1,
+          "displayName": "Flame Cross"
+        },
+        {
+          "templateId": "cross-wood",
+          "templateVersion": 1,
+          "displayName": "Rustic Wood Cross"
+        },
+        {
+          "templateId": "crown-thorns",
+          "templateVersion": 1,
+          "displayName": "Crown of Thorns"
+        },
+        {
+          "templateId": "dove",
+          "templateVersion": 1,
+          "displayName": "Peace Dove"
+        },
+        {
+          "templateId": "praying-hands",
+          "templateVersion": 1,
+          "displayName": "Praying Hands"
+        },
+        {
+          "templateId": "heart-cross",
+          "templateVersion": 1,
+          "displayName": "Heart with Cross"
+        },
+        {
+          "templateId": "anchor",
+          "templateVersion": 1,
+          "displayName": "Anchor Cross"
+        },
+        {
+          "templateId": "lamb",
+          "templateVersion": 1,
+          "displayName": "Lamb of God"
+        },
+        {
+          "templateId": "bible",
+          "templateVersion": 1,
+          "displayName": "Bible with Cross"
+        },
+        {
+          "templateId": "chi-rho",
+          "templateVersion": 1,
+          "displayName": "Chi Rho Symbol"
+        },
+        {
+          "templateId": "three-crosses",
+          "templateVersion": 1,
+          "displayName": "Three Crosses"
+        },
+        {
+          "templateId": "butterfly",
+          "templateVersion": 1,
+          "displayName": "Butterfly Cross"
+        },
+        {
+          "templateId": "alpha-omega",
+          "templateVersion": 1,
+          "displayName": "Alpha & Omega"
+        },
+        {
+          "templateId": "fish",
+          "templateVersion": 1,
+          "displayName": "Christian Fish"
+        }
+      ],
+      "customization": {
+        "organizationName": {
+          "required": false,
+          "maximumLength": 100,
+          "trimWhitespace": true,
+          "emptyValueBehavior": "omit",
+          "separateFromAdditionalTextLimit": true
+        },
+        "additionalTextElements": {
+          "maximumElements": 4,
+          "maximumLengthPerElement": 100,
+          "blankElementBehavior": "discard",
+          "contentType": "plain-text"
+        },
+        "fonts": [
+          {
+            "fontId": "cinzel",
+            "displayName": "Cinzel"
+          },
+          {
+            "fontId": "inter",
+            "displayName": "Inter"
+          },
+          {
+            "fontId": "georgia",
+            "displayName": "Georgia"
+          },
+          {
+            "fontId": "script",
+            "displayName": "Script"
+          },
+          {
+            "fontId": "impact",
+            "displayName": "Impact"
+          },
+          {
+            "fontId": "playfair",
+            "displayName": "Playfair"
+          },
+          {
+            "fontId": "oswald",
+            "displayName": "Oswald"
+          },
+          {
+            "fontId": "lobster",
+            "displayName": "Lobster"
+          }
+        ],
+        "textColor": {
+          "format": "hex-rgb-6",
+          "normalization": "uppercase",
+          "restrictedPalette": false
+        },
+        "fontSize": {
+          "minimum": 10,
+          "maximum": 48
+        },
+        "archDegrees": {
+          "minimum": -30,
+          "maximum": 30
+        },
+        "customerInstructions": {
+          "required": false,
+          "maximumLength": 500,
+          "contentType": "plain-text",
+          "affectsPricing": false,
+          "affectsDedupe": false
+        }
+      },
+      "designSnapshot": {
+        "schemaVersion": "custom-design-v1",
+        "canvasVersion": "tshirt-800-v1",
+        "canvas": {
+          "width": 800,
+          "height": 800,
+          "coordinateUnit": "canvasPixel"
+        },
+        "allowedDesignScale": {
+          "minimum": 0.5,
+          "maximum": 2
+        },
+        "customerDragging": true,
+        "persistResolvedCoordinates": true,
+        "preventCompletelyOutsideCanvas": true,
+        "rotationSupported": false,
+        "layering": {
+          "artworkBelowText": true,
+          "textOrder": "stored-integer-order",
+          "customerReordering": false
+        },
+        "customArtwork": {
+          "acceptedMediaTypes": [
+            "image/png",
+            "image/jpeg",
+            "image/svg+xml"
+          ],
+          "maximumFileSizeBytes": 5242880,
+          "durableReferenceRequired": true,
+          "binaryInSnapshotAllowed": false,
+          "dataUrlInSnapshotAllowed": false,
+          "blobUrlInSnapshotAllowed": false,
+          "requiredReferenceFields": [
+            "assetId",
+            "storageKey",
+            "originalFilename",
+            "mediaType",
+            "uploadStatus"
+          ]
+        },
+        "requiredSnapshotFields": [
+          "productId",
+          "baseSku",
+          "productVersion",
+          "pricingVersion",
+          "garment",
+          "color",
+          "placement",
+          "variantAllocations",
+          "totalQuantity",
+          "designSource",
+          "designGeometry",
+          "designScale",
+          "organizationName",
+          "textElements",
+          "schemaVersion",
+          "canvasVersion",
+          "canvas",
+          "customerInstructions",
+          "pricingBreakdown",
+          "currency"
+        ]
+      },
+      "productionRules": {
+        "customerSelectablePrintMethod": false,
+        "supportedInternalMethods": [
+          "SCREEN_PRINT",
+          "DTG"
+        ],
+        "customerConfigurationImmutable": true,
+        "separateProductionFields": [
+          "productionMethod",
+          "internalProductionNotes",
+          "productionStatus",
+          "supplierGarmentMapping",
+          "productionIdentifiers"
+        ]
+      },
+      "businessReviewStatus": "APPROVED",
+      "sellable": false,
+      "operationalReadiness": {
+        "templateOrdersRequireArtworkUpload": false,
+        "customArtworkOperational": false,
+        "blockers": [
+          "Implement durable customer-artwork upload and storage references.",
+          "Add the customer-visible 50-200% scale control for uploaded artwork.",
+          "Enforce element canvas bounds so elements cannot be placed completely outside the usable canvas.",
+          "Implement backend tier pricing, grouped variant allocations, size surcharges, and immutable configuration snapshots before cart/API launch."
+        ]
+      },
       "version": 1,
       "pricingVersion": 1,
       "createdAt": "2026-08-13T00:00:00.000Z",
-      "updatedAt": "2026-08-13T00:00:00.000Z",
+      "updatedAt": "2026-08-14T00:00:00.000Z",
       "sourcePage": "products/church-t-shirt.html",
       "requiresReview": true,
       "reviewNotes": [
-        "Authoritative cart price, SKU, option combinations, and sellability require business review."
+        "Business configuration is approved; keep this record draft and excluded from import until operational readiness blockers are complete.",
+        "CUSTOM_ARTWORK remains unavailable until durable artwork upload/storage is implemented."
       ]
     },
     {

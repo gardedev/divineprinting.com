@@ -185,10 +185,10 @@ describe('cartRepository', () => {
   });
 
   test('updates an item transactionally with item and cart optimistic versions', async () => {
-    const { client, repository } = setup(); client.send.mockResolvedValueOnce({ Item: { cartId: 'c', anonymousSessionHash: 'sha256-token-hash', status: 'active', version: 5, idempotencyRecords: [] } }).mockResolvedValueOnce({});
+    const { client, repository } = setup(); client.send.mockResolvedValueOnce({ Item: { cartId: 'c', anonymousSessionHash: 'sha256-token-hash', status: 'active', version: 5, idempotencyRecords: [] } }).mockResolvedValueOnce({ Item: { cartId: 'c', cartItemId: 'i', quantity: 2 } }).mockResolvedValueOnce({});
     const result = await repository.updateCartItem({ cartId: 'c', cartItemId: 'i', owner: anonymousOwner, expectedCartVersion: 5, expectedItemVersion: 2, mutationId: 'update-1', updates: { quantity: 4, lineTotalCents: 800 } });
     expect(result).toMatchObject({ quantity: 4, version: 3 });
-    const tx = client.send.mock.calls[1][0].input.TransactItems;
+    const tx = client.send.mock.calls[2][0].input.TransactItems;
     expect(tx[0].Update.ConditionExpression).toContain('#anonymousSessionHash = :ownerAnonymousHash');
     expect(tx[1].Update.ConditionExpression).toContain('#version = :expectedItemVersion');
     expect(tx[1].Update.ExpressionAttributeValues[':nextItemVersion']).toBe(3);
@@ -196,11 +196,38 @@ describe('cartRepository', () => {
 
   test('persists approved option and fulfillment snapshots during item update', async () => {
     const { client, repository } = setup();
-    client.send.mockResolvedValueOnce({ Item: { cartId: 'c', customerId: 'cognito-sub-1', status: 'active', version: 1, idempotencyRecords: [] } }).mockResolvedValueOnce({});
+    client.send.mockResolvedValueOnce({ Item: { cartId: 'c', customerId: 'cognito-sub-1', status: 'active', version: 1, idempotencyRecords: [] } }).mockResolvedValueOnce({ Item: { cartId: 'c', cartItemId: 'i', quantity: 1 } }).mockResolvedValueOnce({});
     await repository.updateCartItem({ cartId: 'c', cartItemId: 'i', owner: customerOwner, expectedCartVersion: 1, expectedItemVersion: 1, mutationId: 'options', updates: { options: { size: 'L' }, fulfillment: { rush: false } } });
-    const values = client.send.mock.calls[1][0].input.TransactItems[1].Update.ExpressionAttributeValues;
+    const values = client.send.mock.calls[2][0].input.TransactItems[1].Update.ExpressionAttributeValues;
     expect(values[':u_options']).toEqual({ size: 'L' });
     expect(values[':u_fulfillment']).toEqual({ rush: false });
+  });
+
+  test('persists configured-job structures without changing table keys or transactions', async () => {
+    const { client, repository } = setup();
+    client.send.mockResolvedValueOnce({ Item: { cartId: 'c', customerId: 'cognito-sub-1', status: 'active', version: 1, idempotencyRecords: [] } }).mockResolvedValueOnce({});
+    const configured = {
+      productId: 'p', cartItemType: 'CONFIGURED_JOB', baseSku: 'BASE', quantity: 120, totalQuantity: 120,
+      unitPriceCents: 1000, lineTotalCents: 120000, currency: 'USD', dedupeVersion: 'configured-job-v1', dedupeKey: 'hash',
+      customerConfiguration: { schemaVersion: 'custom-v1', options: { material: 'vinyl' } },
+      variantAllocations: [{ selections: { dimension: 'large' }, quantity: 120 }],
+      pricingSnapshot: { schemaVersion: 'configured-pricing-v1', subtotalCents: 120000 },
+      customerInstructions: 'Handle carefully',
+    };
+    const result = await repository.createCartItem({ cartId: 'c', owner: customerOwner, expectedCartVersion: 1, mutationId: 'configured', item: configured });
+    expect(result).toMatchObject(configured);
+    const put = client.send.mock.calls[1][0].input.TransactItems[1].Put;
+    expect(put.Item).toMatchObject({ cartId: 'c', cartItemId: 'generated-id', cartItemType: 'CONFIGURED_JOB' });
+    expect(put.Item).not.toHaveProperty('customerId');
+  });
+
+  test('enforces a 256 KiB serialized CartItem budget and nested credential exclusion', async () => {
+    expect(constants.MAX_CART_ITEM_BYTES).toBe(256 * 1024);
+    const { client, repository } = setup();
+    const base = { productId: 'p', quantity: 1, unitPriceCents: 1, lineTotalCents: 1 };
+    await expect(repository.createCartItem({ cartId: 'c', owner: customerOwner, expectedCartVersion: 1, mutationId: 'secret', item: { ...base, customerConfiguration: { accessToken: 'secret' } } })).rejects.toThrow('must not be persisted');
+    client.send.mockResolvedValueOnce({ Item: { cartId: 'c', customerId: 'cognito-sub-1', status: 'active', version: 1, idempotencyRecords: [] } });
+    await expect(repository.createCartItem({ cartId: 'c', owner: customerOwner, expectedCartVersion: 1, mutationId: 'large', item: { ...base, personalization: { text: 'x'.repeat(constants.MAX_CART_ITEM_BYTES) } } })).rejects.toMatchObject({ code: 'CART_ITEM_TOO_LARGE' });
   });
 
   test('hard-deletes an item transactionally with ownership and both version guards', async () => {

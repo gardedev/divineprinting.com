@@ -19,12 +19,14 @@ const PRODUCT_INDEX = 'ProductCartItemIndex';
 const ANONYMOUS_TTL_SECONDS = 14 * 24 * 60 * 60;
 const CUSTOMER_TTL_SECONDS = 90 * 24 * 60 * 60;
 const MAX_IDEMPOTENCY_RECORDS = 20;
+const MAX_CART_ITEM_BYTES = 256 * 1024;
 const MUTABLE_STATUSES = ['draft', 'active'];
 const CART_STATUSES = ['draft', 'active', 'pending_checkout', 'abandoned', 'expired', 'converted'];
 const CART_ITEM_FIELDS = [
   'sku', 'productVersion', 'pricingVersion', 'variation', 'options', 'personalization', 'fulfillment',
   'uploadId', 'designId', 'dedupeKey', 'validationStatus', 'validationErrors',
-  'inventoryStatus',
+  'inventoryStatus', 'cartItemType', 'baseSku', 'customerConfiguration', 'variantAllocations',
+  'totalQuantity', 'pricingSnapshot', 'customerInstructions', 'dedupeVersion',
 ];
 
 class CartRepositoryError extends Error {
@@ -51,9 +53,24 @@ function integer(value, field, { min = 0 } = {}) {
 
 function assertNoRawIdentity(input) {
   const forbidden = ['anonymousToken', 'cartToken', 'accessToken', 'idToken', 'refreshToken', 'role', 'roles', 'groups', 'isAdmin'];
-  if (forbidden.some((field) => Object.prototype.hasOwnProperty.call(input || {}, field))) {
-    throw new TypeError('Raw authentication and anonymous cart tokens must not be persisted');
+  const inspect = (value) => {
+    if (!value || typeof value !== 'object') return;
+    if (forbidden.some((field) => Object.prototype.hasOwnProperty.call(value, field))) {
+      throw new TypeError('Raw authentication and anonymous cart tokens must not be persisted');
+    }
+    Object.values(value).forEach(inspect);
+  };
+  inspect(input);
+}
+
+function assertCartItemSize(item) {
+  let bytes;
+  try {
+    bytes = Buffer.byteLength(JSON.stringify(item), 'utf8');
+  } catch (error) {
+    throw new TypeError('Cart item must be serializable JSON data');
   }
+  if (bytes > MAX_CART_ITEM_BYTES) throw new CartRepositoryError('CART_ITEM_TOO_LARGE');
 }
 
 function ownerCondition(owner, names, values) {
@@ -368,6 +385,7 @@ function createCartRepository({ client = docClient, now = () => new Date(), gene
     prepared.record.result = { cartItemId };
     const snapshots = Object.fromEntries(CART_ITEM_FIELDS.filter((field) => item[field] !== undefined).map((field) => [field, item[field]]));
     const persisted = { ...snapshots, cartId: requiredString(cartId, 'cartId'), cartItemId, ...semanticItem, createdAt: at.toISOString(), updatedAt: at.toISOString(), version: 1 };
+    assertCartItemSize(persisted);
     try {
       await client.send(new TransactWriteCommand({ TransactItems: [itemMutationCartUpdate({ cartId, owner, expectedCartVersion, at, idempotencyRecords: prepared.records, cartUpdates }), { Put: { TableName: CART_ITEMS_TABLE, Item: persisted, ConditionExpression: 'attribute_not_exists(cartId) AND attribute_not_exists(cartItemId)' } }] }));
       return persisted;
@@ -376,19 +394,23 @@ function createCartRepository({ client = docClient, now = () => new Date(), gene
 
   async function updateCartItem({ cartId, cartItemId, owner, expectedCartVersion, expectedItemVersion, mutationId, updates, cartUpdates = {}, idempotencyInput }) {
     assertNoRawIdentity(updates);
-    const allowed = new Set(['quantity', 'unitPriceCents', 'lineTotalCents', 'currency', 'productVersion', 'pricingVersion', 'variation', 'options', 'personalization', 'fulfillment', 'uploadId', 'designId', 'dedupeKey', 'validationStatus', 'inventoryStatus']);
+    const allowed = new Set(['quantity', 'unitPriceCents', 'lineTotalCents', 'currency', 'productVersion', 'pricingVersion', 'variation', 'options', 'personalization', 'fulfillment', 'uploadId', 'designId', 'dedupeKey', 'validationStatus', 'inventoryStatus', 'cartItemType', 'baseSku', 'customerConfiguration', 'variantAllocations', 'totalQuantity', 'pricingSnapshot', 'customerInstructions', 'dedupeVersion']);
     const names = { '#cartId': 'cartId', '#cartItemId': 'cartItemId', '#version': 'version', '#updatedAt': 'updatedAt' };
     const values = { ':expectedItemVersion': integer(expectedItemVersion, 'expectedItemVersion', { min: 1 }), ':nextItemVersion': expectedItemVersion + 1, ':updatedAt': now().toISOString() };
     const sets = ['#version = :nextItemVersion', '#updatedAt = :updatedAt'];
     for (const [key, value] of Object.entries(updates || {})) {
       if (!allowed.has(key)) throw new TypeError(`${key} is not mutable through updateCartItem`);
       if (key === 'quantity') integer(value, key, { min: 1 });
+      if (key === 'totalQuantity') integer(value, key, { min: 1 });
       if (key.endsWith('Cents')) integer(value, key);
       names[`#u_${key}`] = key; values[`:u_${key}`] = value; sets.push(`#u_${key} = :u_${key}`);
     }
     const mutationFingerprint = fingerprint(idempotencyInput || { operation: 'updateCartItem', cartItemId, updates });
     const prepared = await prepareItemMutation({ cartId, owner, expectedCartVersion, mutationId, mutationFingerprint, result: { cartItemId } });
     if (prepared.replay) return getCartItem(cartId, cartItemId);
+    const existingItem = await getCartItem(cartId, cartItemId);
+    if (!existingItem) throw new CartRepositoryError('CART_ITEM_NOT_FOUND');
+    assertCartItemSize({ ...existingItem, ...updates, version: expectedItemVersion + 1 });
     const at = now();
     try {
       await client.send(new TransactWriteCommand({ TransactItems: [itemMutationCartUpdate({ cartId: requiredString(cartId, 'cartId'), owner, expectedCartVersion, at, idempotencyRecords: prepared.records, cartUpdates }), { Update: { TableName: CART_ITEMS_TABLE, Key: { cartId, cartItemId: requiredString(cartItemId, 'cartItemId') }, UpdateExpression: `SET ${sets.join(', ')}`, ConditionExpression: 'attribute_exists(#cartId) AND attribute_exists(#cartItemId) AND #version = :expectedItemVersion', ExpressionAttributeNames: names, ExpressionAttributeValues: values } }] }));
@@ -417,4 +439,4 @@ function createCartRepository({ client = docClient, now = () => new Date(), gene
   return { createCart, getCart, findActiveCustomerCart, findAnonymousCartByHash, queryExpiringCarts, mutateCart, transitionExpiredCart, listCartItems, getCartItem, findCartItemsByProduct, getMutationReplay, createCartItem, updateCartItem, deleteCartItem, executeTransaction };
 }
 
-module.exports = { createCartRepository, CartRepositoryError, constants: { CARTS_TABLE, CART_ITEMS_TABLE, CUSTOMER_INDEX, ANONYMOUS_INDEX, EXPIRY_INDEX, PRODUCT_INDEX, ANONYMOUS_TTL_SECONDS, CUSTOMER_TTL_SECONDS, MAX_IDEMPOTENCY_RECORDS }, fingerprint };
+module.exports = { createCartRepository, CartRepositoryError, constants: { CARTS_TABLE, CART_ITEMS_TABLE, CUSTOMER_INDEX, ANONYMOUS_INDEX, EXPIRY_INDEX, PRODUCT_INDEX, ANONYMOUS_TTL_SECONDS, CUSTOMER_TTL_SECONDS, MAX_IDEMPOTENCY_RECORDS, MAX_CART_ITEM_BYTES }, fingerprint };
