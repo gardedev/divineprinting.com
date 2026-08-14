@@ -7,6 +7,7 @@ const { adminAuth } = require('./middleware/adminAuth');
 const { jwtAuth } = require('./middleware/jwtAuth');
 const { createCustomerRegistrationRouter } = require('./api/customerRegistrationApi');
 const { createAdminSessionRouter } = require('./api/adminSessionApi');
+const { createCartRouter } = require('./api/cartApi');
 
 /**
  * Creates and configures an Express application.
@@ -36,6 +37,7 @@ function createApp({
   adminAuthMiddleware = adminAuth,
   jwtAuthMiddleware: injectedJwtAuth = jwtAuth,
   customerRegistrationRouter: injectedCustomerRouter,
+  cartRouter: injectedCartRouter,
 } = {}) {
   if (!productService) {
     throw new Error('createApp requires a productService instance.');
@@ -46,7 +48,7 @@ function createApp({
   // --------------------------------------------------------------------------
   // Middleware
   // --------------------------------------------------------------------------
-  app.use(express.json());
+  app.use(express.json({ limit: '256kb' }));
 
   // --------------------------------------------------------------------------
   // Health check (unauthenticated)
@@ -71,12 +73,15 @@ function createApp({
     injectedCustomerRouter ||
     createCustomerRegistrationRouter(injectedJwtAuth);
   app.use('/api/customers', customerRouter);
+  app.use('/api/carts', injectedCartRouter || createCartRouter({ jwtAuthMiddleware: injectedJwtAuth, productService }));
 
   // --------------------------------------------------------------------------
   // Global error handler
   // --------------------------------------------------------------------------
   // eslint-disable-next-line no-unused-vars
   app.use((err, req, res, next) => {
+    if (err && err.type === 'entity.too.large') return res.status(413).json({ error: 'The cart request is too large.', code: 'CART_ITEM_TOO_LARGE' });
+    if (err instanceof SyntaxError && err.status === 400) return res.status(400).json({ error: 'The request JSON is invalid.', code: 'CART_INVALID_INPUT' });
     console.error('[error]', err.message);
     return res.status(500).json({ error: 'Internal server error.' });
   });

@@ -2,7 +2,6 @@
 
 const crypto = require('crypto');
 const defaultCartRepository = require('./cartRepository').createCartRepository();
-const defaultProductService = require('../products/productService');
 
 const USD = 'USD';
 const MIN_QUANTITY = 1;
@@ -153,7 +152,8 @@ function translate(error) {
   return error;
 }
 
-function createCartService({ cartRepository = defaultCartRepository, productService = defaultProductService, assetVerifier } = {}) {
+function createCartService({ cartRepository = defaultCartRepository, productService: suppliedProductService, assetVerifier } = {}) {
+  const productService = suppliedProductService || require('../products/productService');
   async function getTrustedProduct(productId) {
     const product = await productService.getProduct(requiredString(productId, 'productId'));
     if (!product) throw new CartServiceError('CART_PRODUCT_UNAVAILABLE');
@@ -298,10 +298,10 @@ function createCartService({ cartRepository = defaultCartRepository, productServ
     } catch (error) { throw translate(error); }
   }
 
-  async function updateConfiguredJob({ context, cartId, cartItemId, expectedCartVersion, expectedItemVersion, mutationId, variantAllocations, customerInstructions }) {
+  async function updateConfiguredJob({ context, cartId, cartItemId, expectedCartVersion, expectedItemVersion, mutationId, variantAllocations, customerConfiguration, customerInstructions }) {
     try {
       const owner = ownerFromContext(context);
-      const idempotencyInput = configuredIdempotencyInput('updateConfiguredJob', { variantAllocations, customerInstructions }, { cartItemId });
+      const idempotencyInput = configuredIdempotencyInput('updateConfiguredJob', { variantAllocations, customerConfiguration, customerInstructions }, { cartItemId });
       const replay = await cartRepository.getMutationReplay({ cartId, owner, mutationId, idempotencyInput });
       if (replay) return cartRepository.getCartItem(cartId, replay.result.cartItemId);
       const cart = await cartRepository.getCart(requiredString(cartId, 'cartId'));
@@ -313,11 +313,18 @@ function createCartService({ cartRepository = defaultCartRepository, productServ
       const resolvedInstructions = customerInstructions === undefined
         ? existing.customerInstructions
         : (typeof customerInstructions === 'string' ? customerInstructions.trim() || undefined : customerInstructions);
+      const resolvedConfiguration = customerConfiguration === undefined ? existing.customerConfiguration : customerConfiguration;
+      const resolvedAllocations = variantAllocations === undefined ? existing.variantAllocations : variantAllocations;
       const evaluated = await productService.evaluateCartConfiguration(existing.productId, {
-        customerConfiguration: existing.customerConfiguration,
-        variantAllocations,
+        customerConfiguration: resolvedConfiguration,
+        variantAllocations: resolvedAllocations,
         customerInstructions: resolvedInstructions,
       }, { assetVerifier });
+      const nextDedupeKey = configuredJobDedupeKey({ productId: existing.productId, baseSku: evaluated.baseSku, customerConfiguration: evaluated.customerConfiguration });
+      const items = await cartRepository.listCartItems(cartId);
+      if (items.some((entry) => entry.cartItemId !== cartItemId && entry.cartItemType === CONFIGURED_JOB && entry.dedupeKey === nextDedupeKey)) {
+        throw new CartServiceError('CART_CONFIGURATION_CONFLICT');
+      }
       const updates = {
         baseSku: evaluated.baseSku,
         customerConfiguration: evaluated.customerConfiguration,
@@ -326,6 +333,7 @@ function createCartService({ cartRepository = defaultCartRepository, productServ
         customerInstructions: evaluated.customerInstructions ?? null,
         pricingSnapshot: evaluated.pricingSnapshot,
         dedupeVersion: evaluated.dedupeVersion,
+        dedupeKey: nextDedupeKey,
         quantity: evaluated.totalQuantity,
         currency: evaluated.pricingSnapshot.currency,
         unitPriceCents: evaluated.pricingSnapshot.tier.baseUnitPriceCents,
@@ -335,7 +343,6 @@ function createCartService({ cartRepository = defaultCartRepository, productServ
         validationStatus: 'warning',
         inventoryStatus: 'not_checked',
       };
-      const items = await cartRepository.listCartItems(cartId);
       const cartUpdates = { ...totals(items.map((entry) => entry.cartItemId === cartItemId ? { ...entry, ...updates } : entry)), validationStatus: 'warning' };
       return cartRepository.updateCartItem({ cartId, cartItemId, owner, expectedCartVersion, expectedItemVersion, mutationId, updates, cartUpdates, idempotencyInput });
     } catch (error) { throw translate(error); }

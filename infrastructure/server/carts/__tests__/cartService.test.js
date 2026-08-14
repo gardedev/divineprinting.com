@@ -228,5 +228,27 @@ describe('cartService', () => {
       expect(updated.updates).toMatchObject({ totalQuantity: 100, quantity: 100, lineTotalCents: 100000 });
       await expect(service.updateItemQuantity({ context: customer, cartId: 'c', cartItemId: 'i', expectedCartVersion: 3, expectedItemVersion: 2, mutationId: 'scalar', quantity: 2 })).rejects.toMatchObject({ code: 'CART_INVALID_INPUT' });
     });
+
+    test('replaces configured customer configuration, reprices, and recalculates dedupe', async () => {
+      const existing = { cartItemId: 'i', cartItemType: 'CONFIGURED_JOB', productId: 'configured', baseSku: 'BASE', customerConfiguration, variantAllocations: [{ selections: { size: 'M' }, quantity: 2 }], quantity: 2, lineTotalCents: 2000, version: 2, dedupeKey: 'old' };
+      const changed = { ...customerConfiguration, options: { ...customerConfiguration.options, color: 'White' } };
+      const { repo, productService, service } = configuredSetup();
+      repo.getCart.mockResolvedValue({ cartId: 'c', customerId: 'sub-1', status: 'active' }); repo.getCartItem.mockResolvedValue(existing); repo.listCartItems.mockResolvedValue([existing]); repo.updateCartItem.mockImplementation(async (input) => input);
+      const updated = await service.updateConfiguredJob({ context: customer, cartId: 'c', cartItemId: 'i', expectedCartVersion: 3, expectedItemVersion: 2, mutationId: 'replace-config', customerConfiguration: changed });
+      expect(productService.evaluateCartConfiguration).toHaveBeenCalledWith('configured', expect.objectContaining({ customerConfiguration: changed, variantAllocations: existing.variantAllocations }), expect.any(Object));
+      expect(updated.updates.customerConfiguration).toEqual(changed);
+      expect(updated.updates.dedupeKey).toBe(configuredJobDedupeKey({ productId: 'configured', baseSku: 'BASE', customerConfiguration: changed }));
+    });
+
+    test('rejects a configured update that collides with another line', async () => {
+      const changed = { ...customerConfiguration, options: { ...customerConfiguration.options, color: 'White' } };
+      const collisionKey = configuredJobDedupeKey({ productId: 'configured', baseSku: 'BASE', customerConfiguration: changed });
+      const existing = { cartItemId: 'i', cartItemType: 'CONFIGURED_JOB', productId: 'configured', baseSku: 'BASE', customerConfiguration, variantAllocations: [{ selections: { size: 'M' }, quantity: 2 }], quantity: 2, lineTotalCents: 2000, version: 2 };
+      const collision = { ...existing, cartItemId: 'other', customerConfiguration: changed, dedupeKey: collisionKey };
+      const { repo, service } = configuredSetup();
+      repo.getCart.mockResolvedValue({ cartId: 'c', customerId: 'sub-1', status: 'active' }); repo.getCartItem.mockResolvedValue(existing); repo.listCartItems.mockResolvedValue([existing, collision]);
+      await expect(service.updateConfiguredJob({ context: customer, cartId: 'c', cartItemId: 'i', expectedCartVersion: 3, expectedItemVersion: 2, mutationId: 'collision', customerConfiguration: changed })).rejects.toMatchObject({ code: 'CART_CONFIGURATION_CONFLICT' });
+      expect(repo.updateCartItem).not.toHaveBeenCalled();
+    });
   });
 });

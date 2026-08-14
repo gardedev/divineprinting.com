@@ -19,6 +19,7 @@ const { createCustomerOrdersRouter } = require('./api/customerOrdersApi');
 const { jwtAuth } = require('./middleware/jwtAuth');
 const { adminAuth } = require('./middleware/adminAuth');
 const { createAdminSessionRouter } = require('./api/adminSessionApi');
+const { createCartRouter } = require('./api/cartApi');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -26,7 +27,7 @@ const PORT = process.env.PORT || 3000;
 const ORDERS_TABLE = process.env.ORDERS_TABLE || 'divine-printing-orders';
 
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: '256kb' }));
 
 // Product admin routes
 app.use('/api/admin/products', productRoutes);
@@ -41,6 +42,7 @@ app.use('/api/products', publicProductRoutes);
 // accepted or stored.
 app.use('/api/customers', createCustomerRegistrationRouter(jwtAuth));
 app.use('/api/orders', createCustomerOrdersRouter(jwtAuth, docClient, ORDERS_TABLE));
+app.use('/api/carts', createCartRouter({ jwtAuthMiddleware: jwtAuth }));
 
 // ---------------------------------------------------------------------------
 // Legacy auth endpoints — PERMANENTLY DISABLED (Task 4.4)
@@ -152,6 +154,17 @@ app.post('/api/webhook/snipcart', async (req, res) => {
   }
 });
 
-app.listen(PORT, () => {
-  logger.info('Divine Printing API running', { port: PORT });
+// Safe JSON parser failures for both cart and existing API routes.
+app.use((err, req, res, next) => {
+  if (err && err.type === 'entity.too.large') return res.status(413).json({ error: 'The cart request is too large.', code: 'CART_ITEM_TOO_LARGE' });
+  if (err instanceof SyntaxError && err.status === 400) return res.status(400).json({ error: 'The request JSON is invalid.', code: 'CART_INVALID_INPUT' });
+  return next(err);
 });
+
+if (require.main === module) {
+  app.listen(PORT, () => {
+    logger.info('Divine Printing API running', { port: PORT });
+  });
+}
+
+module.exports = app;
