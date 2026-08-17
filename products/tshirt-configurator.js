@@ -537,17 +537,10 @@ function drawArchedText(ctx, text, x, y, size, font, color, arch) {
 }
 
 function handleFileUpload(e) {
-  const file = e.target.files[0];
-  if (file) {
-    document.getElementById('uploadedFileName').textContent = 'Uploaded: ' + file.name;
-    const reader = new FileReader();
-    reader.onload = (ev) => { 
-      const img = new Image(); 
-      img.onload = () => { state.uploadedImage = img; drawPreview(); }; 
-      img.src = ev.target.result; 
-    };
-    reader.readAsDataURL(file);
-  }
+  if (e?.target) e.target.value = '';
+  state.uploadedImage = null;
+  const label = document.getElementById('uploadedFileName');
+  if (label) label.textContent = 'Custom artwork upload coming soon';
 }
 
 // Drawing functions - Updated to fill canvas better
@@ -763,12 +756,26 @@ function drawPreview() {
     }
   });
   
-  // Update cart button with current design
-  updateCartButton();
 }
 
 // Init
 function init() {
+  const approved = [
+    { name: 'Black', hex: '#1A1A1A', image: 'black.jpg' }, { name: 'White', hex: '#FFFFFF', image: 'white.jpg' },
+    { name: 'Navy', hex: '#1A237E', image: 'navy.jpg' }, { name: 'Royal Blue', hex: '#4169E1', image: 'royal.jpg' },
+    { name: 'Red', hex: '#C62828', image: 'red.jpg' }, { name: 'Maroon', hex: '#800000', image: 'maroon.jpg' },
+    { name: 'Forest Green', hex: '#1B5E20', image: 'forest-green.jpg' }, { name: 'Kelly Green', hex: '#00A86B', image: 'irish-green.jpg' },
+    { name: 'Purple', hex: '#3D1A6E', image: 'purple.jpg' }, { name: 'Orange', hex: '#FFA500', image: 'orange.jpg' },
+    { name: 'Yellow', hex: '#FFFF00', image: 'yellow-haze.jpg' }, { name: 'Light Blue', hex: '#ADD8E6', image: 'light-blue.jpg' },
+    { name: 'Light Pink', hex: '#FFB6C1', image: 'light-pink.jpg' }, { name: 'Gray', hex: '#A9A9A9', image: 'sport-grey.jpg' },
+    { name: 'Charcoal', hex: '#36454F', image: 'charcoal.jpg' }
+  ];
+  Object.keys(colorCategories).forEach(key => { colorCategories[key] = key === 'Popular' ? approved : []; });
+  state.shirtColor = approved[0].hex; currentShirtImageName = approved[0].image;
+  const selectedColorName = document.getElementById('selectedColorName');
+  const selectedColorPreview = document.getElementById('selectedColorPreview');
+  if (selectedColorName) selectedColorName.textContent = approved[0].name;
+  if (selectedColorPreview) selectedColorPreview.style.background = approved[0].hex;
   // Load initial shirt image
   loadShirtImage(currentShirtImageName);
   
@@ -813,6 +820,7 @@ function init() {
   // Generate color tabs
   const colorTabContent = document.getElementById('colorTabContent');
   const colorTabs = document.querySelectorAll('.color-tab');
+  colorTabs.forEach(tab => { if (tab.dataset.category !== 'Popular') tab.hidden = true; });
   
   function renderColorsForCategory(categoryName) {
     if (!colorTabContent) return;
@@ -941,117 +949,32 @@ function init() {
   drawPreview();
 }
 
-// Get current design data as object for webhook
-function getDesignDataForWebhook() {
-  const canvas = document.getElementById('tshirtCanvas');
-  let previewUrl = null;
-  let printableUrl = null;
-  
-  try {
-    previewUrl = canvas.toDataURL('image/png');
-    printableUrl = generatePrintableDesign();
-  } catch (e) {
-    console.log('Could not generate design images');
-  }
-  
+function buildConfiguredJobRequest() {
+  const allocations = Array.from(document.querySelectorAll('#variantAllocations input[data-size]')).map(input => ({
+    selections: { size: input.dataset.size }, quantity: Number(input.value || 0)
+  })).filter(entry => Number.isInteger(entry.quantity) && entry.quantity > 0);
+  const placementMap = { center: 'center-chest', left: 'left-chest', back: 'full-back' };
+  const fontMap = { Cinzel: 'cinzel', Inter: 'inter', Georgia: 'georgia', 'Brush Script MT': 'script', Impact: 'impact', 'Playfair Display': 'playfair', Oswald: 'oswald', Lobster: 'lobster' };
+  const organizationName = (document.getElementById('organizationName')?.value || '').trim();
+  const textElements = state.texts.filter(entry => entry.text && entry.text.trim()).slice(0, 4).map((entry, index) => ({
+    elementRole: index === 0 && organizationName && entry.text.trim() === organizationName ? 'organizationName' : 'additionalText',
+    text: entry.text.trim(), fontId: fontMap[entry.font] || 'inter', color: String(entry.color || '#000000').toUpperCase(),
+    fontSize: Number(entry.size), archDegrees: Number(entry.arch || 0), position: { x: Number(entry.x), y: Number(entry.y) }, order: index
+  }));
+  const defaults = getDefaultPositions();
+  if (!allocations.length) throw new Error('Enter a quantity for at least one size.');
   return {
-    previewImage: previewUrl,
-    printableImage: printableUrl,
-    designInfo: {
-      design: state.selectedDesign ? designOptions[state.selectedDesign]?.name : 'Custom Upload',
-      color: document.getElementById('selectedColorName')?.textContent || 'Antique Cherry Red',
-      texts: state.texts.filter(t => t.text).map(t => t.text).join(', ') || 'None',
-      position: document.getElementById('positionSelect')?.value || 'center',
-      size: document.getElementById('sizeSelect')?.value || 'L',
-      quantity: document.getElementById('quantityInput')?.value || '25'
-    }
+    productId: 'd204cea4-ce22-4bc5-ad04-530f19fb3878',
+    variantAllocations: allocations,
+    customerConfiguration: {
+      schemaVersion: 'custom-design-v1',
+      options: { color: document.getElementById('selectedColorName')?.textContent || 'Black', placement: placementMap[document.getElementById('positionSelect')?.value] || 'center-chest', designSource: 'TEMPLATE' },
+      ...(organizationName ? { organizationName } : {}),
+      designConfiguration: { canvasVersion: 'tshirt-800-v1', templateId: state.selectedDesign, templateVersion: 1,
+        designGeometry: { x: Number(state.designX ?? defaults.cx), y: Number(state.designY ?? defaults.cy) }, designScale: Number(state.designScale), textElements }
+    },
+    customerInstructions: (document.getElementById('customerInstructions')?.value || '').trim()
   };
-}
-
-// Snipcart integration - Update cart button with current design
-function updateCartButton() {
-  const btn = document.querySelector('.snipcart-add-item');
-  if (!btn) return;
-  
-  // Get current design info
-  const designName = state.selectedDesign ? designOptions[state.selectedDesign]?.name : 'Custom Upload';
-  const colorName = document.getElementById('selectedColorName')?.textContent || 'Antique Cherry Red';
-  const position = document.getElementById('positionSelect')?.value || 'center';
-  const size = document.getElementById('sizeSelect')?.value || 'L';
-  const quantity = parseInt(document.getElementById('quantityInput')?.value || '25');
-  const texts = state.texts.filter(t => t.text).map(t => t.text).join(', ') || 'None';
-  
-  // Determine tier for display purposes only (price is fixed at $15 for Snipcart validation)
-  let tier = '25-49';
-  if (quantity <= 5) { tier = '1-5'; }
-  else if (quantity <= 10) { tier = '6-10'; }
-  else if (quantity <= 24) { tier = '11-24'; }
-  else if (quantity <= 49) { tier = '25-49'; }
-  else if (quantity <= 99) { tier = '50-99'; }
-  else { tier = '100+'; }
-  
-  // Get design data for webhook
-  const designData = getDesignDataForWebhook();
-  
-  // Update data attributes (keep price at $15 for Snipcart crawling validation)
-  // Tiered pricing is handled via custom field and description
-  btn.setAttribute('data-item-quantity', quantity);
-  btn.setAttribute('data-item-custom1-value', texts);
-  btn.setAttribute('data-item-custom2-value', designName);
-  btn.setAttribute('data-item-custom3-value', colorName);
-  btn.setAttribute('data-item-custom4-value', position);
-  btn.setAttribute('data-item-custom5-value', state.uploadedImage ? 'Custom Upload' : 'Standard Design');
-  btn.setAttribute('data-item-custom6-value', size);
-  btn.setAttribute('data-item-custom7-value', tier);
-  
-  // Store design data in a global variable for the webhook to access
-  window.divinePrintingDesignData = designData;
-  
-  // Update button text (generic, price is shown in cart)
-  btn.textContent = `Add to Cart`;
-  
-  // Generate design preview image
-  const canvas = document.getElementById('tshirtCanvas');
-  if (canvas) {
-    try {
-      const previewUrl = canvas.toDataURL('image/png');
-      btn.setAttribute('data-item-image', previewUrl);
-    } catch (e) {
-      console.log('Could not generate preview image');
-    }
-  }
-}
-
-// Save current design to localStorage
-function saveCurrentDesign() {
-  const canvas = document.getElementById('tshirtCanvas');
-  let previewUrl = null;
-  
-  try {
-    previewUrl = canvas.toDataURL('image/png');
-  } catch (e) {
-    console.log('Could not generate preview');
-  }
-  
-  const designName = prompt('Enter a name for this design:');
-  if (!designName) return;
-  
-  const design = {
-    name: designName,
-    date: new Date().toISOString(),
-    design: state.selectedDesign ? designOptions[state.selectedDesign]?.name : 'Custom Upload',
-    color: document.getElementById('selectedColorName')?.textContent || 'Antique Cherry Red',
-    text: state.texts.filter(t => t.text).map(t => t.text).join(', ') || 'None',
-    position: document.getElementById('positionSelect')?.value || 'center',
-    preview: previewUrl,
-    state: JSON.parse(JSON.stringify(state))
-  };
-  
-  const savedDesigns = JSON.parse(localStorage.getItem('divinePrinting_savedDesigns') || '[]');
-  savedDesigns.push(design);
-  localStorage.setItem('divinePrinting_savedDesigns', JSON.stringify(savedDesigns));
-  
-  alert('Design saved! View it in My Account → Saved Designs');
 }
 
 // Load design from URL params if present
@@ -1073,148 +996,4 @@ function loadDesignFromUrl() {
   drawPreview();
 }
 
-// Generate high-resolution printable design (300 DPI, 12" x 12" = 3600x3600px)
-function generatePrintableDesign() {
-  const canvas = document.createElement('canvas');
-  canvas.width = 3600;
-  canvas.height = 3600;
-  const ctx = canvas.getContext('2d');
-  
-  // Transparent background for print
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-  
-  const { cx, cy, scale } = getDefaultPositions();
-  const designX = state.designX || cx;
-  const designY = state.designY || cy;
-  
-  // Scale up for print resolution
-  const printScale = scale * 9;
-  
-  if (state.uploadedImage) {
-    const dw = printScale * state.uploadedImageScale;
-    const dh = printScale * state.uploadedImageScale;
-    ctx.drawImage(state.uploadedImage, designX * 9 - dw/2, designY * 9 - dh/2, dw, dh);
-  } else if (state.selectedDesign && designImages[state.selectedDesign]) {
-    const designImg = designImages[state.selectedDesign];
-    if (designImg && designImg.complete && designImg.naturalWidth > 0) {
-      const aspect = designImg.width / designImg.height;
-      const baseScale = printScale * state.designScale;
-      const dw = baseScale * (aspect > 1 ? 1 : aspect);
-      const dh = baseScale / (aspect > 1 ? aspect : 1);
-      ctx.drawImage(designImg, designX * 9 - dw/2, designY * 9 - dh/2, dw, dh);
-    }
-  }
-  
-  // Add text at high resolution
-  state.texts.forEach((textObj, index) => {
-    if (!textObj.text) return;
-    const x = (textObj.x || cx) * 9;
-    const y = (textObj.y || (cy + scale/2 + 25 + index * 25)) * 9;
-    
-    ctx.fillStyle = textObj.color || state.printColor;
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.font = (textObj.size * 9) + 'px ' + textObj.font;
-    ctx.fillText(textObj.text, x, y);
-  });
-  
-  return canvas.toDataURL('image/png');
-}
-
-// Save printable design when order is placed
-async function saveOrderDesign(orderToken) {
-  try {
-    const printableDataUrl = generatePrintableDesign();
-    const previewDataUrl = document.getElementById('tshirtCanvas').toDataURL('image/png');
-    
-    const orderData = {
-      orderToken: orderToken,
-      previewImage: previewDataUrl,
-      printableImage: printableDataUrl,
-      designInfo: {
-        design: state.selectedDesign ? designOptions[state.selectedDesign]?.name : 'Custom Upload',
-        color: document.getElementById('selectedColorName')?.textContent || 'Antique Cherry Red',
-        texts: state.texts.filter(t => t.text).map(t => t.text).join(', ') || 'None',
-        position: document.getElementById('positionSelect')?.value || 'center',
-        size: document.getElementById('sizeSelect')?.value || 'L',
-        quantity: document.getElementById('quantityInput')?.value || '25'
-      },
-      timestamp: new Date().toISOString()
-    };
-    
-    // Store in localStorage
-    const pendingOrders = JSON.parse(localStorage.getItem('divinePrinting_pendingOrders') || '[]');
-    pendingOrders.push(orderData);
-    localStorage.setItem('divinePrinting_pendingOrders', JSON.stringify(pendingOrders));
-    
-    console.log('Design saved for order:', orderToken);
-    return orderData;
-  } catch (e) {
-    console.error('Error saving design:', e);
-    return null;
-  }
-}
-
 document.addEventListener('DOMContentLoaded', init);
-
-// Webhook endpoint URL - UPDATE THIS after deploying the Lambda
-const WEBHOOK_ENDPOINT = 'https://s7ovzglni1.execute-api.us-east-2.amazonaws.com/default/divineprinting-save-design';
-
-// Listen for Snipcart order completion
-document.addEventListener('snipcart.ready', function() {
-  Snipcart.events.on('order.completed', function(order) {
-    console.log('Order completed:', order.token);
-    
-    // Save to localStorage (for admin page viewing)
-    saveOrderDesign(order.token);
-    
-    // Send design data to webhook for S3 storage
-    sendDesignToWebhook(order);
-  });
-});
-
-// Send design data to webhook endpoint
-async function sendDesignToWebhook(order) {
-  try {
-    // Get the design data we stored when updating the cart button
-    const designData = window.divinePrintingDesignData;
-    
-    if (!designData || !designData.previewImage) {
-      console.log('No design data available for webhook');
-      return;
-    }
-    
-    // Prepare payload matching what the Lambda expects
-    const payload = {
-      eventName: 'order.completed',
-      content: {
-        token: order.token,
-        invoiceNumber: order.invoiceNumber,
-        email: order.email,
-        billingAddress: order.billingAddress,
-        customFields: order.customFields,
-        metadata: {
-          designData: designData
-        }
-      }
-    };
-    
-    // Send to webhook
-    const response = await fetch(WEBHOOK_ENDPOINT, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(payload)
-    });
-    
-    if (response.ok) {
-      const result = await response.json();
-      console.log('Design saved to S3:', result);
-    } else {
-      console.error('Webhook failed:', response.status, await response.text());
-    }
-  } catch (error) {
-    console.error('Error sending design to webhook:', error);
-  }
-}
