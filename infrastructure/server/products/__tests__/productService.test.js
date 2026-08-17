@@ -4,8 +4,8 @@
  * Tests for ProductService
  *
  * Strategy:
- *   1. Mock the entire productRepository module so that require('uuid') and
- *      DynamoDB SDK imports are never evaluated during the test run.
+ *   1. Mock the entire productRepository module so DynamoDB SDK imports are
+ *      not evaluated during this service-level test run.
  *   2. Also inject a mock repository directly into service methods (via the
  *      optional `_repo` parameter) for fine-grained per-test control.
  *
@@ -14,7 +14,7 @@
  */
 
 // Mock the productRepository module before it is required by productService,
-// preventing uuid / DynamoDB SDK ESM-only imports from being evaluated.
+// preventing DynamoDB SDK imports from being evaluated.
 jest.mock('../productRepository', () => ({
   createProduct: jest.fn(),
   createProductWithId: jest.fn(),
@@ -24,8 +24,7 @@ jest.mock('../productRepository', () => ({
   updateProduct: jest.fn(),
 }));
 
-// Also mock uuid and the DynamoDB clients to satisfy any transitive require.
-jest.mock('uuid', () => ({ v4: jest.fn(() => 'mocked-uuid') }));
+// Mock the DynamoDB clients to satisfy any transitive require.
 jest.mock('@aws-sdk/lib-dynamodb', () => ({
   PutCommand: jest.fn(),
   GetCommand: jest.fn(),

@@ -1,7 +1,7 @@
 'use strict';
 
+const { randomUUID } = require('crypto');
 const { PutCommand, GetCommand, QueryCommand, ScanCommand, UpdateCommand } = require('@aws-sdk/lib-dynamodb');
-const { v4: uuidv4 } = require('uuid');
 const { docClient } = require('../utils/dynamoDbClient');
 
 const TABLE_NAME = 'divine-printing-products';
@@ -26,7 +26,7 @@ const VALID_STATUSES = ['active', 'draft', 'archived'];
  */
 async function createProduct(productData) {
   const now = new Date().toISOString();
-  const productId = uuidv4();
+  const productId = randomUUID();
 
   // Validate basePrice is a non-negative integer representing cents
   const basePrice = productData.basePrice;

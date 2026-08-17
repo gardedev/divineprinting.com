@@ -49,7 +49,6 @@ jest.mock('@aws-sdk/lib-dynamodb', () => ({
 jest.mock('@aws-sdk/client-dynamodb', () => ({
   DynamoDBClient: jest.fn().mockImplementation(() => ({})),
 }));
-jest.mock('uuid', () => ({ v4: jest.fn(() => 'mocked-uuid') }));
 
 // ---------------------------------------------------------------------------
 // Imports (after mocks are set up)

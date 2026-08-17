@@ -188,7 +188,7 @@
       ],
       "basePrice": 2500,
       "currency": "USD",
-      "status": "draft",
+      "status": "active",
       "image": "../images/2026-04-07-18-55-31-group-wearing-shirts.png",
       "productType": "configurable",
       "garment": {
@@ -565,15 +565,13 @@
         ]
       },
       "businessReviewStatus": "APPROVED",
-      "sellable": false,
+      "sellable": true,
+      "availableForSale": true,
       "operationalReadiness": {
         "templateOrdersRequireArtworkUpload": false,
         "customArtworkOperational": false,
         "blockers": [
-          "Implement durable customer-artwork upload and storage references.",
-          "Add the customer-visible 50-200% scale control for uploaded artwork.",
-          "Enforce element canvas bounds so elements cannot be placed completely outside the usable canvas.",
-          "Implement backend tier pricing, grouped variant allocations, size surcharges, and immutable configuration snapshots before cart/API launch."
+          "CUSTOM_ARTWORK remains unavailable until durable customer-artwork upload, storage, and verification exist."
         ]
       },
       "version": 1,
@@ -581,9 +579,9 @@
       "createdAt": "2026-08-13T00:00:00.000Z",
       "updatedAt": "2026-08-14T00:00:00.000Z",
       "sourcePage": "products/church-t-shirt.html",
-      "requiresReview": true,
+      "requiresReview": false,
       "reviewNotes": [
-        "Business configuration is approved; keep this record draft and excluded from import until operational readiness blockers are complete.",
+        "Business configuration and TEMPLATE ordering are approved for MVP activation.",
         "CUSTOM_ARTWORK remains unavailable until durable artwork upload/storage is implemented."
       ]
     },

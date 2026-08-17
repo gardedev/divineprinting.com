@@ -1,0 +1,18 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "ReadAndConditionallyCreateReviewedProducts",
+      "Effect": "Allow",
+      "Action": [
+        "dynamodb:GetItem",
+        "dynamodb:Query",
+        "dynamodb:PutItem"
+      ],
+      "Resource": [
+        "arn:aws:dynamodb:us-east-1:911762440868:table/divine-printing-products",
+        "arn:aws:dynamodb:us-east-1:911762440868:table/divine-printing-products/index/slug-index"
+      ]
+    }
+  ]
+}

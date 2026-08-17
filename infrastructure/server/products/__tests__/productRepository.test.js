@@ -38,9 +38,10 @@ jest.mock('@aws-sdk/client-dynamodb', () => ({
   DynamoDBClient: jest.fn().mockImplementation(() => ({})),
 }));
 
-// Mock uuid so that productId values are deterministic in tests.
-jest.mock('uuid', () => ({
-  v4: jest.fn(() => 'test-uuid-1234'),
+// Keep built-in UUID generation deterministic while exercising CommonJS module loading.
+jest.mock('crypto', () => ({
+  ...jest.requireActual('crypto'),
+  randomUUID: jest.fn(() => 'test-uuid-1234'),
 }));
 
 // ---------------------------------------------------------------------------
@@ -64,6 +65,11 @@ const VALID_PRODUCT_DATA = {
 describe('productRepository', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+  });
+
+  it('loads in CommonJS without requiring the ESM-only uuid package', () => {
+    expect(() => require('../productRepository')).not.toThrow();
+    expect(require('fs').readFileSync(require.resolve('../productRepository'), 'utf8')).not.toMatch(/require\(['"]uuid['"]\)/);
   });
 
   it('conditionally creates a seed product with its stable manifest ID', async () => {

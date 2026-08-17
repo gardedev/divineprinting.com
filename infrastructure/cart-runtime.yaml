@@ -1,0 +1,354 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Isolated DivinePrinting Task 5.4 cart/product runtime. Creates only new retained resources.
+
+Parameters:
+  LambdaCodeBucket:
+    Type: String
+    Description: Existing deployment-artifact bucket containing the reviewed Lambda zip.
+    Default: cf-templates-1rvy5qsonbpgk-us-east-1
+  LambdaCodeKey:
+    Type: String
+    Description: Immutable versioned S3 key for the reviewed Lambda zip.
+    Default: divineprinting/task-5.4/cart-api/sha256-cc1f601cfcf2d28f1bd3565a0551aec1669200f460163a85686bc2807690c6a0/divine-printing-cart-api.zip
+  LambdaCodeVersion:
+    Type: String
+    Default: ''
+    Description: Optional S3 object version for the reviewed Lambda zip.
+  CognitoUserPoolId:
+    Type: String
+    Default: us-east-1_hs1jWXB87
+  CognitoClientId:
+    Type: String
+    Default: pf2ioscnn7vf7c4if5mjemos
+
+Conditions:
+  HasLambdaCodeVersion: !Not [!Equals [!Ref LambdaCodeVersion, '']]
+
+Resources:
+  ProductsTable:
+    Type: AWS::DynamoDB::Table
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      TableName: divine-printing-products
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: productId
+          AttributeType: S
+        - AttributeName: slug
+          AttributeType: S
+      KeySchema:
+        - AttributeName: productId
+          KeyType: HASH
+      GlobalSecondaryIndexes:
+        - IndexName: slug-index
+          KeySchema:
+            - AttributeName: slug
+              KeyType: HASH
+          Projection:
+            ProjectionType: ALL
+      Tags:
+        - Key: Project
+          Value: divine-printing
+        - Key: Environment
+          Value: production
+        - Key: ManagedBy
+          Value: cloudformation
+        - Key: Task
+          Value: '5.4'
+
+  CartsTable:
+    Type: AWS::DynamoDB::Table
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      TableName: divine-printing-carts
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: cartId
+          AttributeType: S
+        - AttributeName: customerId
+          AttributeType: S
+        - AttributeName: anonymousSessionHash
+          AttributeType: S
+        - AttributeName: status
+          AttributeType: S
+        - AttributeName: updatedAt
+          AttributeType: S
+        - AttributeName: expiresAt
+          AttributeType: N
+      KeySchema:
+        - AttributeName: cartId
+          KeyType: HASH
+      GlobalSecondaryIndexes:
+        - IndexName: CustomerActiveCartIndex
+          KeySchema:
+            - AttributeName: customerId
+              KeyType: HASH
+            - AttributeName: updatedAt
+              KeyType: RANGE
+          Projection: { ProjectionType: ALL }
+        - IndexName: AnonymousSessionIndex
+          KeySchema:
+            - AttributeName: anonymousSessionHash
+              KeyType: HASH
+            - AttributeName: updatedAt
+              KeyType: RANGE
+          Projection: { ProjectionType: ALL }
+        - IndexName: CartStatusExpiryIndex
+          KeySchema:
+            - AttributeName: status
+              KeyType: HASH
+            - AttributeName: expiresAt
+              KeyType: RANGE
+          Projection: { ProjectionType: ALL }
+      TimeToLiveSpecification:
+        AttributeName: expiresAt
+        Enabled: true
+      Tags:
+        - Key: Project
+          Value: divine-printing
+        - Key: Environment
+          Value: production
+        - Key: ManagedBy
+          Value: cloudformation
+        - Key: Task
+          Value: '5.4'
+
+  CartItemsTable:
+    Type: AWS::DynamoDB::Table
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      TableName: divine-printing-cart-items
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: cartId
+          AttributeType: S
+        - AttributeName: cartItemId
+          AttributeType: S
+        - AttributeName: productId
+          AttributeType: S
+        - AttributeName: updatedAt
+          AttributeType: S
+      KeySchema:
+        - AttributeName: cartId
+          KeyType: HASH
+        - AttributeName: cartItemId
+          KeyType: RANGE
+      GlobalSecondaryIndexes:
+        - IndexName: ProductCartItemIndex
+          KeySchema:
+            - AttributeName: productId
+              KeyType: HASH
+            - AttributeName: updatedAt
+              KeyType: RANGE
+          Projection: { ProjectionType: ALL }
+      Tags:
+        - Key: Project
+          Value: divine-printing
+        - Key: Environment
+          Value: production
+        - Key: ManagedBy
+          Value: cloudformation
+        - Key: Task
+          Value: '5.4'
+
+  CartRuntimeRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: divine-printing-cart-runtime
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal: { Service: lambda.amazonaws.com }
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: CartRuntimeLeastPrivilege
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Sid: ReadTrustedProduct
+                Effect: Allow
+                Action: dynamodb:GetItem
+                Resource: !GetAtt ProductsTable.Arn
+              - Sid: ReadWriteOwnedCarts
+                Effect: Allow
+                Action:
+                  - dynamodb:GetItem
+                  - dynamodb:PutItem
+                  - dynamodb:Query
+                  - dynamodb:UpdateItem
+                  - dynamodb:TransactWriteItems
+                Resource:
+                  - !GetAtt CartsTable.Arn
+                  - !Sub '${CartsTable.Arn}/index/CustomerActiveCartIndex'
+                  - !Sub '${CartsTable.Arn}/index/AnonymousSessionIndex'
+                  - !Sub '${CartsTable.Arn}/index/CartStatusExpiryIndex'
+                  - !GetAtt CartItemsTable.Arn
+                  - !Sub '${CartItemsTable.Arn}/index/ProductCartItemIndex'
+              - Sid: DeleteOwnedCartItems
+                Effect: Allow
+                Action: dynamodb:DeleteItem
+                Resource: !GetAtt CartItemsTable.Arn
+              - Sid: WriteOwnedLogStream
+                Effect: Allow
+                Action:
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: !Sub '${CartRuntimeLogGroup.Arn}:*'
+      Tags:
+        - Key: Project
+          Value: divine-printing
+        - Key: Environment
+          Value: production
+        - Key: ManagedBy
+          Value: cloudformation
+        - Key: Task
+          Value: '5.4'
+
+  CartRuntimeLogGroup:
+    Type: AWS::Logs::LogGroup
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      LogGroupName: /aws/lambda/divine-printing-cart-api
+      RetentionInDays: 30
+      Tags:
+        - Key: Project
+          Value: divine-printing
+        - Key: Environment
+          Value: production
+        - Key: ManagedBy
+          Value: cloudformation
+        - Key: Task
+          Value: '5.4'
+
+  CartRuntimeFunction:
+    Type: AWS::Lambda::Function
+    DependsOn: CartRuntimeLogGroup
+    Properties:
+      FunctionName: divine-printing-cart-api
+      Description: Task 5.4 isolated Express cart API runtime
+      Runtime: nodejs22.x
+      Architectures: [arm64]
+      Handler: lambda-cart.handler
+      Role: !GetAtt CartRuntimeRole.Arn
+      Timeout: 20
+      MemorySize: 512
+      Code:
+        S3Bucket: !Ref LambdaCodeBucket
+        S3Key: !Ref LambdaCodeKey
+        S3ObjectVersion: !If [HasLambdaCodeVersion, !Ref LambdaCodeVersion, !Ref 'AWS::NoValue']
+      Environment:
+        Variables:
+          AWS_NODEJS_CONNECTION_REUSE_ENABLED: '1'
+          CARTS_TABLE: !Ref CartsTable
+          CART_ITEMS_TABLE: !Ref CartItemsTable
+          COGNITO_USER_POOL_ID: !Ref CognitoUserPoolId
+          COGNITO_REGION: !Ref 'AWS::Region'
+          COGNITO_CLIENT_ID: !Ref CognitoClientId
+      Tags:
+        - Key: Project
+          Value: divine-printing
+        - Key: Environment
+          Value: production
+        - Key: ManagedBy
+          Value: cloudformation
+        - Key: Task
+          Value: '5.4'
+
+  CartHttpApi:
+    Type: AWS::ApiGatewayV2::Api
+    Properties:
+      Name: divine-printing-cart-api
+      ProtocolType: HTTP
+      CorsConfiguration:
+        AllowOrigins:
+          - https://divineprinting.com
+          - https://www.divineprinting.com
+        AllowMethods: [GET, POST, PATCH, DELETE, OPTIONS]
+        AllowHeaders:
+          - Content-Type
+          - Authorization
+          - X-Cart-Token
+          - Idempotency-Key
+          - If-Match
+          - X-Cart-Item-Version
+        ExposeHeaders: [ETag]
+        MaxAge: 3600
+      Tags:
+        Project: divine-printing
+        Environment: production
+        ManagedBy: cloudformation
+        Task: '5.4'
+
+  CartHttpApiStage:
+    Type: AWS::ApiGatewayV2::Stage
+    Properties:
+      ApiId: !Ref CartHttpApi
+      StageName: '$default'
+      AutoDeploy: true
+      DefaultRouteSettings:
+        ThrottlingBurstLimit: 100
+        ThrottlingRateLimit: 50
+      Tags:
+        Project: divine-printing
+        Environment: production
+        ManagedBy: cloudformation
+        Task: '5.4'
+
+  CartLambdaIntegration:
+    Type: AWS::ApiGatewayV2::Integration
+    Properties:
+      ApiId: !Ref CartHttpApi
+      IntegrationType: AWS_PROXY
+      IntegrationUri: !GetAtt CartRuntimeFunction.Arn
+      PayloadFormatVersion: '2.0'
+      TimeoutInMillis: 20000
+
+  CartBaseRoute:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId: !Ref CartHttpApi
+      RouteKey: ANY /api/carts
+      Target: !Sub integrations/${CartLambdaIntegration}
+
+  CartProxyRoute:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId: !Ref CartHttpApi
+      RouteKey: ANY /api/carts/{proxy+}
+      Target: !Sub integrations/${CartLambdaIntegration}
+
+  CartHealthRoute:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId: !Ref CartHttpApi
+      RouteKey: GET /api/cart-health
+      Target: !Sub integrations/${CartLambdaIntegration}
+
+  CartRuntimeInvokePermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !Ref CartRuntimeFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub 'arn:${AWS::Partition}:execute-api:${AWS::Region}:${AWS::AccountId}:${CartHttpApi}/*/*'
+
+Outputs:
+  CartApiEndpoint:
+    Value: !GetAtt CartHttpApi.ApiEndpoint
+  CartHealthUrl:
+    Value: !Sub '${CartHttpApi.ApiEndpoint}/api/cart-health'
+  CartApiBaseUrl:
+    Value: !Sub '${CartHttpApi.ApiEndpoint}/api/carts'
+  ProductsTableName:
+    Value: !Ref ProductsTable
+  CartsTableName:
+    Value: !Ref CartsTable
+  CartItemsTableName:
+    Value: !Ref CartItemsTable
+  CartLambdaName:
+    Value: !Ref CartRuntimeFunction

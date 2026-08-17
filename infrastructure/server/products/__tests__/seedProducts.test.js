@@ -31,7 +31,9 @@ describe('seedProducts', () => {
     expect(manifest.records).toHaveLength(26);
     expect(new Set(manifest.records.map((record) => record.productId))).toHaveProperty('size', 26);
     expect(new Set(manifest.records.map((record) => record.slug))).toHaveProperty('size', 26);
-    expect(manifest.records.every((record) => record.sourcePage.startsWith('products/') && record.requiresReview && record.status === 'draft')).toBe(true);
+    expect(manifest.records.every((record) => record.sourcePage.startsWith('products/'))).toBe(true);
+    expect(manifest.records.filter((record) => record.requiresReview && record.status === 'draft')).toHaveLength(25);
+    expect(manifest.records.filter((record) => !record.requiresReview && record.status === 'active').map((record) => record.slug)).toEqual(['church-t-shirt']);
   });
 
   test('imports a valid reviewed record through ProductService and preserves its stable ID', async () => {
@@ -104,4 +106,11 @@ describe('seedProducts', () => {
     const source = fs.readFileSync(path.join(__dirname, '..', 'seedProducts.js'), 'utf8');
     expect(source).not.toMatch(/fetch\s*\(|https?:\/\/|vendor|supplier/i);
   });
+});
+
+test('managed comparison includes configurable-product pricing and schema fields', () => {
+  const { sameManagedRecord } = require('../seedProducts');
+  const base = { productId: 'p', quantityPricing: { tiers: [{ minimumQuantity: 1, baseUnitPriceCents: 2500 }] }, designSnapshot: { schemaVersion: 'v1' } };
+  expect(sameManagedRecord(base, { ...base, quantityPricing: { tiers: [{ minimumQuantity: 1, baseUnitPriceCents: 1500 }] } })).toBe(false);
+  expect(sameManagedRecord(base, { ...base, designSnapshot: { schemaVersion: 'v2' } })).toBe(false);
 });

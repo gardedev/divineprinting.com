@@ -7,7 +7,9 @@ const defaultProductService = require('./productService');
 const DEFAULT_MANIFEST = path.join(__dirname, 'data', 'product-seed.json');
 const MANAGED_FIELDS = [
   'productId', 'name', 'slug', 'sku', 'supportedSkus', 'basePrice', 'currency', 'status',
-  'image', 'options', 'variants', 'version', 'pricingVersion', 'sourcePage',
+  'image', 'productType', 'garment', 'options', 'variants', 'quantityPricing', 'designTemplates',
+  'customization', 'designSnapshot', 'productionRules', 'businessReviewStatus', 'sellable',
+  'availableForSale', 'operationalReadiness', 'version', 'pricingVersion', 'sourcePage',
 ];
 
 function canonical(value) {

@@ -1,0 +1,149 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Import-only Task 5.4 retained cart/product resources. No runtime resources.
+
+Resources:
+  ProductsTable:
+    Type: AWS::DynamoDB::Table
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      TableName: divine-printing-products
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: productId
+          AttributeType: S
+        - AttributeName: slug
+          AttributeType: S
+      KeySchema:
+        - AttributeName: productId
+          KeyType: HASH
+      GlobalSecondaryIndexes:
+        - IndexName: slug-index
+          KeySchema:
+            - AttributeName: slug
+              KeyType: HASH
+          Projection:
+            ProjectionType: ALL
+      Tags:
+        - Key: Project
+          Value: divine-printing
+        - Key: Environment
+          Value: production
+        - Key: ManagedBy
+          Value: cloudformation
+        - Key: Task
+          Value: '5.4'
+
+  CartsTable:
+    Type: AWS::DynamoDB::Table
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      TableName: divine-printing-carts
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: cartId
+          AttributeType: S
+        - AttributeName: customerId
+          AttributeType: S
+        - AttributeName: anonymousSessionHash
+          AttributeType: S
+        - AttributeName: status
+          AttributeType: S
+        - AttributeName: updatedAt
+          AttributeType: S
+        - AttributeName: expiresAt
+          AttributeType: N
+      KeySchema:
+        - AttributeName: cartId
+          KeyType: HASH
+      GlobalSecondaryIndexes:
+        - IndexName: CustomerActiveCartIndex
+          KeySchema:
+            - AttributeName: customerId
+              KeyType: HASH
+            - AttributeName: updatedAt
+              KeyType: RANGE
+          Projection: { ProjectionType: ALL }
+        - IndexName: AnonymousSessionIndex
+          KeySchema:
+            - AttributeName: anonymousSessionHash
+              KeyType: HASH
+            - AttributeName: updatedAt
+              KeyType: RANGE
+          Projection: { ProjectionType: ALL }
+        - IndexName: CartStatusExpiryIndex
+          KeySchema:
+            - AttributeName: status
+              KeyType: HASH
+            - AttributeName: expiresAt
+              KeyType: RANGE
+          Projection: { ProjectionType: ALL }
+      TimeToLiveSpecification:
+        AttributeName: expiresAt
+        Enabled: true
+      Tags:
+        - Key: Project
+          Value: divine-printing
+        - Key: Environment
+          Value: production
+        - Key: ManagedBy
+          Value: cloudformation
+        - Key: Task
+          Value: '5.4'
+
+  CartItemsTable:
+    Type: AWS::DynamoDB::Table
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      TableName: divine-printing-cart-items
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: cartId
+          AttributeType: S
+        - AttributeName: cartItemId
+          AttributeType: S
+        - AttributeName: productId
+          AttributeType: S
+        - AttributeName: updatedAt
+          AttributeType: S
+      KeySchema:
+        - AttributeName: cartId
+          KeyType: HASH
+        - AttributeName: cartItemId
+          KeyType: RANGE
+      GlobalSecondaryIndexes:
+        - IndexName: ProductCartItemIndex
+          KeySchema:
+            - AttributeName: productId
+              KeyType: HASH
+            - AttributeName: updatedAt
+              KeyType: RANGE
+          Projection: { ProjectionType: ALL }
+      Tags:
+        - Key: Project
+          Value: divine-printing
+        - Key: Environment
+          Value: production
+        - Key: ManagedBy
+          Value: cloudformation
+        - Key: Task
+          Value: '5.4'
+
+  CartRuntimeLogGroup:
+    Type: AWS::Logs::LogGroup
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      LogGroupName: /aws/lambda/divine-printing-cart-api
+      RetentionInDays: 30
+      Tags:
+        - Key: Project
+          Value: divine-printing
+        - Key: Environment
+          Value: production
+        - Key: ManagedBy
+          Value: cloudformation
+        - Key: Task
+          Value: '5.4'
