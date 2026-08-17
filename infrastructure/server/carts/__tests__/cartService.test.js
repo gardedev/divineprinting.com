@@ -57,6 +57,14 @@ describe('cartService', () => {
     expect(repo.createCart).not.toHaveBeenCalled();
   });
 
+  test.each([
+    ['converted', 'CART_ALREADY_CONVERTED'], ['expired', 'CART_EXPIRED'],
+  ])('blocks normal anonymous access to a terminal %s cart', async (status, code) => {
+    const { repo, service } = setup();
+    repo.findAnonymousCartByHash.mockResolvedValue({ cartId: 'anonymous', anonymousSessionHash: 'token-hash', status, expiresAt: status === 'expired' ? 1 : 9999999999 });
+    await expect(service.getCurrentCart(anonymous)).rejects.toMatchObject({ code });
+  });
+
   test('adds a new item using ProductService price, USD, totals, and neutral inventory', async () => {
     const { repo, productService, service } = setup();
     repo.getCart.mockResolvedValue({ cartId: 'c', customerId: 'sub-1', status: 'active', currency: 'USD' });

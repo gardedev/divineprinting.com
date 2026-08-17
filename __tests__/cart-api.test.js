@@ -69,4 +69,44 @@ describe('Task 5.4 anonymous cart browser client', () => {
     expect(sessionStorage.getItem('dp_anonymous_cart_v1')).toBe(envelope);
     expect(global.fetch).not.toHaveBeenCalled();
   });
+
+  test('claims after login and clears the preserved envelope only after authoritative success', async () => {
+    const token = 'q'.repeat(43);
+    sessionStorage.setItem('dp_anonymous_cart_v1', JSON.stringify({ cartId: 'anonymous-cart', cartToken: token }));
+    global.getAccessToken = jest.fn(() => 'verified-access-token');
+    global.authenticatedCartFetch = jest.fn()
+      .mockReturnValueOnce(response(200, { cart: { cartId: 'customer-cart', version: 5 }, items: [] }))
+      .mockReturnValueOnce(response(200, { cart: { cartId: 'customer-cart', version: 6 }, items: [], warnings: ['CART_PRICE_UPDATED'] }));
+    fetch.mockReturnValueOnce(response(200, { cart: { cartId: 'anonymous-cart', version: 3 }, items: [] }));
+    const result = await DivineCart.claimPreservedAnonymousCart();
+    expect(result).toMatchObject({ mode: 'customer', warnings: ['CART_PRICE_UPDATED'] });
+    const [path, options] = authenticatedCartFetch.mock.calls[1];
+    expect(path).toBe('/api/carts/current/claim');
+    expect(options.headers).toMatchObject({ 'X-Cart-Token': token, 'If-Match': '5', 'X-Anonymous-Cart-Version': '3' });
+    expect(JSON.parse(options.body)).toEqual({ anonymousCartId: 'anonymous-cart' });
+    expect(sessionStorage.getItem('dp_anonymous_cart_v1')).toBeNull();
+    expect(sessionStorage.getItem('dp_cart_claim_v1')).toBeNull();
+  });
+
+  test('preserves the anonymous envelope but resets semantic claim metadata after an authoritative conflict', async () => {
+    const envelope = JSON.stringify({ cartId: 'anonymous-cart', cartToken: 'r'.repeat(43), future: true });
+    sessionStorage.setItem('dp_anonymous_cart_v1', envelope);
+    global.getAccessToken = jest.fn(() => 'verified-access-token');
+    global.authenticatedCartFetch = jest.fn()
+      .mockReturnValueOnce(response(200, { cart: { cartId: 'customer-cart', version: 5 }, items: [] }))
+      .mockReturnValueOnce(response(409, { code: 'CART_VERSION_CONFLICT', error: 'Changed' }));
+    fetch.mockReturnValueOnce(response(200, { cart: { cartId: 'anonymous-cart', version: 3 }, items: [] }));
+    await expect(DivineCart.claimPreservedAnonymousCart()).rejects.toMatchObject({ code: 'CART_VERSION_CONFLICT' });
+    expect(sessionStorage.getItem('dp_anonymous_cart_v1')).toBe(envelope);
+    expect(sessionStorage.getItem('dp_cart_claim_v1')).toBeNull();
+  });
+
+  test.each(['CART_TOKEN_INVALID', 'CART_EXPIRED', 'CART_ALREADY_CONVERTED'])('clears an authoritatively unusable anonymous envelope for %s', async (code) => {
+    sessionStorage.setItem('dp_anonymous_cart_v1', JSON.stringify({ cartId: 'anonymous-cart', cartToken: 's'.repeat(43) }));
+    global.getAccessToken = jest.fn(() => 'verified-access-token');
+    global.authenticatedCartFetch = jest.fn().mockReturnValueOnce(response(200, { cart: { cartId: 'customer-cart', version: 5 }, items: [] }));
+    fetch.mockReturnValueOnce(response(code === 'CART_EXPIRED' ? 410 : code === 'CART_ALREADY_CONVERTED' ? 409 : 401, { code, error: 'Unavailable' }));
+    await expect(DivineCart.claimPreservedAnonymousCart()).rejects.toMatchObject({ code });
+    expect(sessionStorage.getItem('dp_anonymous_cart_v1')).toBeNull();
+  });
 });

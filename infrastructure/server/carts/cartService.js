@@ -53,6 +53,14 @@ function configuredJobDedupeKey({ productId, baseSku, customerConfiguration }) {
   }))).digest('hex');
 }
 
+function configuredMergeKey({ productId, customerConfiguration }) {
+  return crypto.createHash('sha256').update(JSON.stringify(canonical({
+    dedupeVersion: CONFIGURED_JOB_DEDUPE_VERSION,
+    productId,
+    customerConfiguration,
+  }))).digest('hex');
+}
+
 function mergeInstructions(existing, requested) {
   const left = typeof existing === 'string' ? existing.trim() : '';
   const right = typeof requested === 'string' ? requested.trim() : '';
@@ -187,6 +195,10 @@ function createCartService({ cartRepository = defaultCartRepository, productServ
       cart = await cartRepository.findAnonymousCartByHash(owner.anonymousSessionHash);
       if (!cart) throw new CartServiceError('CART_NOT_FOUND');
       assertOwned(cart, owner);
+      if (cart.status === 'converted') throw new CartServiceError('CART_ALREADY_CONVERTED');
+      if (cart.status === 'expired' || (Number.isInteger(cart.expiresAt) && cart.expiresAt <= Math.floor(Date.now() / 1000))) {
+        throw new CartServiceError('CART_EXPIRED');
+      }
     }
     return { cart, items: await cartRepository.listCartItems(cart.cartId) };
   }
@@ -369,7 +381,118 @@ function createCartService({ cartRepository = defaultCartRepository, productServ
     } catch (error) { throw translate(error); }
   }
 
-  return { createCart, getCurrentCart, addItem, updateItemQuantity, updateConfiguredJob, removeItem };
+  function priceChanged(original, next) {
+    return original.lineTotalCents !== next.lineTotalCents
+      || original.unitPriceCents !== next.unitPriceCents
+      || original.productVersion !== next.productVersion
+      || original.pricingVersion !== next.pricingVersion
+      || JSON.stringify(canonical(original.pricingSnapshot)) !== JSON.stringify(canonical(next.pricingSnapshot));
+  }
+
+  async function mergeSimpleItems(entries) {
+    const first = entries[0];
+    const product = await getTrustedProduct(first.productId);
+    entries.forEach((entry) => validateProductSelections(product, entry));
+    const quantity = validateQuantity(entries.reduce((sum, entry) => sum + entry.quantity, 0), product);
+    const unitPriceCents = product.basePrice;
+    const lineTotalCents = unitPriceCents * quantity;
+    if (!Number.isSafeInteger(lineTotalCents)) throw new CartServiceError('CART_PRICE_CHANGED');
+    if (product.availableForSale === false) throw new CartServiceError('CART_INVENTORY_UNAVAILABLE');
+    return {
+      ...first, cartItemType: first.cartItemType || 'SIMPLE', quantity, currency: USD, unitPriceCents, lineTotalCents,
+      productVersion: product.version, pricingVersion: product.pricingVersion,
+      validationStatus: 'warning', inventoryStatus: 'not_checked', dedupeKey: dedupeKey(first),
+    };
+  }
+
+  async function mergeConfiguredItems(entries) {
+    const first = entries[0];
+    const customerInstructions = entries.reduce((resolved, entry) => mergeInstructions(resolved, entry.customerInstructions), undefined);
+    const evaluated = await productService.evaluateCartConfiguration(first.productId, {
+      customerConfiguration: first.customerConfiguration,
+      variantAllocations: entries.flatMap((entry) => entry.variantAllocations || []),
+      customerInstructions,
+    }, { assetVerifier });
+    return {
+      ...first, cartItemType: CONFIGURED_JOB, baseSku: evaluated.baseSku,
+      customerConfiguration: evaluated.customerConfiguration, variantAllocations: evaluated.variantAllocations,
+      totalQuantity: evaluated.totalQuantity, customerInstructions: evaluated.customerInstructions ?? null,
+      pricingSnapshot: evaluated.pricingSnapshot, dedupeVersion: evaluated.dedupeVersion,
+      dedupeKey: configuredJobDedupeKey({ productId: first.productId, baseSku: evaluated.baseSku, customerConfiguration: evaluated.customerConfiguration }),
+      quantity: evaluated.totalQuantity, currency: evaluated.pricingSnapshot.currency,
+      unitPriceCents: evaluated.pricingSnapshot.tier.baseUnitPriceCents, lineTotalCents: evaluated.lineTotalCents,
+      productVersion: evaluated.pricingSnapshot.productVersion, pricingVersion: evaluated.pricingSnapshot.pricingVersion,
+      validationStatus: 'warning', inventoryStatus: 'not_checked',
+    };
+  }
+
+  async function claimAnonymousCart({ context, anonymousContext, anonymousCartId, expectedCustomerVersion, expectedAnonymousVersion, mutationId }) {
+    try {
+      const customerOwner = ownerFromContext(context);
+      const anonymousOwner = ownerFromContext(anonymousContext);
+      if (customerOwner.type !== 'customer' || anonymousOwner.type !== 'anonymous') throw new CartServiceError('CART_ACCESS_DENIED');
+      const id = requiredString(mutationId, 'mutationId');
+      const customerCart = await cartRepository.findOrCreateCustomerCart(customerOwner.customerId);
+      assertOwned(customerCart, customerOwner);
+      if (customerCart.status === 'pending_checkout') throw new CartServiceError('CART_CHECKOUT_IN_PROGRESS');
+      assertMutable(customerCart);
+      const source = await cartRepository.getCart(requiredString(anonymousCartId, 'anonymousCartId'));
+      if (!source) throw new CartServiceError('CART_NOT_FOUND');
+      assertOwned(source, anonymousOwner);
+
+      if (source.status === 'converted') {
+        const priorTarget = source.mergedIntoCartId ? await cartRepository.getCart(source.mergedIntoCartId) : null;
+        if (source.migrationId === id && priorTarget?.customerId === customerOwner.customerId && !priorTarget.anonymousSessionHash) {
+          const current = await cartRepository.findOrCreateCustomerCart(customerOwner.customerId);
+          const state = { cart: current, items: await cartRepository.listCartItems(current.cartId, { consistentRead: true }) };
+          return { ...state, warnings: source.priceUpdated ? ['CART_PRICE_UPDATED'] : [] };
+        }
+        throw new CartServiceError('CART_ALREADY_CONVERTED');
+      }
+      if (source.status === 'expired' || (Number.isInteger(source.expiresAt) && source.expiresAt <= Math.floor(Date.now() / 1000))) throw new CartServiceError('CART_EXPIRED');
+      assertMutable(source);
+      if (customerCart.version !== expectedCustomerVersion || source.version !== expectedAnonymousVersion) throw new CartServiceError('CART_VERSION_CONFLICT');
+
+      const [customerItems, anonymousItems] = await Promise.all([
+        cartRepository.listCartItems(customerCart.cartId, { consistentRead: true }),
+        cartRepository.listCartItems(source.cartId, { consistentRead: true }),
+      ]);
+      const groups = new Map();
+      const add = (item, origin) => {
+        const configured = item.cartItemType === CONFIGURED_JOB;
+        const key = `${configured ? CONFIGURED_JOB : 'SIMPLE'}:${configured ? configuredMergeKey(item) : dedupeKey(item)}`;
+        const group = groups.get(key) || { entries: [], targetEntries: [] };
+        group.entries.push(item);
+        if (origin === 'target') group.targetEntries.push(item);
+        groups.set(key, group);
+      };
+      customerItems.forEach((item) => add(item, 'target'));
+      anonymousItems.forEach((item) => add(item, 'source'));
+
+      const mergedItems = [];
+      let updatedPrice = false;
+      for (const group of groups.values()) {
+        if (group.targetEntries.length > 1) throw new CartServiceError('CART_CONFIGURATION_CONFLICT');
+        const configured = group.entries[0].cartItemType === CONFIGURED_JOB;
+        const evaluated = configured ? await mergeConfiguredItems(group.entries) : await mergeSimpleItems(group.entries);
+        updatedPrice = updatedPrice || group.entries.some((entry) => priceChanged(entry, evaluated));
+        const target = group.targetEntries[0];
+        const { cartId: _cartId, cartItemId: _cartItemId, createdAt: _createdAt, updatedAt: _updatedAt, version: _version, ...snapshot } = evaluated;
+        mergedItems.push({ ...snapshot, ...(target ? { cartItemId: target.cartItemId, createdAt: target.createdAt, version: target.version } : {}) });
+      }
+      const cartUpdates = { ...totals(mergedItems), validationStatus: mergedItems.some((item) => item.validationStatus === 'warning') ? 'warning' : 'valid' };
+      await cartRepository.claimAnonymousCart({
+        customerId: customerOwner.customerId, customerCart, anonymousCart: source,
+        anonymousSessionHash: anonymousOwner.anonymousSessionHash, mutationId: id,
+        items: mergedItems, cartUpdates, priceUpdated: updatedPrice,
+      });
+      const persistedCart = await cartRepository.getCart(customerCart.cartId);
+      const state = { cart: persistedCart, items: await cartRepository.listCartItems(customerCart.cartId, { consistentRead: true }) };
+      return { ...state, warnings: updatedPrice ? ['CART_PRICE_UPDATED'] : [] };
+    } catch (error) { throw translate(error); }
+  }
+
+  return { createCart, getCurrentCart, addItem, updateItemQuantity, updateConfiguredJob, removeItem, claimAnonymousCart };
 }
 
-module.exports = { createCartService, CartServiceError, dedupeKey, configuredJobDedupeKey, constants: { USD, MIN_QUANTITY, MAX_QUANTITY, CONFIGURED_JOB } };
+module.exports = { createCartService, CartServiceError, dedupeKey, configuredJobDedupeKey, configuredMergeKey, constants: { USD, MIN_QUANTITY, MAX_QUANTITY, CONFIGURED_JOB } };

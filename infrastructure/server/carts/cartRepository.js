@@ -20,6 +20,8 @@ const ANONYMOUS_TTL_SECONDS = 14 * 24 * 60 * 60;
 const CUSTOMER_TTL_SECONDS = 90 * 24 * 60 * 60;
 const MAX_IDEMPOTENCY_RECORDS = 20;
 const MAX_CART_ITEM_BYTES = 256 * 1024;
+const MAX_TRANSACTION_ACTIONS = 100;
+const MAX_TRANSACTION_BYTES = 3584 * 1024;
 const CUSTOMER_POINTER_PREFIX = 'customer-cart-pointer:';
 const MUTABLE_STATUSES = ['draft', 'active'];
 const CART_STATUSES = ['draft', 'active', 'pending_checkout', 'abandoned', 'expired', 'converted'];
@@ -413,8 +415,8 @@ function createCartRepository({ client = docClient, now = () => new Date(), gene
     } catch (error) { throw translate(error); }
   }
 
-  async function listCartItems(cartId) {
-    const response = await client.send(new QueryCommand({ TableName: CART_ITEMS_TABLE, KeyConditionExpression: '#cartId = :cartId', ExpressionAttributeNames: { '#cartId': 'cartId' }, ExpressionAttributeValues: { ':cartId': requiredString(cartId, 'cartId') } }));
+  async function listCartItems(cartId, { consistentRead = false } = {}) {
+    const response = await client.send(new QueryCommand({ TableName: CART_ITEMS_TABLE, KeyConditionExpression: '#cartId = :cartId', ExpressionAttributeNames: { '#cartId': 'cartId' }, ExpressionAttributeValues: { ':cartId': requiredString(cartId, 'cartId') }, ConsistentRead: consistentRead }));
     return response.Items || [];
   }
 
@@ -546,7 +548,95 @@ function createCartRepository({ client = docClient, now = () => new Date(), gene
     } catch (error) { throw translate(error); }
   }
 
-  return { createCart, getCart, getCustomerCartPointer, findOrCreateCustomerCart, findActiveCustomerCart, findAnonymousCartByHash, queryExpiringCarts, mutateCart, transitionExpiredCart, listCartItems, getCartItem, findCartItemsByProduct, getMutationReplay, createCartItem, updateCartItem, deleteCartItem, executeTransaction };
+  async function claimAnonymousCart({ customerId, customerCart, anonymousCart, anonymousSessionHash, mutationId, items, cartUpdates, priceUpdated = false }) {
+    const trustedCustomerId = requiredString(customerId, 'customerId');
+    const trustedHash = requiredString(anonymousSessionHash, 'anonymousSessionHash');
+    const id = requiredString(mutationId, 'mutationId');
+    if (!customerCart || !anonymousCart) throw new TypeError('customerCart and anonymousCart are required');
+    assertOwnerMatches(customerCart, { type: 'customer', customerId: trustedCustomerId });
+    assertOwnerMatches(anonymousCart, { type: 'anonymous', anonymousSessionHash: trustedHash });
+    if (!Array.isArray(items)) throw new TypeError('items must be an array');
+
+    const at = now();
+    const targetVersion = integer(customerCart.version, 'customerCart.version', { min: 1 });
+    const sourceVersion = integer(anonymousCart.version, 'anonymousCart.version', { min: 1 });
+    const migrationFingerprint = fingerprint({ operation: 'claimAnonymousCart', anonymousCartId: anonymousCart.cartId, customerCartId: customerCart.cartId, customerId: trustedCustomerId });
+    const records = [...(customerCart.idempotencyRecords || []), {
+      mutationId: id,
+      fingerprint: migrationFingerprint,
+      appliedVersion: targetVersion + 1,
+      result: { cartId: customerCart.cartId, anonymousCartId: anonymousCart.cartId, priceUpdated: Boolean(priceUpdated) },
+    }].slice(-MAX_IDEMPOTENCY_RECORDS);
+
+    const targetValues = {
+      ':customerId': trustedCustomerId, ':active': 'active', ':expectedVersion': targetVersion,
+      ':nextVersion': targetVersion + 1, ':updatedAt': at.toISOString(),
+      ':expiresAt': Math.floor(at.getTime() / 1000) + CUSTOMER_TTL_SECONDS, ':records': records,
+    };
+    const targetNames = {
+      '#customerId': 'customerId', '#status': 'status', '#version': 'version', '#updatedAt': 'updatedAt',
+      '#expiresAt': 'expiresAt', '#records': 'idempotencyRecords',
+    };
+    const targetSets = ['#version = :nextVersion', '#updatedAt = :updatedAt', '#expiresAt = :expiresAt', '#records = :records'];
+    const allowedUpdates = new Set(['subtotalCents', 'discountCents', 'taxCents', 'shippingCents', 'totalCents', 'validationStatus']);
+    for (const [key, value] of Object.entries(cartUpdates || {})) {
+      if (!allowedUpdates.has(key)) throw new TypeError(`${key} is not mutable through claimAnonymousCart`);
+      if (key.endsWith('Cents')) integer(value, key);
+      targetNames[`#u_${key}`] = key;
+      targetValues[`:u_${key}`] = value;
+      targetSets.push(`#u_${key} = :u_${key}`);
+    }
+
+    const transactItems = [{ Update: {
+      TableName: CARTS_TABLE, Key: { cartId: customerCart.cartId },
+      UpdateExpression: `SET ${targetSets.join(', ')}`,
+      ConditionExpression: '#customerId = :customerId AND attribute_not_exists(anonymousSessionHash) AND #status = :active AND #version = :expectedVersion',
+      ExpressionAttributeNames: targetNames, ExpressionAttributeValues: targetValues,
+    } }, { Update: {
+      TableName: CARTS_TABLE, Key: { cartId: anonymousCart.cartId },
+      UpdateExpression: 'SET #status = :converted, #conversionReason = :reason, #migrationId = :migrationId, #mergedIntoCartId = :targetId, #priceUpdated = :priceUpdated, #version = :nextVersion, #updatedAt = :updatedAt',
+      ConditionExpression: '#anonymousSessionHash = :anonymousSessionHash AND attribute_not_exists(customerId) AND (#status = :draft OR #status = :active) AND #version = :expectedVersion',
+      ExpressionAttributeNames: { '#anonymousSessionHash': 'anonymousSessionHash', '#status': 'status', '#conversionReason': 'conversionReason', '#migrationId': 'migrationId', '#mergedIntoCartId': 'mergedIntoCartId', '#priceUpdated': 'priceUpdated', '#version': 'version', '#updatedAt': 'updatedAt' },
+      ExpressionAttributeValues: { ':anonymousSessionHash': trustedHash, ':draft': 'draft', ':active': 'active', ':converted': 'converted', ':reason': 'customer_cart_merge', ':migrationId': id, ':targetId': customerCart.cartId, ':priceUpdated': Boolean(priceUpdated), ':expectedVersion': sourceVersion, ':nextVersion': sourceVersion + 1, ':updatedAt': at.toISOString() },
+    } }, { ConditionCheck: {
+      TableName: CARTS_TABLE, Key: { cartId: customerPointerId(trustedCustomerId) },
+      ConditionExpression: '#activeCartId = :targetId',
+      ExpressionAttributeNames: { '#activeCartId': 'activeCartId' }, ExpressionAttributeValues: { ':targetId': customerCart.cartId },
+    } }];
+
+    for (const input of items) {
+      assertNoRawIdentity(input);
+      const existing = Boolean(input.cartItemId && input.version);
+      const persisted = {
+        ...Object.fromEntries(Object.entries(input).filter(([key]) => !key.startsWith('_'))),
+        cartId: customerCart.cartId,
+        cartItemId: input.cartItemId || generateId(),
+        createdAt: input.createdAt || at.toISOString(), updatedAt: at.toISOString(),
+        version: existing ? input.version + 1 : 1,
+      };
+      assertCartItemSize(persisted);
+      transactItems.push({ Put: {
+        TableName: CART_ITEMS_TABLE, Item: persisted,
+        ConditionExpression: existing
+          ? '#cartId = :cartId AND #cartItemId = :cartItemId AND #version = :expectedItemVersion'
+          : 'attribute_not_exists(#cartId) AND attribute_not_exists(#cartItemId)',
+        ExpressionAttributeNames: { '#cartId': 'cartId', '#cartItemId': 'cartItemId', ...(existing ? { '#version': 'version' } : {}) },
+        ExpressionAttributeValues: existing
+          ? { ':cartId': customerCart.cartId, ':cartItemId': persisted.cartItemId, ':expectedItemVersion': input.version }
+          : undefined,
+      } });
+    }
+
+    if (transactItems.length > MAX_TRANSACTION_ACTIONS || Buffer.byteLength(JSON.stringify({ TransactItems: transactItems }), 'utf8') > MAX_TRANSACTION_BYTES) {
+      throw new CartRepositoryError('CART_MERGE_TOO_LARGE');
+    }
+    try {
+      await client.send(new TransactWriteCommand({ TransactItems: transactItems, ClientRequestToken: fingerprint({ mutationId: id }).slice(0, 36) }));
+      return { cartId: customerCart.cartId, version: targetVersion + 1, idempotentReplay: false };
+    } catch (error) { throw translate(error); }
+  }
+
+  return { createCart, getCart, getCustomerCartPointer, findOrCreateCustomerCart, findActiveCustomerCart, findAnonymousCartByHash, queryExpiringCarts, mutateCart, transitionExpiredCart, listCartItems, getCartItem, findCartItemsByProduct, getMutationReplay, createCartItem, updateCartItem, deleteCartItem, executeTransaction, claimAnonymousCart };
 }
 
-module.exports = { createCartRepository, CartRepositoryError, constants: { CARTS_TABLE, CART_ITEMS_TABLE, CUSTOMER_INDEX, ANONYMOUS_INDEX, EXPIRY_INDEX, PRODUCT_INDEX, ANONYMOUS_TTL_SECONDS, CUSTOMER_TTL_SECONDS, MAX_IDEMPOTENCY_RECORDS, MAX_CART_ITEM_BYTES, CUSTOMER_POINTER_PREFIX }, fingerprint, customerPointerId };
+module.exports = { createCartRepository, CartRepositoryError, constants: { CARTS_TABLE, CART_ITEMS_TABLE, CUSTOMER_INDEX, ANONYMOUS_INDEX, EXPIRY_INDEX, PRODUCT_INDEX, ANONYMOUS_TTL_SECONDS, CUSTOMER_TTL_SECONDS, MAX_IDEMPOTENCY_RECORDS, MAX_CART_ITEM_BYTES, MAX_TRANSACTION_ACTIONS, MAX_TRANSACTION_BYTES, CUSTOMER_POINTER_PREFIX }, fingerprint, customerPointerId };

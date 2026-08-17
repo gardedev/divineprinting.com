@@ -11,6 +11,7 @@ const SIMPLE_ADD_FIELDS = new Set(['itemType', 'productId', 'quantity', 'sku', '
 const CONFIGURED_ADD_FIELDS = new Set(['itemType', 'productId', 'variantAllocations', 'customerConfiguration', 'customerInstructions']);
 const SIMPLE_UPDATE_FIELDS = new Set(['itemType', 'quantity']);
 const CONFIGURED_UPDATE_FIELDS = new Set(['itemType', 'variantAllocations', 'customerConfiguration', 'customerInstructions']);
+const CLAIM_FIELDS = new Set(['anonymousCartId']);
 
 const STATUS_BY_CODE = Object.freeze({
   CART_INVALID_INPUT: 400,
@@ -30,6 +31,7 @@ const STATUS_BY_CODE = Object.freeze({
   CART_ALREADY_CONVERTED: 409,
   CART_EXPIRED: 410,
   CART_ITEM_TOO_LARGE: 413,
+  CART_MERGE_TOO_LARGE: 413,
   CART_PRODUCT_UNAVAILABLE: 422,
   CART_PRODUCT_CHANGED: 422,
   CART_PRICE_CHANGED: 422,
@@ -53,6 +55,8 @@ const SAFE_MESSAGES = Object.freeze({
   CART_CONFIGURATION_CONFLICT: 'That configuration already exists as another cart item.',
   CART_EXPIRED: 'The cart has expired.',
   CART_ITEM_TOO_LARGE: 'The configured cart item is too large.',
+  CART_MERGE_TOO_LARGE: 'The carts are too large to merge safely.',
+  CART_ALREADY_CONVERTED: 'The anonymous cart was already converted.',
   CART_ASSET_REFERENCE_INVALID: 'Custom artwork is not available for this cart configuration.',
 });
 
@@ -129,7 +133,7 @@ function sanitizeItem(item) {
 function sendCart(res, state, extra = {}) {
   const cart = sanitizeCart(state.cart);
   if (cart?.version) res.set('ETag', `"${cart.version}"`);
-  return res.status(extra.status || 200).json({ success: true, cart, items: (state.items || []).map(sanitizeItem), warnings: [], ...extra.body });
+  return res.status(extra.status || 200).json({ success: true, cart, items: (state.items || []).map(sanitizeItem), warnings: state.warnings || [], ...extra.body });
 }
 
 function sendError(res, error, { anonymousCredential = false } = {}) {
@@ -218,6 +222,18 @@ function createCartRouter({ cartService, productService, jwtAuthMiddleware = jwt
   router.delete('/anonymous/:cartId/items/:cartItemId', asyncRoute((req, res) => mutate(req, res, loadAnonymous), { anonymousCredential: true }));
 
   router.get('/current', jwtAuthMiddleware, requireCustomer, asyncRoute(async (req, res) => sendCart(res, (await loadCustomer(req)).state)));
+  router.post('/current/claim', jwtAuthMiddleware, requireCustomer, asyncRoute(async (req, res) => {
+    assertExactFields(req.body, CLAIM_FIELDS);
+    if (typeof req.body.anonymousCartId !== 'string' || !req.body.anonymousCartId.trim()) throw invalidInput();
+    const transport = mutationTransport(req);
+    const expectedAnonymousVersion = positiveVersion(requiredHeader(req, 'X-Anonymous-Cart-Version'), 'X-Anonymous-Cart-Version');
+    const state = await service.claimAnonymousCart({
+      context: customerContext(req), anonymousContext: anonymousContext(req),
+      anonymousCartId: req.body.anonymousCartId, expectedAnonymousVersion,
+      expectedCustomerVersion: transport.expectedCartVersion, mutationId: transport.mutationId,
+    });
+    return sendCart(res, state);
+  }, { anonymousCredential: true }));
   router.post('/current/items', jwtAuthMiddleware, requireCustomer, asyncRoute((req, res) => mutate(req, res, loadCustomer)));
   router.patch('/current/items/:cartItemId', jwtAuthMiddleware, requireCustomer, asyncRoute((req, res) => mutate(req, res, loadCustomer)));
   router.delete('/current/items/:cartItemId', jwtAuthMiddleware, requireCustomer, asyncRoute((req, res) => mutate(req, res, loadCustomer)));

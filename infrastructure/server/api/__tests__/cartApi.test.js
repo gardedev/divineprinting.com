@@ -24,6 +24,7 @@ function setup({ mode = 'customer', service: overrides = {} } = {}) {
     createCart: jest.fn().mockResolvedValue({ ...baseCart, cartType: 'anonymous', customerId: undefined, status: 'draft', version: 1 }),
     getCurrentCart: jest.fn().mockImplementation(async (context) => ({ cart: context.type === 'anonymous' ? { ...baseCart, cartType: 'anonymous', customerId: undefined, anonymousSessionHash: context.anonymousSessionHash } : baseCart, items: [] })),
     addItem: jest.fn().mockResolvedValue({}), updateItemQuantity: jest.fn().mockResolvedValue({}), updateConfiguredJob: jest.fn().mockResolvedValue({}), removeItem: jest.fn().mockResolvedValue(true),
+    claimAnonymousCart: jest.fn().mockResolvedValue({ cart: baseCart, items: [], warnings: [] }),
     ...overrides,
   };
   const app = express();
@@ -95,6 +96,29 @@ describe('shopping cart API', () => {
 
   test('requires authentication for current-cart routes', async () => {
     await request(setup({ mode: 'missing' }).app).get('/api/carts/current').expect(401);
+  });
+
+  test('claims using verified Cognito sub, hashed anonymous credential, idempotency, and both versions', async () => {
+    const { app, service } = setup();
+    const response = await request(app).post('/api/carts/current/claim')
+      .set('X-Cart-Token', TOKEN).set('Idempotency-Key', 'claim-1').set('If-Match', '3').set('X-Anonymous-Cart-Version', '7')
+      .send({ anonymousCartId: 'anonymous-cart' }).expect(200);
+    expect(service.claimAnonymousCart).toHaveBeenCalledWith({
+      context: { type: 'customer', sub: 'trusted-sub' },
+      anonymousContext: { type: 'anonymous', anonymousSessionHash: HASH },
+      anonymousCartId: 'anonymous-cart', expectedCustomerVersion: 3, expectedAnonymousVersion: 7, mutationId: 'claim-1',
+    });
+    expect(JSON.stringify(service.claimAnonymousCart.mock.calls)).not.toContain(TOKEN);
+    expect(response.body.warnings).toEqual([]);
+  });
+
+  test('rejects client identity/pricing fields and missing claim transport', async () => {
+    const { app, service } = setup();
+    await request(app).post('/api/carts/current/claim')
+      .set('X-Cart-Token', TOKEN).set('Idempotency-Key', 'claim-1').set('If-Match', '3').set('X-Anonymous-Cart-Version', '7')
+      .send({ anonymousCartId: 'anonymous-cart', customerId: 'attacker' }).expect(400);
+    await request(app).post('/api/carts/current/claim').set('X-Cart-Token', TOKEN).send({ anonymousCartId: 'anonymous-cart' }).expect(400);
+    expect(service.claimAnonymousCart).not.toHaveBeenCalled();
   });
 
   test('adds a SIMPLE item using only approved customer-selectable fields and reloads canonical state', async () => {
