@@ -165,6 +165,9 @@ function createCartService({ cartRepository = defaultCartRepository, productServ
 
   async function createCart(context) {
     const owner = ownerFromContext(context);
+    if (owner.type === 'customer' && typeof cartRepository.findOrCreateCustomerCart === 'function') {
+      return cartRepository.findOrCreateCustomerCart(owner.customerId);
+    }
     return cartRepository.createCart(owner.type === 'customer'
       ? { cartType: 'customer', customerId: owner.customerId, currency: USD }
       : { cartType: 'anonymous', anonymousSessionHash: owner.anonymousSessionHash, currency: USD });
@@ -174,7 +177,9 @@ function createCartService({ cartRepository = defaultCartRepository, productServ
     const owner = ownerFromContext(context);
     let cart;
     if (owner.type === 'customer') {
-      cart = await cartRepository.findActiveCustomerCart(owner.customerId);
+      cart = typeof cartRepository.findOrCreateCustomerCart === 'function'
+        ? await cartRepository.findOrCreateCustomerCart(owner.customerId)
+        : await cartRepository.findActiveCustomerCart(owner.customerId);
       if (cart) assertOwned(cart, owner);
       if (cart?.status === 'pending_checkout') throw new CartServiceError('CART_CHECKOUT_IN_PROGRESS');
       if (!cart) cart = await createCart(context);

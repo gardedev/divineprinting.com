@@ -352,6 +352,22 @@ describe('authenticatedFetch: sends Access Token as Bearer', () => {
     expect(options.headers['Authorization']).not.toContain('test-id-token');
   });
 
+  it('sends only the access token to the fixed cart API origin', async () => {
+    _sessionStore['dp_id_token'] = 'display-only-id-token';
+    _sessionStore['dp_refresh_token'] = 'frontend-only-refresh-token';
+    await cognitoAuth.authenticatedCartFetch('/api/carts/current');
+    const [url, options] = global.fetch.mock.calls[0];
+    expect(url).toBe('https://i3w6x21dzg.execute-api.us-east-1.amazonaws.com/api/carts/current');
+    expect(options.headers.Authorization).toBe(`Bearer ${_sessionStore.dp_access_token}`);
+    expect(JSON.stringify(options)).not.toContain('display-only-id-token');
+    expect(JSON.stringify(options)).not.toContain('frontend-only-refresh-token');
+  });
+
+  it.each(['https://evil.example/api/carts/current', '/api/orders', '//evil.example/api/carts/current'])('rejects non-cart or arbitrary-origin cart path %s', async path => {
+    await expect(cognitoAuth.authenticatedCartFetch(path)).rejects.toThrow('not allowed');
+    expect(global.fetch).not.toHaveBeenCalled();
+  });
+
   it('throws when no access token is available', async () => {
     delete _sessionStore['dp_access_token'];
     // Re-require to reset in-memory store

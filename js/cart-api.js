@@ -21,10 +21,16 @@
     return `${Date.now()}-${Math.random().toString(36).slice(2)}`;
   }
 
-  async function request(path, options, retry = true) {
+  function authenticatedMode() {
+    return typeof global.getAccessToken === 'function' && Boolean(global.getAccessToken());
+  }
+
+  async function request(path, options, retry = true, authenticated = false) {
     try {
-      const response = await global.fetch(`${API_BASE}${path}`, options);
-      if (retry && RETRYABLE.has(response.status)) return request(path, options, false);
+      const response = authenticated
+        ? await global.authenticatedCartFetch(path, options)
+        : await global.fetch(`${API_BASE}${path}`, options);
+      if (retry && RETRYABLE.has(response.status)) return request(path, options, false, authenticated);
       const body = await response.json().catch(() => ({}));
       if (!response.ok) {
         const error = new Error(body.error || 'The cart request could not be completed.');
@@ -60,20 +66,36 @@
     }
   }
 
+  async function loadCustomerCart() {
+    if (typeof global.authenticatedCartFetch !== 'function') throw new Error('Authenticated cart support is unavailable.');
+    const body = await request('/api/carts/current', { headers: { Accept: 'application/json' } }, true, true);
+    return { mode: 'customer', cart: body.cart, items: body.items || [] };
+  }
+
+  async function loadCurrentCart(createIfMissing) {
+    return authenticatedMode() ? loadCustomerCart() : loadAnonymousCart(createIfMissing);
+  }
+
   async function mutate(method, itemPath, payload, expectedCartVersion, expectedItemVersion, idempotencyKey) {
-    const state = await loadAnonymousCart(true);
+    const state = await loadCurrentCart(true);
+    const customer = state.mode === 'customer';
     const headers = {
       Accept: 'application/json',
       'Content-Type': 'application/json',
-      'X-Cart-Token': state.cartToken,
       'Idempotency-Key': idempotencyKey || mutationId(),
       'If-Match': String(expectedCartVersion || state.cart.version),
+      ...(customer ? {} : { 'X-Cart-Token': state.cartToken }),
     };
     if (expectedItemVersion) headers['X-Cart-Item-Version'] = String(expectedItemVersion);
-    const body = await request(`/api/carts/anonymous/${encodeURIComponent(state.cart.cartId)}/items${itemPath || ''}`, {
+    const path = customer
+      ? `/api/carts/current/items${itemPath || ''}`
+      : `/api/carts/anonymous/${encodeURIComponent(state.cart.cartId)}/items${itemPath || ''}`;
+    const body = await request(path, {
       method, headers, ...(payload === undefined ? {} : { body: JSON.stringify(payload) }),
-    });
-    return { cart: body.cart, items: body.items || [], cartToken: state.cartToken };
+    }, true, customer);
+    return customer
+      ? { mode: 'customer', cart: body.cart, items: body.items || [] }
+      : { cart: body.cart, items: body.items || [], cartToken: state.cartToken };
   }
 
   async function addConfiguredJob(job, idempotencyKey) {
@@ -84,7 +106,7 @@
     try {
       return await mutate('PATCH', `/${encodeURIComponent(item.cartItemId)}`, { itemType: 'CONFIGURED_JOB', ...changes }, expectedCartVersion, item.version, idempotencyKey);
     } catch (error) {
-      if (error.code === 'CART_VERSION_CONFLICT') await loadAnonymousCart(false);
+      if (error.code === 'CART_VERSION_CONFLICT') await loadCurrentCart(false);
       throw error;
     }
   }
@@ -93,11 +115,11 @@
     try {
       return await mutate('DELETE', `/${encodeURIComponent(item.cartItemId)}`, undefined, expectedCartVersion, item.version, idempotencyKey);
     } catch (error) {
-      if (error.code === 'CART_VERSION_CONFLICT') await loadAnonymousCart(false);
+      if (error.code === 'CART_VERSION_CONFLICT') await loadCurrentCart(false);
       throw error;
     }
   }
 
-  global.DivineCart = { STORAGE_KEY, readSession, loadAnonymousCart, createAnonymousCart, addConfiguredJob, updateConfiguredJob, removeItem };
+  global.DivineCart = { STORAGE_KEY, readSession, loadAnonymousCart, loadCustomerCart, loadCurrentCart, createAnonymousCart, addConfiguredJob, updateConfiguredJob, removeItem };
   if (typeof module !== 'undefined') module.exports = global.DivineCart;
 }(typeof window !== 'undefined' ? window : globalThis));

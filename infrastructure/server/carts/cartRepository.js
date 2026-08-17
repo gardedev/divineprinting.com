@@ -20,6 +20,7 @@ const ANONYMOUS_TTL_SECONDS = 14 * 24 * 60 * 60;
 const CUSTOMER_TTL_SECONDS = 90 * 24 * 60 * 60;
 const MAX_IDEMPOTENCY_RECORDS = 20;
 const MAX_CART_ITEM_BYTES = 256 * 1024;
+const CUSTOMER_POINTER_PREFIX = 'customer-cart-pointer:';
 const MUTABLE_STATUSES = ['draft', 'active'];
 const CART_STATUSES = ['draft', 'active', 'pending_checkout', 'abandoned', 'expired', 'converted'];
 const CART_ITEM_FIELDS = [
@@ -126,6 +127,10 @@ function fingerprint(value) {
   return crypto.createHash('sha256').update(canonicalJson(value)).digest('hex');
 }
 
+function customerPointerId(customerId) {
+  return `${CUSTOMER_POINTER_PREFIX}${crypto.createHash('sha256').update(requiredString(customerId, 'customerId')).digest('hex')}`;
+}
+
 function translate(error, fallback = 'CART_VERSION_CONFLICT') {
   if (error instanceof CartRepositoryError || error instanceof TypeError) return error;
   if (error && (error.name === 'ConditionalCheckFailedException' || error.name === 'TransactionCanceledException')) {
@@ -135,6 +140,111 @@ function translate(error, fallback = 'CART_VERSION_CONFLICT') {
 }
 
 function createCartRepository({ client = docClient, now = () => new Date(), generateId = () => crypto.randomUUID() } = {}) {
+  function newCustomerCart(customerId) {
+    const at = now();
+    const epoch = Math.floor(at.getTime() / 1000);
+    return {
+      cartId: generateId(), cartType: 'customer', customerId: requiredString(customerId, 'customerId'),
+      status: 'active', currency: 'USD', subtotalCents: 0, discountCents: 0, totalCents: 0,
+      validationStatus: 'not_validated', idempotencyRecords: [], createdAt: at.toISOString(),
+      updatedAt: at.toISOString(), expiresAt: epoch + CUSTOMER_TTL_SECONDS, version: 1,
+    };
+  }
+
+  async function getCustomerCartPointer(customerId) {
+    const response = await client.send(new GetCommand({
+      TableName: CARTS_TABLE,
+      Key: { cartId: customerPointerId(customerId) },
+      ConsistentRead: true,
+    }));
+    const pointer = response.Item;
+    return pointer?.recordType === 'customer_active_cart_pointer' ? pointer : null;
+  }
+
+  function pointerItem(customerId, activeCartId) {
+    const at = now().toISOString();
+    return {
+      cartId: customerPointerId(customerId), recordType: 'customer_active_cart_pointer',
+      ownerHash: fingerprint({ customerId: requiredString(customerId, 'customerId') }),
+      activeCartId: requiredString(activeCartId, 'activeCartId'), createdAt: at, updatedAt: at,
+    };
+  }
+
+  async function transactOrReload(customerId, transactItems, { priorCartId } = {}) {
+    try {
+      await client.send(new TransactWriteCommand({ TransactItems: transactItems }));
+      return null;
+    } catch (error) {
+      if (!error || !['ConditionalCheckFailedException', 'TransactionCanceledException'].includes(error.name)) throw error;
+      const winner = await getCustomerCartPointer(customerId);
+      if (!winner) throw new CartRepositoryError('CART_VERSION_CONFLICT');
+      if (priorCartId && winner.activeCartId === priorCartId) throw new CartRepositoryError('CART_VERSION_CONFLICT');
+      return getCart(winner.activeCartId);
+    }
+  }
+
+  async function adoptLegacyCustomerCart(customerId, legacy) {
+    const pointer = pointerItem(customerId, legacy.cartId);
+    const winner = await transactOrReload(customerId, [{
+      Put: { TableName: CARTS_TABLE, Item: pointer, ConditionExpression: 'attribute_not_exists(cartId)' },
+    }]);
+    return winner || legacy;
+  }
+
+  async function createCurrentCustomerCart(customerId, { priorCart } = {}) {
+    const cart = newCustomerCart(customerId);
+    const pointerKey = { cartId: customerPointerId(customerId) };
+    const items = [{
+      Put: { TableName: CARTS_TABLE, Item: cart, ConditionExpression: 'attribute_not_exists(cartId)' },
+    }];
+    if (priorCart) {
+      if (priorCart.status === 'active' && Number.isInteger(priorCart.expiresAt) && priorCart.expiresAt <= Math.floor(now().getTime() / 1000)) {
+        items.push({ Update: {
+          TableName: CARTS_TABLE, Key: { cartId: priorCart.cartId },
+          UpdateExpression: 'SET #status = :expired, #version = :nextVersion, #updatedAt = :updatedAt',
+          ConditionExpression: '#customerId = :customerId AND #status = :active AND #version = :expectedVersion AND #expiresAt <= :nowEpoch',
+          ExpressionAttributeNames: { '#customerId': 'customerId', '#status': 'status', '#version': 'version', '#expiresAt': 'expiresAt', '#updatedAt': 'updatedAt' },
+          ExpressionAttributeValues: { ':customerId': customerId, ':active': 'active', ':expired': 'expired', ':expectedVersion': priorCart.version, ':nextVersion': priorCart.version + 1, ':nowEpoch': Math.floor(now().getTime() / 1000), ':updatedAt': now().toISOString() },
+        } });
+      }
+      items.push({ Update: {
+        TableName: CARTS_TABLE, Key: pointerKey,
+        UpdateExpression: 'SET #activeCartId = :nextCartId, #updatedAt = :updatedAt',
+        ConditionExpression: '#activeCartId = :priorCartId',
+        ExpressionAttributeNames: { '#activeCartId': 'activeCartId', '#updatedAt': 'updatedAt' },
+        ExpressionAttributeValues: { ':nextCartId': cart.cartId, ':priorCartId': priorCart.cartId, ':updatedAt': now().toISOString() },
+      } });
+    } else {
+      items.push({ Put: { TableName: CARTS_TABLE, Item: pointerItem(customerId, cart.cartId), ConditionExpression: 'attribute_not_exists(cartId)' } });
+    }
+    const winner = await transactOrReload(customerId, items, priorCart ? { priorCartId: priorCart.cartId } : {});
+    return winner || cart;
+  }
+
+  async function findOrCreateCustomerCart(customerId) {
+    const id = requiredString(customerId, 'customerId');
+    const pointer = await getCustomerCartPointer(id);
+    if (pointer) {
+      const pointed = await getCart(pointer.activeCartId);
+      if (pointed) assertOwnerMatches(pointed, { type: 'customer', customerId: id });
+      if (pointed?.status === 'pending_checkout') return pointed;
+      const nowEpoch = Math.floor(now().getTime() / 1000);
+      if (pointed?.status === 'active' && pointed.expiresAt > nowEpoch) return pointed;
+      return createCurrentCustomerCart(id, { priorCart: pointed || { cartId: pointer.activeCartId, status: 'missing' } });
+    }
+
+    const legacy = await findActiveCustomerCart(id);
+    if (legacy) {
+      assertOwnerMatches(legacy, { type: 'customer', customerId: id });
+      if (legacy.status === 'pending_checkout') return adoptLegacyCustomerCart(id, legacy);
+      if (legacy.status === 'active' && legacy.expiresAt > Math.floor(now().getTime() / 1000)) return adoptLegacyCustomerCart(id, legacy);
+      const adopted = await adoptLegacyCustomerCart(id, legacy);
+      if (adopted.cartId !== legacy.cartId) return adopted;
+      return createCurrentCustomerCart(id, { priorCart: legacy });
+    }
+    return createCurrentCustomerCart(id);
+  }
+
   async function createCart(input) {
     assertNoRawIdentity(input);
     const cartType = requiredString(input.cartType, 'cartType');
@@ -436,7 +546,7 @@ function createCartRepository({ client = docClient, now = () => new Date(), gene
     } catch (error) { throw translate(error); }
   }
 
-  return { createCart, getCart, findActiveCustomerCart, findAnonymousCartByHash, queryExpiringCarts, mutateCart, transitionExpiredCart, listCartItems, getCartItem, findCartItemsByProduct, getMutationReplay, createCartItem, updateCartItem, deleteCartItem, executeTransaction };
+  return { createCart, getCart, getCustomerCartPointer, findOrCreateCustomerCart, findActiveCustomerCart, findAnonymousCartByHash, queryExpiringCarts, mutateCart, transitionExpiredCart, listCartItems, getCartItem, findCartItemsByProduct, getMutationReplay, createCartItem, updateCartItem, deleteCartItem, executeTransaction };
 }
 
-module.exports = { createCartRepository, CartRepositoryError, constants: { CARTS_TABLE, CART_ITEMS_TABLE, CUSTOMER_INDEX, ANONYMOUS_INDEX, EXPIRY_INDEX, PRODUCT_INDEX, ANONYMOUS_TTL_SECONDS, CUSTOMER_TTL_SECONDS, MAX_IDEMPOTENCY_RECORDS, MAX_CART_ITEM_BYTES }, fingerprint };
+module.exports = { createCartRepository, CartRepositoryError, constants: { CARTS_TABLE, CART_ITEMS_TABLE, CUSTOMER_INDEX, ANONYMOUS_INDEX, EXPIRY_INDEX, PRODUCT_INDEX, ANONYMOUS_TTL_SECONDS, CUSTOMER_TTL_SECONDS, MAX_IDEMPOTENCY_RECORDS, MAX_CART_ITEM_BYTES, CUSTOMER_POINTER_PREFIX }, fingerprint, customerPointerId };

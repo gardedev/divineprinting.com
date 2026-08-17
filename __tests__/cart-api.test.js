@@ -5,6 +5,8 @@ describe('Task 5.4 anonymous cart browser client', () => {
     global.sessionStorage = createStorage();
     global.localStorage = createStorage();
     global.fetch = jest.fn();
+    global.getAccessToken = undefined;
+    global.authenticatedCartFetch = undefined;
     require('../js/cart-api');
   });
 
@@ -47,5 +49,24 @@ describe('Task 5.4 anonymous cart browser client', () => {
     await expect(DivineCart.updateConfiguredJob({ cartItemId: 'i1', version: 3 }, { variantAllocations: [] }, 7, 'mutation')).rejects.toMatchObject({ code: 'CART_VERSION_CONFLICT' });
     expect(fetch.mock.calls[1][1].headers).toMatchObject({ 'If-Match': '7', 'X-Cart-Item-Version': '3' });
     expect(fetch).toHaveBeenCalledTimes(3); // initial load, one mutation, conflict refetch only
+  });
+
+  test('uses authenticated current-cart routes without changing the anonymous envelope', async () => {
+    const envelope = JSON.stringify({ cartId: 'anonymous-cart', cartToken: 'z'.repeat(43), future: { claim: true } });
+    sessionStorage.setItem('dp_anonymous_cart_v1', envelope);
+    global.getAccessToken = jest.fn(() => 'verified-access-token');
+    global.authenticatedCartFetch = jest.fn()
+      .mockReturnValueOnce(response(200, { cart: { cartId: 'customer-cart', version: 4 }, items: [] }))
+      .mockReturnValueOnce(response(200, { cart: { cartId: 'customer-cart', version: 4 }, items: [] }))
+      .mockReturnValueOnce(response(200, { cart: { cartId: 'customer-cart', version: 5 }, items: [] }));
+    const loaded = await DivineCart.loadCurrentCart(false);
+    expect(loaded).toMatchObject({ mode: 'customer', cart: { cartId: 'customer-cart' } });
+    await DivineCart.addConfiguredJob({ productId: 'p', variantAllocations: [], customerConfiguration: {} }, 'customer-mutation');
+    expect(global.authenticatedCartFetch.mock.calls[0][0]).toBe('/api/carts/current');
+    expect(global.authenticatedCartFetch.mock.calls[2][0]).toBe('/api/carts/current/items');
+    expect(global.authenticatedCartFetch.mock.calls[2][1].headers).not.toHaveProperty('X-Cart-Token');
+    expect(global.authenticatedCartFetch.mock.calls[2][1].headers['Idempotency-Key']).toBe('customer-mutation');
+    expect(sessionStorage.getItem('dp_anonymous_cart_v1')).toBe(envelope);
+    expect(global.fetch).not.toHaveBeenCalled();
   });
 });

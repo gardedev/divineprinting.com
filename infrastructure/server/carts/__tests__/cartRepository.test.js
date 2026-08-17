@@ -10,7 +10,7 @@ jest.mock('@aws-sdk/lib-dynamodb', () => {
 });
 jest.mock('../../utils/dynamoDbClient', () => ({ docClient: { send: jest.fn() } }));
 
-const { createCartRepository, CartRepositoryError, constants, fingerprint } = require('../cartRepository');
+const { createCartRepository, CartRepositoryError, constants, fingerprint, customerPointerId } = require('../cartRepository');
 
 const fixedNow = new Date('2026-08-13T12:00:00.000Z');
 const epoch = Math.floor(fixedNow.getTime() / 1000);
@@ -69,6 +69,61 @@ describe('cartRepository', () => {
     expect(client.send.mock.calls[0][0].input.IndexName).toBe('CustomerActiveCartIndex');
     expect(client.send.mock.calls[1][0].input.IndexName).toBe('AnonymousSessionIndex');
     expect(JSON.stringify(client.send.mock.calls[1][0].input)).not.toContain('anonymousToken');
+  });
+
+  test('transactionally creates one current customer cart and hashed pointer', async () => {
+    const { client, repository } = setup();
+    client.send.mockResolvedValueOnce({}).mockResolvedValueOnce({ Items: [] }).mockResolvedValueOnce({});
+    const cart = await repository.findOrCreateCustomerCart('cognito-sub-1');
+    expect(cart).toMatchObject({ cartId: 'generated-id', customerId: 'cognito-sub-1', status: 'active', expiresAt: epoch + constants.CUSTOMER_TTL_SECONDS });
+    const transaction = client.send.mock.calls[2][0].input.TransactItems;
+    const pointer = transaction[1].Put.Item;
+    expect(pointer).toMatchObject({ cartId: customerPointerId('cognito-sub-1'), recordType: 'customer_active_cart_pointer', activeCartId: 'generated-id' });
+    expect(pointer).not.toHaveProperty('customerId');
+    expect(JSON.stringify(pointer)).not.toContain('cognito-sub-1');
+  });
+
+  test('adopts a valid legacy active cart instead of creating a duplicate', async () => {
+    const legacy = { cartId: 'legacy-cart', cartType: 'customer', customerId: 'cognito-sub-1', status: 'active', expiresAt: epoch + 100, version: 4 };
+    const { client, repository } = setup();
+    client.send.mockResolvedValueOnce({}).mockResolvedValueOnce({ Items: [legacy] }).mockResolvedValueOnce({});
+    await expect(repository.findOrCreateCustomerCart('cognito-sub-1')).resolves.toBe(legacy);
+    const transaction = client.send.mock.calls[2][0].input.TransactItems;
+    expect(transaction).toHaveLength(1);
+    expect(transaction[0].Put.Item.activeCartId).toBe('legacy-cart');
+  });
+
+  test('reads an existing pointer without extending TTL or changing cart version', async () => {
+    const cart = { cartId: 'current-cart', cartType: 'customer', customerId: 'cognito-sub-1', status: 'active', expiresAt: epoch + 100, version: 7 };
+    const { client, repository } = setup();
+    client.send.mockResolvedValueOnce({ Item: { cartId: customerPointerId('cognito-sub-1'), recordType: 'customer_active_cart_pointer', activeCartId: 'current-cart' } }).mockResolvedValueOnce({ Item: cart });
+    await expect(repository.findOrCreateCustomerCart('cognito-sub-1')).resolves.toBe(cart);
+    expect(client.send).toHaveBeenCalledTimes(2);
+    expect(client.send.mock.calls.every(([command]) => command.kind === 'Get')).toBe(true);
+  });
+
+  test('atomically expires and replaces an elapsed current cart', async () => {
+    const expired = { cartId: 'old-cart', cartType: 'customer', customerId: 'cognito-sub-1', status: 'active', expiresAt: epoch - 1, version: 3 };
+    let nextId = 0;
+    const client = { send: jest.fn().mockResolvedValueOnce({ Item: { cartId: customerPointerId('cognito-sub-1'), recordType: 'customer_active_cart_pointer', activeCartId: 'old-cart' } }).mockResolvedValueOnce({ Item: expired }).mockResolvedValueOnce({}) };
+    const repository = createCartRepository({ client, now: () => fixedNow, generateId: () => `replacement-${++nextId}` });
+    const replacement = await repository.findOrCreateCustomerCart('cognito-sub-1');
+    expect(replacement).toMatchObject({ cartId: 'replacement-1', status: 'active', subtotalCents: 0, totalCents: 0, version: 1 });
+    const transaction = client.send.mock.calls[2][0].input.TransactItems;
+    expect(transaction).toHaveLength(3);
+    expect(transaction[1].Update).toMatchObject({ Key: { cartId: 'old-cart' } });
+    expect(transaction[1].Update.ExpressionAttributeValues).toMatchObject({ ':expired': 'expired', ':expectedVersion': 3 });
+    expect(transaction[2].Update.ExpressionAttributeValues).toMatchObject({ ':priorCartId': 'old-cart', ':nextCartId': 'replacement-1' });
+  });
+
+  test('concurrent creation loser converges on the winning pointer cart', async () => {
+    const conflict = Object.assign(new Error('race'), { name: 'TransactionCanceledException' });
+    const winner = { cartId: 'winner-cart', cartType: 'customer', customerId: 'cognito-sub-1', status: 'active', expiresAt: epoch + 100, version: 1 };
+    const { client, repository } = setup();
+    client.send.mockResolvedValueOnce({}).mockResolvedValueOnce({ Items: [] }).mockRejectedValueOnce(conflict)
+      .mockResolvedValueOnce({ Item: { cartId: customerPointerId('cognito-sub-1'), recordType: 'customer_active_cart_pointer', activeCartId: 'winner-cart' } })
+      .mockResolvedValueOnce({ Item: winner });
+    await expect(repository.findOrCreateCustomerCart('cognito-sub-1')).resolves.toBe(winner);
   });
 
   test('queries expiration candidates by status and integer epoch seconds', async () => {

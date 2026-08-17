@@ -36,6 +36,15 @@ describe('cartService', () => {
     expect(repo.createCart).toHaveBeenCalledWith(expect.objectContaining({ customerId: 'sub-1' }));
   });
 
+  test('uses the atomic customer-cart resolver when available', async () => {
+    const current = { cartId: 'stable', customerId: 'sub-1', status: 'active', version: 6 };
+    const { repo, service } = setup({ repo: { findOrCreateCustomerCart: jest.fn().mockResolvedValue(current), listCartItems: jest.fn().mockResolvedValue([]) } });
+    await expect(service.getCurrentCart(customer)).resolves.toMatchObject({ cart: current, items: [] });
+    expect(repo.findOrCreateCustomerCart).toHaveBeenCalledWith('sub-1');
+    expect(repo.findActiveCustomerCart).not.toHaveBeenCalled();
+    expect(repo.createCart).not.toHaveBeenCalled();
+  });
+
   test('returns checkout-in-progress instead of creating a second cart', async () => {
     const { repo, service } = setup(); repo.findActiveCustomerCart.mockResolvedValue({ cartId: 'locked', customerId: 'sub-1', status: 'pending_checkout' });
     await expect(service.getCurrentCart(customer)).rejects.toMatchObject({ code: 'CART_CHECKOUT_IN_PROGRESS' });
