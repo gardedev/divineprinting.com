@@ -27,7 +27,7 @@ const COGNITO_DOMAIN = 'https://divine-printing-auth.auth.us-east-1.amazoncognit
 const USER_POOL_ID = 'us-east-1_hs1jWXB87';
 const CLIENT_ID = 'pf2ioscnn7vf7c4if5mjemos';
 
-const API_BASE = 'https://u7klzkkpbc.execute-api.us-east-1.amazonaws.com';
+const API_BASE = 'https://cad1wdj8c8.execute-api.us-east-1.amazonaws.com';
 const BOOTSTRAP_PATH = '/api/customers/bootstrap';
 
 // Bootstrap retry configuration
@@ -725,7 +725,7 @@ async function authenticatedFetch(path, options = {}) {
  */
 async function fetchOrders() {
   try {
-    const response = await authenticatedFetch('/api/orders');
+    const response = await authenticatedFetch('/orders');
     if (!response.ok) {
       if (response.status === 401 || response.status === 403) {
         clearAllAuthState();
