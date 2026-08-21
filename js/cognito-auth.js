@@ -28,6 +28,7 @@ const USER_POOL_ID = 'us-east-1_hs1jWXB87';
 const CLIENT_ID = 'pf2ioscnn7vf7c4if5mjemos';
 
 const API_BASE = 'https://cad1wdj8c8.execute-api.us-east-1.amazonaws.com';
+const CART_API_ORIGIN = 'https://i3w6x21dzg.execute-api.us-east-1.amazonaws.com';
 const BOOTSTRAP_PATH = '/api/customers/bootstrap';
 
 // Bootstrap retry configuration
@@ -685,6 +686,14 @@ function getCurrentUser() {
  * @returns {Promise<Response>}
  */
 async function authenticatedFetch(path, options = {}) {
+  return authenticatedFetchUrl(`${API_BASE}${path}`, options);
+}
+
+async function authenticatedFetchUrl(url, options = {}) {
+  const target = new URL(url);
+  const primaryOrigin = new URL(API_BASE).origin;
+  const allowed = target.origin === primaryOrigin || (target.origin === CART_API_ORIGIN && target.pathname.startsWith('/api/carts/'));
+  if (!allowed) throw new TypeError('Authenticated request origin is not allowed');
   const accessToken = await ensureFreshAccessToken();
   if (!accessToken) {
     const error = new Error('Not authenticated');
@@ -692,7 +701,7 @@ async function authenticatedFetch(path, options = {}) {
     throw error;
   }
 
-  const performRequest = token => fetch(`${API_BASE}${path}`, {
+  const performRequest = token => fetch(url, {
     ...options,
     headers: {
       'Content-Type': 'application/json',
@@ -717,6 +726,17 @@ async function authenticatedFetch(path, options = {}) {
   const retryResponse = await performRequest(retryToken);
   if (retryResponse.status === 401) clearAllAuthState();
   return retryResponse;
+}
+
+/**
+ * Authenticated access to the isolated cart runtime. The origin and path are
+ * fixed here so callers cannot redirect a Cognito access token elsewhere.
+ */
+async function authenticatedCartFetch(path, options = {}) {
+  if (typeof path !== 'string' || !path.startsWith('/api/carts/') || path.includes('://')) {
+    throw new TypeError('Authenticated cart path is not allowed');
+  }
+  return authenticatedFetchUrl(`${CART_API_ORIGIN}${path}`, options);
 }
 
 /**
@@ -1086,6 +1106,7 @@ if (typeof module !== 'undefined' && module.exports) {
     callBootstrap,
     // Protected API
     authenticatedFetch,
+    authenticatedCartFetch,
     fetchOrders,
     // Error codes (for testing assertions)
     AUTH_ERRORS,

@@ -36,7 +36,7 @@
   async function render() {
     const container = document.getElementById('cartContent');
     try {
-      const state = await global.DivineCart.loadAnonymousCart(false);
+      const state = await global.DivineCart.loadCurrentCart(false);
       const items = state?.items || [];
       const badge = document.getElementById('cart-count');
       if (badge) { badge.textContent = items.reduce((sum, item) => sum + (item.totalQuantity || item.quantity || 0), 0); badge.style.display = items.length ? 'flex' : 'none'; }
