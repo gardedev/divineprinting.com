@@ -1,0 +1,44 @@
+{
+  "_comment": [
+    "PROPOSAL ONLY — LOCAL REVIEW. Do NOT apply without explicit approval.",
+    "Least-privilege DynamoDB policy for the Task 6.1 OrderRepository.",
+    "It is restricted to the two proposed v2 tables and repository-used indexes.",
+    "It grants no access to the existing divine-printing-orders table or StripeEvents."
+  ],
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "OrdersV2Read",
+      "Effect": "Allow",
+      "Action": ["dynamodb:GetItem", "dynamodb:Query"],
+      "Resource": [
+        "arn:aws:dynamodb:us-east-1:911762440868:table/divine-printing-orders-v2",
+        "arn:aws:dynamodb:us-east-1:911762440868:table/divine-printing-orders-v2/index/CustomerOrdersIndex",
+        "arn:aws:dynamodb:us-east-1:911762440868:table/divine-printing-orders-v2/index/StripeCheckoutSessionIndex",
+        "arn:aws:dynamodb:us-east-1:911762440868:table/divine-printing-orders-v2/index/StripePaymentIntentIndex",
+        "arn:aws:dynamodb:us-east-1:911762440868:table/divine-printing-orders-v2/index/OrderNumberIndex"
+      ]
+    },
+    {
+      "Sid": "OrdersV2StateUpdates",
+      "Effect": "Allow",
+      "Action": "dynamodb:UpdateItem",
+      "Resource": "arn:aws:dynamodb:us-east-1:911762440868:table/divine-printing-orders-v2"
+    },
+    {
+      "Sid": "OrderItemsV2Hydration",
+      "Effect": "Allow",
+      "Action": "dynamodb:Query",
+      "Resource": "arn:aws:dynamodb:us-east-1:911762440868:table/divine-printing-order-items-v2"
+    },
+    {
+      "Sid": "OrdersV2AtomicCreation",
+      "Effect": "Allow",
+      "Action": "dynamodb:TransactWriteItems",
+      "Resource": [
+        "arn:aws:dynamodb:us-east-1:911762440868:table/divine-printing-orders-v2",
+        "arn:aws:dynamodb:us-east-1:911762440868:table/divine-printing-order-items-v2"
+      ]
+    }
+  ]
+}

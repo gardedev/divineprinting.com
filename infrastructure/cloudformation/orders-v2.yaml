@@ -1,0 +1,212 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: >
+  DivinePrinting Task 6.1 — LOCAL REVIEW ONLY. Do NOT deploy without explicit approval.
+  Creates ONLY the two new v2 order tables (divine-printing-orders-v2 and
+  divine-printing-order-items-v2). This template does not touch any existing resources.
+  StripeEvents table is NOT included (excluded from Task 6.1 scope).
+
+# ============================================================================
+# REVIEW-ONLY NOTICE
+# ============================================================================
+#
+#   This template is authored for architecture review and pre-approval.
+#   DO NOT create a CloudFormation change set or deploy these resources
+#   until the change set has been reviewed and explicitly approved.
+#
+#   Exclusions (not in this template):
+#     - StripeEvents table (not a Task 6.1 resource)
+#     - Existing divine-printing-orders table (preserved unchanged)
+#     - Any Lambda, API Gateway, IAM, or Cognito changes
+#
+# ============================================================================
+
+Resources:
+
+  # --------------------------------------------------------------------------
+  # Orders v2 Table
+  #
+  #   PK:   orderId (S)
+  #
+  #   GSIs:
+  #     CustomerOrdersIndex    — customerId (HASH), createdAt (RANGE)
+  #       Supports listOrdersByCustomer with newest-first ordering.
+  #
+  #     OrderStateIndex        — orderState (HASH), createdAt (RANGE)  [ADR0005]
+  #       Supports admin queries by order lifecycle state, newest-first within state.
+  #
+  #     PaymentStateIndex      — paymentState (HASH), updatedAt (RANGE)
+  #       Supports payment reconciliation and webhook processing.
+  #
+  #     StripeCheckoutSessionIndex — stripeCheckoutSessionId (HASH)
+  #       Supports findByCheckoutSessionId lookup (Stripe webhook + redirect).
+  #
+  #     StripePaymentIntentIndex   — stripePaymentIntentId (HASH)
+  #       Supports findByPaymentIntentId lookup (Stripe webhook processing).
+  #
+  #     OrderNumberIndex       — orderNumber (HASH)
+  #       Supports findByOrderNumber (human-readable order lookup).
+  # --------------------------------------------------------------------------
+
+  OrdersTableV2:
+    Type: AWS::DynamoDB::Table
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      TableName: divine-printing-orders-v2
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: orderId
+          AttributeType: S
+        - AttributeName: customerId
+          AttributeType: S
+        - AttributeName: createdAt
+          AttributeType: S
+        - AttributeName: orderState
+          AttributeType: S
+        - AttributeName: paymentState
+          AttributeType: S
+        - AttributeName: updatedAt
+          AttributeType: S
+        - AttributeName: stripeCheckoutSessionId
+          AttributeType: S
+        - AttributeName: stripePaymentIntentId
+          AttributeType: S
+        - AttributeName: orderNumber
+          AttributeType: S
+        # NOTE: updatedAt is used by PaymentStateIndex only.
+        # OrderStateIndex uses createdAt per ADR0005.
+      KeySchema:
+        - AttributeName: orderId
+          KeyType: HASH
+      GlobalSecondaryIndexes:
+        - IndexName: CustomerOrdersIndex
+          KeySchema:
+            - AttributeName: customerId
+              KeyType: HASH
+            - AttributeName: createdAt
+              KeyType: RANGE
+          Projection:
+            ProjectionType: ALL
+        - IndexName: OrderStateIndex
+          KeySchema:
+            - AttributeName: orderState
+              KeyType: HASH
+            - AttributeName: createdAt  # ADR0005: createdAt, not updatedAt
+              KeyType: RANGE
+          Projection:
+            ProjectionType: ALL
+        - IndexName: PaymentStateIndex
+          KeySchema:
+            - AttributeName: paymentState
+              KeyType: HASH
+            - AttributeName: updatedAt
+              KeyType: RANGE
+          Projection:
+            ProjectionType: ALL
+        - IndexName: StripeCheckoutSessionIndex
+          KeySchema:
+            - AttributeName: stripeCheckoutSessionId
+              KeyType: HASH
+          Projection:
+            ProjectionType: ALL
+        - IndexName: StripePaymentIntentIndex
+          KeySchema:
+            - AttributeName: stripePaymentIntentId
+              KeyType: HASH
+          Projection:
+            ProjectionType: ALL
+        - IndexName: OrderNumberIndex
+          KeySchema:
+            - AttributeName: orderNumber
+              KeyType: HASH
+          Projection:
+            ProjectionType: ALL
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: true
+      SSESpecification:
+        SSEEnabled: true
+      Tags:
+        - Key: Project
+          Value: divine-printing
+        - Key: Environment
+          Value: production
+        - Key: ManagedBy
+          Value: cloudformation
+        - Key: Task
+          Value: '6.1'
+        - Key: ReviewStatus
+          Value: review-only-not-deployed
+
+  # --------------------------------------------------------------------------
+  # Order Items v2 Table
+  #
+  #   PK:  orderId (S)
+  #   SK:  orderItemId (S)
+  #
+  #   GSIs:
+  #     ProductOrderItemIndex  — productId (HASH), createdAt (RANGE)  [ADR0005]
+  #       Supports product-level order item queries (admin, analytics), oldest-first.
+  # --------------------------------------------------------------------------
+
+  OrderItemsTableV2:
+    Type: AWS::DynamoDB::Table
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      TableName: divine-printing-order-items-v2
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: orderId
+          AttributeType: S
+        - AttributeName: orderItemId
+          AttributeType: S
+        - AttributeName: productId
+          AttributeType: S
+        - AttributeName: createdAt  # ADR0005: ProductOrderItemIndex sort key
+          AttributeType: S
+      KeySchema:
+        - AttributeName: orderId
+          KeyType: HASH
+        - AttributeName: orderItemId
+          KeyType: RANGE
+      GlobalSecondaryIndexes:
+        - IndexName: ProductOrderItemIndex
+          KeySchema:
+            - AttributeName: productId
+              KeyType: HASH
+            - AttributeName: createdAt  # ADR0005: createdAt, not updatedAt
+              KeyType: RANGE
+          Projection:
+            ProjectionType: ALL
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: true
+      SSESpecification:
+        SSEEnabled: true
+      Tags:
+        - Key: Project
+          Value: divine-printing
+        - Key: Environment
+          Value: production
+        - Key: ManagedBy
+          Value: cloudformation
+        - Key: Task
+          Value: '6.1'
+        - Key: ReviewStatus
+          Value: review-only-not-deployed
+
+Outputs:
+  OrdersTableV2Name:
+    Description: Name of the new Orders v2 table (review-only — not deployed)
+    Value: !Ref OrdersTableV2
+
+  OrdersTableV2Arn:
+    Description: ARN of the new Orders v2 table (review-only — not deployed)
+    Value: !GetAtt OrdersTableV2.Arn
+
+  OrderItemsTableV2Name:
+    Description: Name of the new Order Items v2 table (review-only — not deployed)
+    Value: !Ref OrderItemsTableV2
+
+  OrderItemsTableV2Arn:
+    Description: ARN of the new Order Items v2 table (review-only — not deployed)
+    Value: !GetAtt OrderItemsTableV2.Arn
