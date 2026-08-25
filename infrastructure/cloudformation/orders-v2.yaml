@@ -1,6 +1,6 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Description: >
-  DivinePrinting Task 6.1 — LOCAL REVIEW ONLY. Do NOT deploy without explicit approval.
+  DivinePrinting Task 6.1 isolated ADR 0005 Orders v2 persistence resources.
   Creates ONLY the two new v2 order tables (divine-printing-orders-v2 and
   divine-printing-order-items-v2). This template does not touch any existing resources.
   StripeEvents table is NOT included (excluded from Task 6.1 scope).
@@ -134,8 +134,6 @@ Resources:
           Value: cloudformation
         - Key: Task
           Value: '6.1'
-        - Key: ReviewStatus
-          Value: review-only-not-deployed
 
   # --------------------------------------------------------------------------
   # Order Items v2 Table
@@ -150,6 +148,7 @@ Resources:
 
   OrderItemsTableV2:
     Type: AWS::DynamoDB::Table
+    DependsOn: OrdersTableV2
     DeletionPolicy: Retain
     UpdateReplacePolicy: Retain
     Properties:
@@ -191,22 +190,20 @@ Resources:
           Value: cloudformation
         - Key: Task
           Value: '6.1'
-        - Key: ReviewStatus
-          Value: review-only-not-deployed
 
 Outputs:
   OrdersTableV2Name:
-    Description: Name of the new Orders v2 table (review-only — not deployed)
+    Description: Name of the Orders v2 table
     Value: !Ref OrdersTableV2
 
   OrdersTableV2Arn:
-    Description: ARN of the new Orders v2 table (review-only — not deployed)
+    Description: ARN of the Orders v2 table
     Value: !GetAtt OrdersTableV2.Arn
 
   OrderItemsTableV2Name:
-    Description: Name of the new Order Items v2 table (review-only — not deployed)
+    Description: Name of the Order Items v2 table
     Value: !Ref OrderItemsTableV2
 
   OrderItemsTableV2Arn:
-    Description: ARN of the new Order Items v2 table (review-only — not deployed)
+    Description: ARN of the Order Items v2 table
     Value: !GetAtt OrderItemsTableV2.Arn

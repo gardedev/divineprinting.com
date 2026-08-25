@@ -22,7 +22,10 @@
     {
       "Sid": "OrdersV2StateUpdates",
       "Effect": "Allow",
-      "Action": "dynamodb:UpdateItem",
+      "Action": [
+        "dynamodb:PutItem",
+        "dynamodb:UpdateItem"
+      ],
       "Resource": "arn:aws:dynamodb:us-east-1:911762440868:table/divine-printing-orders-v2"
     },
     {
@@ -32,13 +35,10 @@
       "Resource": "arn:aws:dynamodb:us-east-1:911762440868:table/divine-printing-order-items-v2"
     },
     {
-      "Sid": "OrdersV2AtomicCreation",
+      "Sid": "OrderItemsV2Creation",
       "Effect": "Allow",
-      "Action": "dynamodb:TransactWriteItems",
-      "Resource": [
-        "arn:aws:dynamodb:us-east-1:911762440868:table/divine-printing-orders-v2",
-        "arn:aws:dynamodb:us-east-1:911762440868:table/divine-printing-order-items-v2"
-      ]
+      "Action": "dynamodb:PutItem",
+      "Resource": "arn:aws:dynamodb:us-east-1:911762440868:table/divine-printing-order-items-v2"
     }
   ]
 }
