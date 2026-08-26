@@ -206,6 +206,7 @@ function createOrderService({
   discountService,
   shippingService,
   taxService,
+  taxPolicy,
   assetVerifier,
   now = () => new Date(),
 } = {}) {
@@ -292,26 +293,37 @@ function createOrderService({
       let discountTotalCents;
       let shippingCents;
       let taxCents;
+      let taxStatus;
       if (typeof addressResolver === 'function') addressSnapshot = await addressResolver({ customerId, checkoutInput: canonical(checkoutInput) });
       else requirements.push('address_resolution');
       if (discountService && typeof discountService.calculate === 'function') discountTotalCents = nonNegativeMoney(await discountService.calculate({ customerId, cart, items: itemSnapshots, checkoutInput: canonical(checkoutInput) }));
       else requirements.push('discount_calculation');
       if (shippingService && typeof shippingService.calculate === 'function') shippingCents = nonNegativeMoney(await shippingService.calculate({ customerId, cart, items: itemSnapshots, checkoutInput: canonical(checkoutInput), addressSnapshot }));
       else requirements.push('shipping_calculation');
-      if (taxService && typeof taxService.calculate === 'function') taxCents = nonNegativeMoney(await taxService.calculate({ customerId, cart, items: itemSnapshots, checkoutInput: canonical(checkoutInput), addressSnapshot, subtotalCents, discountTotalCents, shippingCents }));
-      else requirements.push('tax_calculation');
+      if (taxPolicy?.status === 'disabled') {
+        taxStatus = 'disabled';
+        taxCents = null;
+      } else if (taxService && typeof taxService.calculate === 'function') {
+        taxStatus = 'calculated';
+        taxCents = nonNegativeMoney(await taxService.calculate({ customerId, cart, items: itemSnapshots, checkoutInput: canonical(checkoutInput), addressSnapshot, subtotalCents, discountTotalCents, shippingCents }));
+      } else requirements.push('tax_calculation');
       let totalCents;
+      let preTaxTotalCents;
       if (requirements.length === 0) {
         if (discountTotalCents > subtotalCents) fail('ORDER_PRICE_INVALID', 'Discount exceeds subtotal.');
-        totalCents = nonNegativeMoney(subtotalCents - discountTotalCents + shippingCents + taxCents);
+        preTaxTotalCents = nonNegativeMoney(subtotalCents - discountTotalCents + shippingCents);
+        totalCents = nonNegativeMoney(preTaxTotalCents + (taxCents ?? 0));
       }
       const preparedAt = now().toISOString();
       const proposedOrder = {
         customerId, cartId: cart.cartId, cartVersion, currency: 'USD', contactSnapshot,
         ...(addressSnapshot !== undefined ? { addressSnapshot: canonical(addressSnapshot) } : {}),
-        subtotalCents,
+        subtotalCents, merchandiseSubtotalCents: subtotalCents,
+        ...(discountTotalCents !== undefined ? { discountCents: discountTotalCents } : {}),
         ...(discountTotalCents !== undefined ? { discountTotalCents } : {}),
         ...(shippingCents !== undefined ? { shippingCents } : {}),
+        ...(preTaxTotalCents !== undefined ? { preTaxTotalCents } : {}),
+        ...(taxStatus !== undefined ? { taxStatus } : {}),
         ...(taxCents !== undefined ? { taxCents } : {}),
         ...(totalCents !== undefined ? { totalCents } : {}),
         itemCount: itemSnapshots.length, preparedAt,

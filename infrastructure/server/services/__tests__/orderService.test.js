@@ -89,6 +89,18 @@ describe('OrderService Option A preparation', () => {
     expect(Object.isFrozen(result.proposedItems[0])).toBe(true);
   });
 
+  test('represents disabled tax as nullable and never as calculated zero', async () => {
+    const { service } = setup({ dependencies: {
+      addressResolver: jest.fn().mockResolvedValue({ collectionAuthority: 'stripe_checkout' }),
+      discountService: { calculate: jest.fn().mockResolvedValue(0) },
+      shippingService: { calculate: jest.fn().mockResolvedValue(795) },
+      taxPolicy: { status: 'disabled' },
+    } });
+    const result = await prepare(service, { checkoutInput: {} });
+    expect(result.readyForDurableCreation).toBe(true);
+    expect(result.proposedOrder).toMatchObject({ merchandiseSubtotalCents: 2400, shippingCents: 795, discountCents: 0, preTaxTotalCents: 3195, taxStatus: 'disabled', taxCents: null, totalCents: 3195 });
+  });
+
   test('derives identity only from auth.sub and rejects client ownership authority', async () => {
     const { service, customerRepository } = setup();
     await expect(prepare(service, { checkoutInput: { customerId: 'attacker' } })).rejects.toMatchObject({ code: 'ORDER_CLIENT_AUTHORITY_REJECTED' });
