@@ -1,6 +1,7 @@
 'use strict';
 
 const STRIPE_ENDPOINT = 'https://api.stripe.com/v1/checkout/sessions';
+const STRIPE_API_VERSION = '2026-02-25.clover';
 const MIN_EXPIRATION_SECONDS = 30 * 60;
 
 class StripeCheckoutError extends Error {
@@ -36,7 +37,7 @@ function createStripeCheckoutClient({ secretProvider, fetchImpl = globalThis.fet
     append(form, `line_items[${items.length}][price_data][product_data][name]`, 'Shipping');
     append(form, `line_items[${items.length}][quantity]`, 1);
     let response;
-    try { response = await fetchImpl(STRIPE_ENDPOINT, { method: 'POST', headers: { Authorization: `Bearer ${secret}`, 'Content-Type': 'application/x-www-form-urlencoded', 'Idempotency-Key': idempotencyKey }, body: form.toString() }); }
+    try { response = await fetchImpl(STRIPE_ENDPOINT, { method: 'POST', headers: { Authorization: `Bearer ${secret}`, 'Content-Type': 'application/x-www-form-urlencoded', 'Idempotency-Key': idempotencyKey, 'Stripe-Version': STRIPE_API_VERSION }, body: form.toString() }); }
     catch (error) { throw new StripeCheckoutError('STRIPE_UNAVAILABLE', 'Payment service is temporarily unavailable.', error); }
     if (!response.ok) throw new StripeCheckoutError(response.status >= 500 ? 'STRIPE_UNAVAILABLE' : 'STRIPE_REQUEST_REJECTED', 'Payment Session could not be created.');
     const payload = await response.json();
@@ -47,7 +48,7 @@ function createStripeCheckoutClient({ secretProvider, fetchImpl = globalThis.fet
     const secret = await secretProvider();
     if (typeof sessionId !== 'string' || !/^cs_[A-Za-z0-9_]+$/.test(sessionId)) throw new StripeCheckoutError('STRIPE_RESPONSE_INVALID', 'Payment Session is invalid.');
     let response;
-    try { response = await fetchImpl(`${STRIPE_ENDPOINT}/${encodeURIComponent(sessionId)}`, { headers: { Authorization: `Bearer ${secret}` } }); }
+    try { response = await fetchImpl(`${STRIPE_ENDPOINT}/${encodeURIComponent(sessionId)}`, { headers: { Authorization: `Bearer ${secret}`, 'Stripe-Version': STRIPE_API_VERSION } }); }
     catch (error) { throw new StripeCheckoutError('STRIPE_UNAVAILABLE', 'Payment service is temporarily unavailable.', error); }
     if (!response.ok) throw new StripeCheckoutError('STRIPE_UNAVAILABLE', 'Payment Session could not be retrieved.');
     const payload = await response.json();
@@ -57,4 +58,4 @@ function createStripeCheckoutClient({ secretProvider, fetchImpl = globalThis.fet
   return { createSession, retrieveSession };
 }
 
-module.exports = { createStripeCheckoutClient, StripeCheckoutError, MIN_EXPIRATION_SECONDS, STRIPE_ENDPOINT };
+module.exports = { createStripeCheckoutClient, StripeCheckoutError, MIN_EXPIRATION_SECONDS, STRIPE_ENDPOINT, STRIPE_API_VERSION };

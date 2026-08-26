@@ -1,7 +1,7 @@
 'use strict';
 jest.mock('@aws-sdk/lib-dynamodb', () => ({ GetCommand: function(input){this.input=input;}, QueryCommand: function(input){this.input=input;}, UpdateCommand: function(input){this.input=input;}, TransactWriteCommand: function(input){this.input=input;} }));
 jest.mock('../../utils/dynamoDbClient', () => ({ docClient: {} }));
-const { createCheckoutRepository, deterministicId } = require('../checkoutRepository');
+const { createCheckoutRepository, deterministicId, estimateTransactionBytes, assertTransactionSafe, MAX_TRANSACTION_BYTES } = require('../checkoutRepository');
 
 const prepared = { proposedOrder: { customerId: 'sub-1', cartId: 'cart-1', cartVersion: 4, merchandiseSubtotalCents: 2000, shippingCents: 795, discountCents: 0, taxStatus: 'disabled', taxCents: null, totalCents: 2795 }, proposedItems: [{ productId: 'p1', lineTotalCents: 2000 }], idempotency: { key: 'checkout-key-1', scope: 'sub-1:cart-1:4', fingerprint: 'a'.repeat(64) } };
 describe('checkoutRepository', () => {
@@ -28,5 +28,27 @@ describe('checkoutRepository', () => {
     await repo.recordStripeFailureAndUnlock({ order: { orderId: 'o1', cartId: 'c1', customerId: 'sub-1', cartVersion: 4, version: 1 }, failureCode: 'STRIPE_UNAVAILABLE' });
     const tx = client.send.mock.calls[1][0].input.TransactItems;
     expect(tx[1].Update.UpdateExpression).toContain('#status = :active');
+  });
+  test('accepts the maximum 96 small items within the 100-action limit', async () => {
+    const client = { send: jest.fn().mockResolvedValueOnce({}).mockResolvedValueOnce({}) };
+    const maximum = { ...prepared, proposedItems: Array.from({ length: 96 }, (_, index) => ({ productId: `p${index}`, lineTotalCents: 1 })) };
+    await expect(createCheckoutRepository({ client }).createPendingCheckout({ prepared: maximum, orderNumber: 'DP-MAX' })).resolves.toBeDefined();
+    expect(client.send.mock.calls[1][0].input.TransactItems).toHaveLength(100);
+  });
+  test('rejects oversized individual and aggregate snapshots before any write', async () => {
+    for (const proposedItems of [
+      [{ productId: 'p1', customerConfiguration: { text: 'x'.repeat(2 * 1024 * 1024) }, lineTotalCents: 1 }],
+      Array.from({ length: 20 }, (_, index) => ({ productId: `p${index}`, customerConfiguration: { text: 'x'.repeat(100000) }, lineTotalCents: 1 })),
+    ]) {
+      const client = { send: jest.fn().mockResolvedValueOnce({}) };
+      await expect(createCheckoutRepository({ client }).createPendingCheckout({ prepared: { ...prepared, proposedItems }, orderNumber: 'DP-BIG' })).rejects.toMatchObject({ code: 'CHECKOUT_TOO_LARGE' });
+      expect(client.send).toHaveBeenCalledTimes(1); // idempotency read only; no write
+    }
+  });
+  test('uses a conservative byte estimate below the DynamoDB hard limit', () => {
+    const near = [{ Put: { Item: { value: 'x'.repeat(1700000) } } }];
+    expect(estimateTransactionBytes(near)).toBeLessThan(MAX_TRANSACTION_BYTES);
+    expect(() => assertTransactionSafe(near)).not.toThrow();
+    expect(() => assertTransactionSafe([{ Put: { Item: { value: 'x'.repeat(1900000) } } }])).toThrow(expect.objectContaining({ code: 'CHECKOUT_TOO_LARGE' }));
   });
 });

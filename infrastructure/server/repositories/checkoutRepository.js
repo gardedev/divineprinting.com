@@ -10,6 +10,12 @@ const DEFAULT_TABLES = Object.freeze({
   orders: 'divine-printing-orders-v2',
   orderItems: 'divine-printing-order-items-v2',
 });
+const MAX_TRANSACTION_ACTIONS = 100;
+// Stay 512 KiB below DynamoDB's 4 MiB hard limit. The estimator doubles the
+// canonical JSON byte size and adds per-action overhead to conservatively cover
+// DynamoDB AttributeValue/type metadata not visible in DocumentClient input.
+const MAX_TRANSACTION_BYTES = 3.5 * 1024 * 1024;
+const TRANSACTION_ACTION_OVERHEAD_BYTES = 1024;
 
 class CheckoutRepositoryError extends Error {
   constructor(code, message, cause) {
@@ -21,6 +27,16 @@ class CheckoutRepositoryError extends Error {
 function deterministicId(namespace, value) {
   const raw = crypto.createHmac('sha256', namespace).update(value).digest('hex');
   return `${raw.slice(0, 8)}-${raw.slice(8, 12)}-${raw.slice(12, 16)}-${raw.slice(16, 20)}-${raw.slice(20, 32)}`;
+}
+
+function estimateTransactionBytes(transactItems) {
+  return (Buffer.byteLength(JSON.stringify(transactItems), 'utf8') * 2) +
+    (transactItems.length * TRANSACTION_ACTION_OVERHEAD_BYTES);
+}
+
+function assertTransactionSafe(transactItems) {
+  if (transactItems.length > MAX_TRANSACTION_ACTIONS) throw new CheckoutRepositoryError('CHECKOUT_TOO_LARGE', 'The cart is too large for atomic checkout.');
+  if (estimateTransactionBytes(transactItems) > MAX_TRANSACTION_BYTES) throw new CheckoutRepositoryError('CHECKOUT_TOO_LARGE', 'The cart is too large for atomic checkout.');
 }
 
 function createCheckoutRepository({ client = docClient, tables = {}, now = () => new Date() } = {}) {
@@ -60,6 +76,7 @@ function createCheckoutRepository({ client = docClient, tables = {}, now = () =>
       ...items.map((item) => ({ Put: { TableName: names.orderItems, Item: item, ConditionExpression: 'attribute_not_exists(orderId) AND attribute_not_exists(orderItemId)' } })),
       { Put: { TableName: names.orders, Item: { orderId: `ORDER_NUMBER#${crypto.createHash('sha256').update(orderNumber).digest('hex')}`, recordType: 'ORDER_NUMBER_RESERVATION', reservedOrderId: orderId, createdAt: at }, ConditionExpression: 'attribute_not_exists(orderId)' } },
     ];
+    assertTransactionSafe(transaction);
     try {
       await client.send(new TransactWriteCommand({ TransactItems: transaction, ClientRequestToken: idempotency.fingerprint.slice(0, 36) }));
       return { order, items, idempotentReplay: false };
@@ -94,4 +111,4 @@ function createCheckoutRepository({ client = docClient, tables = {}, now = () =>
   return { createPendingCheckout, persistStripeSession, recordStripeFailureAndUnlock, getOrder, getCheckout };
 }
 
-module.exports = { createCheckoutRepository, CheckoutRepositoryError, deterministicId, DEFAULT_TABLES };
+module.exports = { createCheckoutRepository, CheckoutRepositoryError, deterministicId, estimateTransactionBytes, assertTransactionSafe, DEFAULT_TABLES, MAX_TRANSACTION_ACTIONS, MAX_TRANSACTION_BYTES };

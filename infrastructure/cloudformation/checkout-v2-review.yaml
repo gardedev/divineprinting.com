@@ -33,33 +33,51 @@ Resources:
             Statement:
               - Sid: CheckoutCartReadWrite
                 Effect: Allow
-                Action: [dynamodb:GetItem, dynamodb:Query, dynamodb:UpdateItem, dynamodb:ConditionCheckItem]
+                Action: [dynamodb:GetItem, dynamodb:PutItem, dynamodb:UpdateItem, dynamodb:ConditionCheckItem]
+                Resource: arn:aws:dynamodb:us-east-1:911762440868:table/divine-printing-carts
+              - Sid: CheckoutCartQueries
+                Effect: Allow
+                Action: dynamodb:Query
                 Resource:
-                  - arn:aws:dynamodb:us-east-1:911762440868:table/divine-printing-carts
+                  - arn:aws:dynamodb:us-east-1:911762440868:table/divine-printing-carts/index/CustomerActiveCartIndex
                   - arn:aws:dynamodb:us-east-1:911762440868:table/divine-printing-cart-items
-                  - arn:aws:dynamodb:us-east-1:911762440868:table/divine-printing-cart-items/index/ProductCartItemIndex
               - Sid: CheckoutOrderWrites
                 Effect: Allow
-                Action: [dynamodb:GetItem, dynamodb:PutItem, dynamodb:UpdateItem, dynamodb:Query]
+                Action: [dynamodb:GetItem, dynamodb:PutItem, dynamodb:UpdateItem]
                 Resource:
                   - arn:aws:dynamodb:us-east-1:911762440868:table/divine-printing-orders-v2
-                  - arn:aws:dynamodb:us-east-1:911762440868:table/divine-printing-orders-v2/index/*
+              - Sid: CheckoutOrderItemWrites
+                Effect: Allow
+                Action: dynamodb:PutItem
+                Resource: arn:aws:dynamodb:us-east-1:911762440868:table/divine-printing-order-items-v2
+              - Sid: CheckoutOrderItemReads
+                Effect: Allow
+                Action: dynamodb:Query
+                Resource:
                   - arn:aws:dynamodb:us-east-1:911762440868:table/divine-printing-order-items-v2
-                  - arn:aws:dynamodb:us-east-1:911762440868:table/divine-printing-order-items-v2/index/*
               - Sid: AuthoritativeProductReads
                 Effect: Allow
-                Action: [dynamodb:GetItem, dynamodb:Query]
-                Resource:
-                  - arn:aws:dynamodb:us-east-1:911762440868:table/divine-printing-products
-                  - arn:aws:dynamodb:us-east-1:911762440868:table/divine-printing-products/index/*
+                Action: dynamodb:GetItem
+                Resource: arn:aws:dynamodb:us-east-1:911762440868:table/divine-printing-products
               - Sid: AuthoritativeCustomerReads
                 Effect: Allow
                 Action: [dynamodb:GetItem]
                 Resource: arn:aws:dynamodb:us-east-1:911762440868:table/divine-printing-customers-v2
+              - Sid: StripeTestSecretRead
+                Effect: Allow
+                Action: secretsmanager:GetSecretValue
+                Resource: !Ref StripeSecretArn
               - Sid: RuntimeLogs
                 Effect: Allow
-                Action: [logs:CreateLogGroup, logs:CreateLogStream, logs:PutLogEvents]
+                Action: [logs:CreateLogStream, logs:PutLogEvents]
                 Resource: arn:aws:logs:us-east-1:911762440868:log-group:/aws/lambda/divine-printing-checkout:*
+  CheckoutLogGroup:
+    Type: AWS::Logs::LogGroup
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      LogGroupName: /aws/lambda/divine-printing-checkout
+      RetentionInDays: 30
   CheckoutFunction:
     Type: AWS::Lambda::Function
     Properties:
@@ -81,7 +99,7 @@ Resources:
           CHECKOUT_SUCCESS_URL: https://divineprinting.com/checkout/success.html
           CHECKOUT_CANCEL_URL: https://divineprinting.com/checkout/cancel.html
           STRIPE_TAX_ENABLED: 'false'
-          STRIPE_SECRET_KEY: !Sub '{{resolve:secretsmanager:${StripeSecretArn}:SecretString:STRIPE_SECRET_KEY}}'
+          STRIPE_SECRET_ARN: !Ref StripeSecretArn
   CheckoutApi:
     Type: AWS::ApiGatewayV2::Api
     Properties:
@@ -99,11 +117,23 @@ Resources:
       IntegrationUri: !GetAtt CheckoutFunction.Arn
       PayloadFormatVersion: '2.0'
       TimeoutInMillis: 20000
+  CheckoutJwtAuthorizer:
+    Type: AWS::ApiGatewayV2::Authorizer
+    Properties:
+      ApiId: !Ref CheckoutApi
+      Name: divine-printing-checkout-cognito-jwt
+      AuthorizerType: JWT
+      IdentitySource: ['$request.header.Authorization']
+      JwtConfiguration:
+        Audience: [!Ref CognitoClientId]
+        Issuer: !Sub https://cognito-idp.${AWS::Region}.amazonaws.com/${CognitoUserPoolId}
   CheckoutRoute:
     Type: AWS::ApiGatewayV2::Route
     Properties:
       ApiId: !Ref CheckoutApi
       RouteKey: POST /api/checkout/session
+      AuthorizationType: JWT
+      AuthorizerId: !Ref CheckoutJwtAuthorizer
       Target: !Sub integrations/${CheckoutIntegration}
   CheckoutStage:
     Type: AWS::ApiGatewayV2::Stage
