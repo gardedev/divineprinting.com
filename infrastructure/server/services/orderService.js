@@ -125,13 +125,11 @@ function inspectFields(value, forbidden, code, path = 'input', seen = new WeakSe
 
 function trustedIdentity(auth) {
   if (!auth || typeof auth !== 'object') fail('ORDER_AUTH_REQUIRED', 'Authentication is required.');
-  const customerId = requiredString(auth.sub, 'ORDER_AUTH_REQUIRED', 'A verified customer identity is required.');
-  if (auth.emailVerified !== true) fail('ORDER_EMAIL_UNVERIFIED', 'A verified email is required.');
-  return customerId;
+  return requiredString(auth.sub, 'ORDER_AUTH_REQUIRED', 'A verified customer identity is required.');
 }
 
 function validateCustomer(customer, customerId) {
-  if (!customer || customer.customerId !== customerId) fail('ORDER_ACCOUNT_INELIGIBLE', 'The customer account is not eligible for checkout.');
+  if (!customer || customer.customerId !== customerId || customer.cognitoSub !== customerId) fail('ORDER_ACCOUNT_INELIGIBLE', 'The customer account is not eligible for checkout.');
   if (customer.emailVerified !== true) fail('ORDER_EMAIL_UNVERIFIED', 'A verified email is required.');
   if (customer.accountStatus === 'pending_profile') fail('ORDER_PROFILE_INCOMPLETE', 'The customer profile is incomplete.');
   if (customer.accountStatus !== 'active') fail('ORDER_ACCOUNT_INELIGIBLE', 'The customer account is not eligible for checkout.');

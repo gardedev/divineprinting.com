@@ -2,6 +2,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const { spawnSync } = require('child_process');
 
 const root = path.resolve(__dirname, '../../..');
 const policy = JSON.parse(fs.readFileSync(path.join(root, 'iam/checkout-v2-runtime-policy.json'), 'utf8'));
@@ -34,5 +35,29 @@ describe('Task 6.3 review-only IAM and authorization', () => {
     expect(template).toContain('AuthorizerId: !Ref CheckoutJwtAuthorizer');
     expect(template).toContain('Audience: [!Ref CognitoClientId]');
     expect(template).toContain('Issuer: !Sub https://cognito-idp.${AWS::Region}.amazonaws.com/${CognitoUserPoolId}');
+  });
+  test('checkout Lambda initializes with the cart-proven CommonJS JWT dependency graph', () => {
+    const serverRoot = path.join(root, 'server');
+    const result = spawnSync(process.execPath, [
+      '--no-experimental-require-module',
+      '-e',
+      "require('./checkoutLambda'); require('jwks-rsa'); require('jose');",
+    ], {
+      cwd: serverRoot,
+      encoding: 'utf8',
+      env: {
+        ...process.env,
+        AWS_REGION: 'us-east-1',
+        COGNITO_USER_POOL_ID: 'us-east-1_hs1jWXB87',
+        COGNITO_CLIENT_ID: 'pf2ioscnn7vf7c4if5mjemos',
+        STRIPE_SECRET_ARN: 'arn:aws:secretsmanager:us-east-1:911762440868:secret:divine-printing/stripe/checkout/test-zRRvD9',
+        CHECKOUT_SUCCESS_URL: 'https://divineprinting.com/checkout/success.html',
+        CHECKOUT_CANCEL_URL: 'https://divineprinting.com/checkout/cancel.html',
+        STRIPE_TAX_ENABLED: 'false',
+      },
+    });
+
+    expect(result.status).toBe(0);
+    expect(`${result.stderr}${result.stdout}`).not.toContain('ERR_REQUIRE_ESM');
   });
 });

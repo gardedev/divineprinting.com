@@ -15,7 +15,7 @@ const {
 
 const auth = { sub: 'customer-sub-1', email: 'claim@example.com', emailVerified: true, groups: ['customer'] };
 const customer = {
-  customerId: 'customer-sub-1', accountStatus: 'active', emailVerified: true,
+  customerId: 'customer-sub-1', cognitoSub: 'customer-sub-1', accountStatus: 'active', emailVerified: true,
   emailDisplay: 'Trusted@Example.com', emailNormalized: 'trusted@example.com', version: 3,
 };
 const cart = { cartId: 'cart-1', customerId: 'customer-sub-1', status: 'active', version: 7, expiresAt: 1999999999 };
@@ -89,6 +89,24 @@ describe('OrderService Option A preparation', () => {
     expect(Object.isFrozen(result.proposedItems[0])).toBe(true);
   });
 
+  test('accepts an access-token identity without email_verified when the authoritative customer is verified', async () => {
+    const { service, customerRepository } = setup({ dependencies: completeAuthorities() });
+    const result = await prepare(service, { auth: { sub: 'customer-sub-1', groups: ['customer'] } });
+    expect(customerRepository.getCustomerById).toHaveBeenCalledWith('customer-sub-1');
+    expect(result.proposedOrder.customerId).toBe('customer-sub-1');
+  });
+
+  test('rejects authoritative unverified email even when request authentication claims verification', async () => {
+    const { service } = setup({ customerRepository: { getCustomerById: jest.fn().mockResolvedValue({ ...customer, emailVerified: false }) } });
+    await expect(prepare(service, { auth: { sub: 'customer-sub-1', emailVerified: true, groups: ['customer'] } })).rejects.toMatchObject({ code: 'ORDER_EMAIL_UNVERIFIED' });
+  });
+
+  test('rejects browser-provided email verification authority before customer lookup', async () => {
+    const { service, customerRepository } = setup({ customerRepository: { getCustomerById: jest.fn().mockResolvedValue({ ...customer, emailVerified: false }) } });
+    await expect(prepare(service, { auth: { sub: 'customer-sub-1', groups: ['customer'] }, checkoutInput: { emailVerified: true } })).rejects.toMatchObject({ code: 'ORDER_CLIENT_AUTHORITY_REJECTED' });
+    expect(customerRepository.getCustomerById).not.toHaveBeenCalled();
+  });
+
   test('represents disabled tax as nullable and never as calculated zero', async () => {
     const { service } = setup({ dependencies: {
       addressResolver: jest.fn().mockResolvedValue({ collectionAuthority: 'stripe_checkout' }),
@@ -111,7 +129,6 @@ describe('OrderService Option A preparation', () => {
   test.each([
     [undefined, 'ORDER_AUTH_REQUIRED'],
     [{ emailVerified: true }, 'ORDER_AUTH_REQUIRED'],
-    [{ sub: 'customer-sub-1', emailVerified: false }, 'ORDER_EMAIL_UNVERIFIED'],
   ])('rejects invalid trusted authentication %p', async (badAuth, code) => {
     const { service } = setup();
     await expect(prepare(service, { auth: badAuth })).rejects.toMatchObject({ code });
@@ -130,6 +147,8 @@ describe('OrderService Option A preparation', () => {
     let service = setup({ customerRepository: { getCustomerById: jest.fn().mockResolvedValue(null) } }).service;
     await expect(prepare(service)).rejects.toMatchObject({ code: 'ORDER_ACCOUNT_INELIGIBLE' });
     service = setup({ customerRepository: { getCustomerById: jest.fn().mockResolvedValue({ ...customer, customerId: 'other' }) } }).service;
+    await expect(prepare(service)).rejects.toMatchObject({ code: 'ORDER_ACCOUNT_INELIGIBLE' });
+    service = setup({ customerRepository: { getCustomerById: jest.fn().mockResolvedValue({ ...customer, cognitoSub: 'other' }) } }).service;
     await expect(prepare(service)).rejects.toMatchObject({ code: 'ORDER_ACCOUNT_INELIGIBLE' });
   });
 
