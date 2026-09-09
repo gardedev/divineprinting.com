@@ -25,7 +25,7 @@
 // Configuration
 // ---------------------------------------------------------------------------
 
-const ACCOUNT_API_BASE = 'https://u7klzkkpbc.execute-api.us-east-1.amazonaws.com';
+const ACCOUNT_API_BASE = 'https://cad1wdj8c8.execute-api.us-east-1.amazonaws.com';
 
 // ---------------------------------------------------------------------------
 // Orders
@@ -50,7 +50,7 @@ async function getOrders(fetchFn) {
   }
 
   try {
-    const response = await fetcher('/api/orders');
+    const response = await fetcher('/orders');
     if (!response.ok) {
       return { orders: [], count: 0 };
     }

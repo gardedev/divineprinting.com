@@ -24,10 +24,10 @@
 // ---------------------------------------------------------------------------
 
 const COGNITO_DOMAIN = 'https://login.divineprinting.com';
-const USER_POOL_ID = 'us-east-1_1LBgFXfaY';
-const CLIENT_ID = '7map1lhflflcehr4ntjhhg2um268';
+const USER_POOL_ID = 'us-east-1_hs1jWXB87';
+const CLIENT_ID = 'pf2ioscnn7vf7c4if5mjemos';
 
-const API_BASE = 'https://u7klzkkpbc.execute-api.us-east-1.amazonaws.com';
+const API_BASE = 'https://cad1wdj8c8.execute-api.us-east-1.amazonaws.com';
 const CART_API_ORIGIN = 'https://i3w6x21dzg.execute-api.us-east-1.amazonaws.com';
 const BOOTSTRAP_PATH = '/api/customers/bootstrap';
 
@@ -294,6 +294,41 @@ function mapOAuthError(rawError) {
   return AUTH_ERRORS.OAUTH_ERROR;
 }
 
+const OAUTH_CALLBACK_PARAMETERS = [
+  'code',
+  'state',
+  'error',
+  'error_description',
+  'error_uri',
+  'session_state',
+  'iss',
+];
+
+/**
+ * Removes OAuth-only callback parameters from the visible URL without
+ * navigating or exposing them to another origin. Non-OAuth query parameters
+ * and the URL fragment are preserved.
+ */
+function scrubOAuthCallbackUrl() {
+  try {
+    const currentPath = `${window.location.pathname || '/'}${window.location.search || ''}${window.location.hash || ''}`;
+    const url = new URL(currentPath, window.location.origin);
+    let changed = false;
+    for (const parameter of OAUTH_CALLBACK_PARAMETERS) {
+      if (url.searchParams.has(parameter)) {
+        url.searchParams.delete(parameter);
+        changed = true;
+      }
+    }
+    if (!changed) return;
+    const query = url.searchParams.toString();
+    const cleanUrl = `${url.pathname}${query ? `?${query}` : ''}${url.hash}`;
+    window.history.replaceState({}, document.title, cleanUrl);
+  } catch (_e) {
+    // URL/history APIs may be unavailable in constrained test environments.
+  }
+}
+
 /**
  * Exchanges a Cognito authorization code for Access, ID, and Refresh tokens.
  * PKCE code_verifier is retrieved from sessionStorage and removed after use.
@@ -304,6 +339,10 @@ function mapOAuthError(rawError) {
  * @returns {Promise<{accessToken: string, idToken: string, refreshToken: string}|null>}
  */
 async function exchangeCodeForTokens(code) {
+  // Defense in depth: direct callers must not leave callback credentials in
+  // browser history, including when the verifier is missing or exchange fails.
+  scrubOAuthCallbackUrl();
+
   const verifier = sessionStorage.getItem('pkce_verifier');
   sessionStorage.removeItem('pkce_verifier');
 
@@ -377,6 +416,13 @@ function parseCodeFromUrl() {
   const state = params.get('state');
   const error = params.get('error');
   const errorDescription = params.get('error_description');
+  const hasOAuthCallbackParameters = OAUTH_CALLBACK_PARAMETERS.some(parameter =>
+    params.has(parameter)
+  );
+
+  // Scrub callback credentials before any validation, logging, event dispatch,
+  // token exchange, or final error rendering.
+  if (hasOAuthCallbackParameters) scrubOAuthCallbackUrl();
 
   // Check for OAuth errors from Cognito
   if (error) {
@@ -388,6 +434,15 @@ function parseCodeFromUrl() {
   }
 
   if (!code) {
+    if (hasOAuthCallbackParameters) {
+      try {
+        sessionStorage.removeItem('pkce_verifier');
+        sessionStorage.removeItem('oauth_state');
+      } catch (_e) {
+        // sessionStorage unavailable
+      }
+      _dispatchAuthEvent('auth:error', { code: AUTH_ERRORS.INVALID_REQUEST });
+    }
     return null;
   }
 
@@ -401,13 +456,6 @@ function parseCodeFromUrl() {
     console.error('[cognito-auth] OAuth state validation failed');
     _dispatchAuthEvent('auth:error', { code: AUTH_ERRORS.STATE_MISMATCH });
     return null;
-  }
-
-  // Clean the URL (remove OAuth callback params)
-  try {
-    window.history.replaceState({}, document.title, window.location.pathname);
-  } catch (_e) {
-    // history API unavailable in some test environments
   }
 
   return code;
@@ -697,7 +745,7 @@ async function authenticatedCartFetch(path, options = {}) {
  */
 async function fetchOrders() {
   try {
-    const response = await authenticatedFetch('/api/orders');
+    const response = await authenticatedFetch('/orders');
     if (!response.ok) {
       if (response.status === 401 || response.status === 403) {
         clearAllAuthState();

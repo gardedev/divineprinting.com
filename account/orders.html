@@ -72,35 +72,10 @@
 .empty-state p { color: var(--gray); margin-bottom: 24px; }
 .btn-shop { background: linear-gradient(135deg, var(--purple) 0%, #5a2d8a 100%); color: #fff; border: none; padding: 16px 32px; border-radius: 12px; font-size: 1rem; font-weight: 600; cursor: pointer; text-decoration: none; display: inline-block; }
 
-/* Login / Magic Link */
+/* Login prompt */
 .login-prompt { text-align: center; padding: 64px 32px; }
 .login-prompt h2 { font-family: 'Cinzel', serif; color: var(--purple); margin-bottom: 16px; }
 .login-prompt p { color: var(--gray); margin-bottom: 24px; }
-
-.magic-link-form { max-width: 400px; margin: 0 auto; }
-.magic-link-form .form-group { margin-bottom: 16px; text-align: left; }
-.magic-link-form label { display: block; color: var(--purple); font-weight: 600; margin-bottom: 6px; }
-.magic-link-form input[type="email"] {
-  width: 100%; padding: 14px 16px; border: 2px solid #e8e2f5; border-radius: 12px;
-  font-size: 1rem; box-sizing: border-box; transition: border-color 0.2s;
-}
-.magic-link-form input[type="email"]:focus { outline: none; border-color: var(--gold); }
-.btn-magic-link {
-  background: linear-gradient(135deg, var(--purple) 0%, #5a2d8a 100%); color: #fff;
-  border: none; padding: 16px 32px; border-radius: 12px; font-size: 1rem;
-  font-weight: 600; cursor: pointer; width: 100%; transition: opacity 0.2s;
-}
-.btn-magic-link:disabled { opacity: 0.6; cursor: not-allowed; }
-.auth-message { margin-top: 16px; padding: 12px 16px; border-radius: 10px; font-size: 0.9rem; display: none; }
-.auth-message.success { display: block; background: #e8f5e9; color: #2e7d32; }
-.auth-message.error { display: block; background: #ffebee; color: #c62828; }
-.auth-divider { margin: 24px 0; color: var(--gray); font-size: 0.9rem; }
-.auth-divider span { background: #fff; padding: 0 12px; position: relative; z-index: 1; }
-.auth-divider::before { content: ''; display: block; border-top: 1px solid #e8e2f5; position: relative; top: 0.6em; z-index: 0; }
-.btn-snipcart-alt { background: none; border: 2px solid var(--purple); color: var(--purple); padding: 12px 24px; border-radius: 12px; font-size: 0.95rem; font-weight: 600; cursor: pointer; transition: all 0.2s; }
-.btn-snipcart-alt:hover { background: var(--gold-pale); }
-.loading-spinner { display: inline-block; width: 20px; height: 20px; border: 3px solid rgba(255,255,255,.3); border-top-color: #fff; border-radius: 50%; animation: spin 0.8s linear infinite; vertical-align: middle; margin-right: 8px; }
-@keyframes spin { to { transform: rotate(360deg); } }
 
 .shipping-address { margin-top: 12px; padding: 12px 16px; background: #f8f6fb; border-radius: 8px; font-size: 0.85rem; color: var(--gray); }
 .shipping-address strong { color: var(--purple); }
@@ -236,28 +211,11 @@
         <a href="../index.html" class="btn-shop">Browse Products</a>
       </div>
       
-      <!-- ============ SIGN-IN FORM ============ -->
+      <!-- ============ SIGN-IN PROMPT ============ -->
       <div id="loggedOutContent" class="login-prompt">
         <h2>Sign In to View Orders</h2>
-        <p>Enter your email to receive a secure sign-in link.</p>
-        
-        <div class="magic-link-form">
-          <form id="magicLinkForm" onsubmit="return handleMagicLink(event);">
-            <div class="form-group">
-              <label for="signInEmail">Email Address</label>
-              <input type="email" id="signInEmail" placeholder="you@yourchurch.org" required />
-            </div>
-            <button type="submit" id="magicLinkBtn" class="btn-magic-link">
-              ✉️ Send Sign-In Link
-            </button>
-          </form>
-          <div id="authMessage" class="auth-message"></div>
-          
-          <div class="auth-divider"><span>or</span></div>
-          <button class="btn-snipcart-alt" onclick="openSnipcartSignIn()">
-            Sign in via Snipcart Checkout
-          </button>
-        </div>
+        <p>Use Divine Printing's secure customer sign-in to view your order history.</p>
+        <a href="login.html" class="btn-shop">Sign In</a>
       </div>
     </main>
   </div>
@@ -267,14 +225,11 @@
 <div hidden id="snipcart" data-api-key="ZjljZmI1ODItM2VmOS00M2ZhLTg3ZGItNmUwY2NiZjViMjQ4NjM5MTE0Njk1NzE1MTQwNTE3" data-config-modal-style="side"></div>
 <script src="https://cdn.snipcart.com/themes/v3.0.31/default/snipcart.js"></script>
 <script src="/snipcart-custom.js"></script>
+<script src="/js/cognito-auth.js"></script>
+<script src="/js/account-api.js"></script>
 <script src="/js/account-auth.js"></script>
 
 <script>
-// =========================================================================
-// CONFIG — replace with your actual API Gateway URL after Terraform deploy
-// =========================================================================
-var API_BASE_URL = ''; // e.g. 'https://xxxxx.execute-api.us-east-1.amazonaws.com'
-
 var allOrders = [];
 
 // Mobile menu toggle
@@ -283,53 +238,6 @@ function toggleMobileMenu() {
   menu.classList.toggle('active');
   document.body.style.overflow = menu.classList.contains('active') ? 'hidden' : '';
 }
-
-function openSnipcartSignIn() {
-  if (window.Snipcart && Snipcart.api && Snipcart.api.theme) {
-    Snipcart.api.theme.cart.open();
-  } else {
-    alert('Please add an item to your cart first, then you can sign in during checkout.');
-  }
-}
-
-// =========================================================================
-// Magic Link Flow
-// =========================================================================
-
-function handleMagicLink(e) {
-  e.preventDefault();
-  var email = document.getElementById('signInEmail').value.trim();
-  var btn = document.getElementById('magicLinkBtn');
-  var msg = document.getElementById('authMessage');
-
-  if (!email) return false;
-
-  btn.disabled = true;
-  btn.innerHTML = '<span class="loading-spinner"></span> Sending…';
-  msg.className = 'auth-message';
-  msg.style.display = 'none';
-
-  DivinePrintingAuth.sendMagicLink(email)
-    .then(function () {
-      msg.className = 'auth-message success';
-      msg.textContent = '✉️ Check your inbox! We sent a sign-in link to ' + email;
-      btn.innerHTML = '✉️ Link Sent!';
-    })
-    .catch(function () {
-      msg.className = 'auth-message error';
-      msg.textContent = 'Something went wrong. Please try again.';
-      btn.disabled = false;
-      btn.innerHTML = '✉️ Send Sign-In Link';
-    });
-
-  return false;
-}
-
-window.addEventListener('dp-auth-error', function (e) {
-  var msg = document.getElementById('authMessage');
-  msg.className = 'auth-message error';
-  msg.textContent = e.detail.message;
-});
 
 // =========================================================================
 // Order Rendering
@@ -350,55 +258,9 @@ function showSignedOut() {
 }
 
 function loadOrders() {
-  // Try our custom API first
-  if (API_BASE_URL && DivinePrintingAuth.isSignedIn()) {
-    DivinePrintingAuth.fetchOrders()
-      .then(function (data) {
-        handleOrders(data.orders || []);
-      })
-      .catch(function () {
-        loadSnipcartOrders();
-      });
-  } else {
-    loadSnipcartOrders();
-  }
-}
-
-function loadSnipcartOrders() {
-  if (window.Snipcart && Snipcart.api && Snipcart.api.customer && typeof Snipcart.api.customer.orders === 'function') {
-    Snipcart.api.customer.orders()
-      .then(function (result) {
-        var orders = result.items || result || [];
-        orders = Array.isArray(orders) ? orders : [];
-        // Normalize to our format
-        var normalized = orders.map(function (o) {
-          return {
-            orderId: o.invoiceNumber || o.token,
-            items: (o.items || []).map(function (i) {
-              return {
-                name: i.name,
-                quantity: i.quantity,
-                unitPrice: i.unitPrice || i.price,
-                totalPrice: i.totalPrice || (i.price * i.quantity),
-                image: i.image || '',
-                customFields: i.customFields || [],
-              };
-            }),
-            subtotal: o.subtotal || 0,
-            taxesTotal: o.taxesTotal || o.taxes || 0,
-            shippingTotal: o.shippingFees || o.shipping || 0,
-            total: o.total || 0,
-            status: o.status || 'Processing',
-            shippingAddress: o.shippingAddress || {},
-            createdAt: o.creationDate || o.completionDate || '',
-          };
-        });
-        handleOrders(normalized);
-      })
-      .catch(function () { handleOrders([]); });
-  } else {
-    handleOrders([]);
-  }
+  getOrders()
+    .then(function (data) { handleOrders(data.orders || []); })
+    .catch(function () { handleOrders([]); });
 }
 
 function handleOrders(orders) {
@@ -527,10 +389,6 @@ document.getElementById('searchOrders').addEventListener('input', function (e) {
 
 document.getElementById('sidebarSignOut').addEventListener('click', function () {
   DivinePrintingAuth.signOut();
-  if (window.Snipcart && Snipcart.api && Snipcart.api.customer && Snipcart.api.customer.signout) {
-    try { Snipcart.api.customer.signout(); } catch (e) {}
-  }
-  window.location.reload();
 });
 
 // =========================================================================
@@ -538,33 +396,18 @@ document.getElementById('sidebarSignOut').addEventListener('click', function () 
 // =========================================================================
 
 (function () {
-  DivinePrintingAuth.init(API_BASE_URL);
+  DivinePrintingAuth.init();
 
-  // Check our custom auth first
   if (DivinePrintingAuth.isSignedIn()) {
     showSignedIn();
-    return;
+  } else {
+    showSignedOut();
   }
 
-  // Fallback: check Snipcart auth
-  document.addEventListener('snipcart.ready', function () {
-    Snipcart.events.on('customer.signedin', function () {
-      if (Snipcart.api && Snipcart.api.theme && Snipcart.api.theme.cart) {
-        Snipcart.api.theme.cart.close();
-      }
-      showSignedIn();
-    });
-
-    Snipcart.events.on('customer.signedout', function () {
-      DivinePrintingAuth.signOut();
-      window.location.reload();
-    });
-
-    var state = Snipcart.store.getState();
-    if (state.customer && state.customer.status === 'SignedIn') {
-      showSignedIn();
-    }
-  });
+  window.addEventListener('auth:login-success', showSignedIn);
+  window.addEventListener('auth:session-restored', showSignedIn);
+  window.addEventListener('auth:access-denied', showSignedOut);
+  window.addEventListener('auth:email-unverified', showSignedOut);
 })();
 </script>
 
