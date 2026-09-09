@@ -1,5 +1,5 @@
 'use strict';
-jest.mock('@aws-sdk/lib-dynamodb', () => ({ GetCommand: function(input){this.input=input;}, QueryCommand: function(input){this.input=input;}, UpdateCommand: function(input){this.input=input;}, TransactWriteCommand: function(input){this.input=input;} }));
+jest.mock('@aws-sdk/lib-dynamodb', () => ({ GetCommand: function(input){this.input=input;}, PutCommand: function(input){this.input=input;}, QueryCommand: function(input){this.input=input;}, UpdateCommand: function(input){this.input=input;}, TransactWriteCommand: function(input){this.input=input;} }));
 jest.mock('../../utils/dynamoDbClient', () => ({ docClient: {} }));
 const { createCheckoutRepository, deterministicId, estimateTransactionBytes, assertTransactionSafe, MAX_TRANSACTION_BYTES } = require('../checkoutRepository');
 
@@ -50,5 +50,17 @@ describe('checkoutRepository', () => {
     expect(estimateTransactionBytes(near)).toBeLessThan(MAX_TRANSACTION_BYTES);
     expect(() => assertTransactionSafe(near)).not.toThrow();
     expect(() => assertTransactionSafe([{ Put: { Item: { value: 'x'.repeat(1900000) } } }])).toThrow(expect.objectContaining({ code: 'CHECKOUT_TOO_LARGE' }));
+  });
+  test('queries the deployed StripeCheckoutSessionIndex name', async () => {
+    const client = { send: jest.fn().mockResolvedValueOnce({ Items: [] }) };
+    await createCheckoutRepository({ client }).getOrderByStripeSessionId('cs_1');
+    expect(client.send.mock.calls[0][0].input).toMatchObject({ IndexName: 'StripeCheckoutSessionIndex' });
+  });
+  test('claims duplicate webhook events with a conditional event-table write', async () => {
+    const duplicate = Object.assign(new Error('duplicate'), { name: 'ConditionalCheckFailedException' });
+    const client = { send: jest.fn().mockRejectedValueOnce(duplicate).mockResolvedValueOnce({ Item: { status: 'processing' } }) };
+    await expect(createCheckoutRepository({ client }).claimStripeEvent({ eventId: 'evt_1', eventType: 'checkout.session.completed', stripeCreatedAt: 1770000000 })).resolves.toMatchObject({ duplicate: true });
+    expect(client.send.mock.calls[0][0].input).toMatchObject({ TableName: 'divine-printing-stripe-events', ConditionExpression: 'attribute_not_exists(stripeEventId)' });
+    expect(client.send.mock.calls[1][0].input).toMatchObject({ ConsistentRead: true });
   });
 });

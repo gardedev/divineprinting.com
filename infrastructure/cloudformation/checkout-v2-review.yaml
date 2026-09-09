@@ -1,5 +1,5 @@
 AWSTemplateFormatVersion: '2010-09-09'
-Description: Review-only Task 6.3 dedicated authenticated Stripe Checkout runtime.
+Description: DivinePrinting authenticated Stripe Checkout and signed webhook runtime.
 
 Parameters:
   ArtifactBucket:
@@ -7,6 +7,8 @@ Parameters:
   ArtifactKey:
     Type: String
   StripeSecretArn:
+    Type: String
+  StripeWebhookSecretArn:
     Type: String
   CognitoUserPoolId:
     Type: String
@@ -46,6 +48,14 @@ Resources:
                 Action: [dynamodb:GetItem, dynamodb:PutItem, dynamodb:UpdateItem]
                 Resource:
                   - arn:aws:dynamodb:us-east-1:911762440868:table/divine-printing-orders-v2
+              - Sid: CheckoutOrderSessionLookup
+                Effect: Allow
+                Action: dynamodb:Query
+                Resource: arn:aws:dynamodb:us-east-1:911762440868:table/divine-printing-orders-v2/index/StripeCheckoutSessionIndex
+              - Sid: StripeEventPersistence
+                Effect: Allow
+                Action: [dynamodb:GetItem, dynamodb:PutItem, dynamodb:UpdateItem]
+                Resource: !GetAtt StripeEventsTable.Arn
               - Sid: CheckoutOrderItemWrites
                 Effect: Allow
                 Action: dynamodb:PutItem
@@ -67,6 +77,10 @@ Resources:
                 Effect: Allow
                 Action: secretsmanager:GetSecretValue
                 Resource: !Ref StripeSecretArn
+              - Sid: StripeWebhookSecretRead
+                Effect: Allow
+                Action: secretsmanager:GetSecretValue
+                Resource: !Ref StripeWebhookSecretArn
               - Sid: RuntimeLogs
                 Effect: Allow
                 Action: [logs:CreateLogStream, logs:PutLogEvents]
@@ -78,6 +92,22 @@ Resources:
     Properties:
       LogGroupName: /aws/lambda/divine-printing-checkout
       RetentionInDays: 30
+  StripeEventsTable:
+    Type: AWS::DynamoDB::Table
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      TableName: divine-printing-stripe-events
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: stripeEventId
+          AttributeType: S
+      KeySchema:
+        - AttributeName: stripeEventId
+          KeyType: HASH
+      TimeToLiveSpecification:
+        AttributeName: ttl
+        Enabled: true
   CheckoutFunction:
     Type: AWS::Lambda::Function
     Properties:
@@ -100,6 +130,8 @@ Resources:
           CHECKOUT_CANCEL_URL: https://divineprinting.com/checkout/cancel.html
           STRIPE_TAX_ENABLED: 'false'
           STRIPE_SECRET_ARN: !Ref StripeSecretArn
+          STRIPE_WEBHOOK_SECRET_ARN: !Ref StripeWebhookSecretArn
+          STRIPE_EVENTS_TABLE: !Ref StripeEventsTable
   CheckoutApi:
     Type: AWS::ApiGatewayV2::Api
     Properties:
@@ -135,6 +167,13 @@ Resources:
       AuthorizationType: JWT
       AuthorizerId: !Ref CheckoutJwtAuthorizer
       Target: !Sub integrations/${CheckoutIntegration}
+  CheckoutWebhookRoute:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId: !Ref CheckoutApi
+      RouteKey: POST /api/checkout/webhook
+      AuthorizationType: NONE
+      Target: !Sub integrations/${CheckoutIntegration}
   CheckoutStage:
     Type: AWS::ApiGatewayV2::Stage
     Properties: { ApiId: !Ref CheckoutApi, StageName: '$default', AutoDeploy: true }
@@ -145,6 +184,13 @@ Resources:
       FunctionName: !Ref CheckoutFunction
       Principal: apigateway.amazonaws.com
       SourceArn: !Sub arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${CheckoutApi}/*/POST/api/checkout/session
+  CheckoutWebhookInvokePermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !Ref CheckoutFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${CheckoutApi}/*/POST/api/checkout/webhook
 
 Outputs:
   CheckoutApiEndpoint: { Value: !GetAtt CheckoutApi.ApiEndpoint }

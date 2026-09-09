@@ -5,6 +5,8 @@ const { createCheckoutApp } = require('./checkoutApp');
 const { createCheckoutService } = require('./services/checkoutService');
 const { createStripeCheckoutClient } = require('./integrations/stripeCheckoutClient');
 const { createStripeSecretProvider } = require('./integrations/stripeSecretProvider');
+const { createStripeWebhookSecretProvider } = require('./integrations/stripeWebhookSecretProvider');
+const { createStripeWebhookValidator } = require('./integrations/stripeWebhookValidator');
 const { jwtAuth } = require('./middleware/jwtAuth');
 
 const stripeClient = createStripeCheckoutClient({
@@ -16,7 +18,10 @@ const stripeClient = createStripeCheckoutClient({
   },
 });
 const checkoutService = createCheckoutService({ stripeClient });
-const app = createCheckoutApp({ checkoutService, jwtAuthMiddleware: jwtAuth });
+const webhookValidator = createStripeWebhookValidator({
+  secretProvider: createStripeWebhookSecretProvider(),
+});
+const app = createCheckoutApp({ checkoutService, webhookValidator, jwtAuthMiddleware: jwtAuth });
 const handler = serverlessExpress({ app });
 
 module.exports = { handler };

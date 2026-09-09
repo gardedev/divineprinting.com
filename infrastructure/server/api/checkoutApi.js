@@ -1,6 +1,7 @@
 'use strict';
 
-const { Router } = require('express');
+const express = require('express');
+const { Router } = express;
 const { jwtAuth } = require('../middleware/jwtAuth');
 const { requireGroup } = require('../middleware/authorization');
 const logger = require('../utils/logger');
@@ -41,14 +42,14 @@ const SAFE = Object.freeze({
  * @param {import('express').Response} res
  * @param {Function} next
  */
+const parseRawWebhookBody = express.raw({ type: () => true, limit: '32kb' });
+
 function rawBodyMiddleware(req, res, next) {
-  const chunks = [];
-  req.on('data', (chunk) => chunks.push(chunk));
-  req.on('end', () => {
-    req.rawBody = Buffer.concat(chunks);
-    next();
+  parseRawWebhookBody(req, res, (error) => {
+    if (error) return next(error);
+    req.rawBody = Buffer.isBuffer(req.body) ? req.body : Buffer.alloc(0);
+    return next();
   });
-  req.on('error', next);
 }
 
 function createCheckoutRouter({ checkoutService, webhookValidator, jwtAuthMiddleware = jwtAuth } = {}) {

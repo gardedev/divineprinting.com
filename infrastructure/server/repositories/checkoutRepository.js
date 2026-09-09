@@ -14,6 +14,7 @@ const DEFAULT_TABLES = Object.freeze({
 const MAX_TRANSACTION_ACTIONS = 100;
 const MAX_TRANSACTION_BYTES = 3.5 * 1024 * 1024;
 const TRANSACTION_ACTION_OVERHEAD_BYTES = 1024;
+const STRIPE_CHECKOUT_SESSION_INDEX = 'StripeCheckoutSessionIndex';
 
 class CheckoutRepositoryError extends Error {
   constructor(code, message, cause) {
@@ -215,7 +216,7 @@ function createCheckoutRepository({ client = docClient, tables = {}, now = () =>
     try {
       const response = await client.send(new QueryCommand({
         TableName: names.orders,
-        IndexName: 'stripeCheckoutSessionId-index',
+        IndexName: STRIPE_CHECKOUT_SESSION_INDEX,
         KeyConditionExpression: '#sessionId = :sessionId',
         ExpressionAttributeNames: { '#sessionId': 'stripeCheckoutSessionId' },
         ExpressionAttributeValues: { ':sessionId': sessionId },
@@ -438,4 +439,4 @@ function createCheckoutRepository({ client = docClient, tables = {}, now = () =>
   };
 }
 
-module.exports = { createCheckoutRepository, CheckoutRepositoryError, deterministicId, estimateTransactionBytes, assertTransactionSafe, DEFAULT_TABLES, MAX_TRANSACTION_ACTIONS, MAX_TRANSACTION_BYTES };
+module.exports = { createCheckoutRepository, CheckoutRepositoryError, deterministicId, estimateTransactionBytes, assertTransactionSafe, DEFAULT_TABLES, MAX_TRANSACTION_ACTIONS, MAX_TRANSACTION_BYTES, STRIPE_CHECKOUT_SESSION_INDEX };

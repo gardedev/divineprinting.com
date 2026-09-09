@@ -10,6 +10,7 @@ const SHIPPING_CENTS = 795;
 // Stripe event types the webhook handler processes
 const HANDLED_EVENT_TYPES = new Set([
   'checkout.session.completed',
+  'checkout.session.async_payment_succeeded',
   'checkout.session.expired',
   'payment_intent.payment_failed',
   'charge.refunded',
@@ -169,6 +170,9 @@ function createCheckoutService({ orderService, checkoutRepository = createChecko
       case 'checkout.session.completed':
         return _handleCheckoutSessionCompleted({ event, eventId, session: data });
 
+      case 'checkout.session.async_payment_succeeded':
+        return _handleAsyncPaymentSucceeded({ event, eventId, session: data });
+
       case 'checkout.session.expired':
         return _handleCheckoutSessionExpired({ event, eventId, session: data });
 
@@ -186,6 +190,28 @@ function createCheckoutService({ orderService, checkoutRepository = createChecko
       default:
         logger.info('Stripe webhook: unrouted event type', { eventId, eventType });
     }
+  }
+
+  async function _handleAsyncPaymentSucceeded({ eventId, session }) {
+    const sessionId = session.id;
+    if (!sessionId) {
+      throw new CheckoutServiceError('WEBHOOK_PAYLOAD_INVALID', 'checkout.session.async_payment_succeeded missing session id.');
+    }
+    const order = await checkoutRepository.getOrderByStripeSessionId(sessionId);
+    if (!order) {
+      logger.warn('Stripe webhook: order not found for asynchronous payment', { eventId, sessionId: _mask(sessionId) });
+      return;
+    }
+    const transitioned = await checkoutRepository.transitionOrderToPaid({
+      order,
+      stripePaymentIntentId: session.payment_intent || '',
+      stripeEventId: eventId,
+    });
+    logger.info('Stripe webhook: asynchronous payment reconciliation completed', {
+      eventId,
+      orderId: order.orderId,
+      transitioned,
+    });
   }
 
   /**
