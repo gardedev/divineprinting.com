@@ -57,6 +57,10 @@ Resources:
                 Effect: Allow
                 Action: dynamodb:Query
                 Resource: arn:aws:dynamodb:us-east-1:911762440868:table/divine-printing-orders-v2/index/StripeCheckoutSessionIndex
+              - Sid: CustomerOrderHistory
+                Effect: Allow
+                Action: dynamodb:Query
+                Resource: arn:aws:dynamodb:us-east-1:911762440868:table/divine-printing-orders-v2/index/CustomerOrdersIndex
               - Sid: StripeEventPersistence
                 Effect: Allow
                 Action: [dynamodb:GetItem, dynamodb:PutItem, dynamodb:UpdateItem]
@@ -254,7 +258,7 @@ Resources:
       ProtocolType: HTTP
       CorsConfiguration:
         AllowOrigins: [https://divineprinting.com, https://www.divineprinting.com]
-        AllowMethods: [POST, OPTIONS]
+        AllowMethods: [GET, POST, OPTIONS]
         AllowHeaders: [Authorization, Content-Type, Idempotency-Key, If-Match]
   CheckoutIntegration:
     Type: AWS::ApiGatewayV2::Integration
@@ -289,6 +293,14 @@ Resources:
       RouteKey: POST /api/checkout/webhook
       AuthorizationType: NONE
       Target: !Sub integrations/${CheckoutIntegration}
+  OrderHistoryRoute:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId: !Ref CheckoutApi
+      RouteKey: GET /api/orders
+      AuthorizationType: JWT
+      AuthorizerId: !Ref CheckoutJwtAuthorizer
+      Target: !Sub integrations/${CheckoutIntegration}
   CheckoutStage:
     Type: AWS::ApiGatewayV2::Stage
     Properties: { ApiId: !Ref CheckoutApi, StageName: '$default', AutoDeploy: true }
@@ -306,6 +318,13 @@ Resources:
       FunctionName: !Ref CheckoutFunction
       Principal: apigateway.amazonaws.com
       SourceArn: !Sub arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${CheckoutApi}/*/POST/api/checkout/webhook
+  OrderHistoryInvokePermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !Ref CheckoutFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${CheckoutApi}/*/GET/api/orders
 
 Outputs:
   CheckoutApiEndpoint: { Value: !GetAtt CheckoutApi.ApiEndpoint }
