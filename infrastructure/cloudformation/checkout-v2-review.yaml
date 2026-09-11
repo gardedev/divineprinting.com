@@ -10,6 +10,11 @@ Parameters:
     Type: String
   StripeWebhookSecretArn:
     Type: String
+  SesSenderEmail:
+    Type: String
+    Default: noreply@divineprinting.com
+  SesSenderIdentityArn:
+    Type: String
   CognitoUserPoolId:
     Type: String
     Default: us-east-1_hs1jWXB87
@@ -56,6 +61,10 @@ Resources:
                 Effect: Allow
                 Action: [dynamodb:GetItem, dynamodb:PutItem, dynamodb:UpdateItem]
                 Resource: !GetAtt StripeEventsTable.Arn
+              - Sid: OrderConfirmationOutboxWrite
+                Effect: Allow
+                Action: dynamodb:PutItem
+                Resource: !GetAtt OrderNotificationsTable.Arn
               - Sid: CheckoutOrderItemWrites
                 Effect: Allow
                 Action: dynamodb:PutItem
@@ -108,6 +117,25 @@ Resources:
       TimeToLiveSpecification:
         AttributeName: ttl
         Enabled: true
+  OrderNotificationsTable:
+    Type: AWS::DynamoDB::Table
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      TableName: divine-printing-order-notifications
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: notificationId
+          AttributeType: S
+      KeySchema:
+        - AttributeName: notificationId
+          KeyType: HASH
+      StreamSpecification:
+        StreamViewType: NEW_IMAGE
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: true
+      SSESpecification:
+        SSEEnabled: true
   CheckoutFunction:
     Type: AWS::Lambda::Function
     Properties:
@@ -132,6 +160,93 @@ Resources:
           STRIPE_SECRET_ARN: !Ref StripeSecretArn
           STRIPE_WEBHOOK_SECRET_ARN: !Ref StripeWebhookSecretArn
           STRIPE_EVENTS_TABLE: !Ref StripeEventsTable
+          ORDER_NOTIFICATIONS_TABLE: !Ref OrderNotificationsTable
+  OrderConfirmationDeadLetterQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: divine-printing-order-confirmation-dlq
+      SqsManagedSseEnabled: true
+      MessageRetentionPeriod: 1209600
+  OrderConfirmationLogGroup:
+    Type: AWS::Logs::LogGroup
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      LogGroupName: /aws/lambda/divine-printing-order-confirmation
+      RetentionInDays: 30
+  OrderConfirmationRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: divine-printing-order-confirmation-runtime
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal: { Service: lambda.amazonaws.com }
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: DivinePrintingOrderConfirmationRuntime
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Sid: NotificationState
+                Effect: Allow
+                Action: [dynamodb:GetItem, dynamodb:UpdateItem]
+                Resource: !GetAtt OrderNotificationsTable.Arn
+              - Sid: NotificationStreamRead
+                Effect: Allow
+                Action: [dynamodb:DescribeStream, dynamodb:GetRecords, dynamodb:GetShardIterator, dynamodb:ListStreams]
+                Resource: !GetAtt OrderNotificationsTable.StreamArn
+              - Sid: ConfirmationOrderRead
+                Effect: Allow
+                Action: dynamodb:GetItem
+                Resource: arn:aws:dynamodb:us-east-1:911762440868:table/divine-printing-orders-v2
+              - Sid: ConfirmationOrderItemRead
+                Effect: Allow
+                Action: dynamodb:Query
+                Resource: arn:aws:dynamodb:us-east-1:911762440868:table/divine-printing-order-items-v2
+              - Sid: ConfirmationEmailSend
+                Effect: Allow
+                Action: ses:SendEmail
+                Resource: !Ref SesSenderIdentityArn
+              - Sid: ConfirmationDeadLetter
+                Effect: Allow
+                Action: sqs:SendMessage
+                Resource: !GetAtt OrderConfirmationDeadLetterQueue.Arn
+              - Sid: ConfirmationLogs
+                Effect: Allow
+                Action: [logs:CreateLogStream, logs:PutLogEvents]
+                Resource: arn:aws:logs:us-east-1:911762440868:log-group:/aws/lambda/divine-printing-order-confirmation:*
+  OrderConfirmationFunction:
+    Type: AWS::Lambda::Function
+    DependsOn: OrderConfirmationLogGroup
+    Properties:
+      FunctionName: divine-printing-order-confirmation
+      Runtime: nodejs22.x
+      Handler: orderConfirmationLambda.handler
+      Role: !GetAtt OrderConfirmationRole.Arn
+      Timeout: 15
+      MemorySize: 256
+      Code: { S3Bucket: !Ref ArtifactBucket, S3Key: !Ref ArtifactKey }
+      Environment:
+        Variables:
+          ORDERS_TABLE: divine-printing-orders-v2
+          ORDER_ITEMS_TABLE: divine-printing-order-items-v2
+          ORDER_NOTIFICATIONS_TABLE: !Ref OrderNotificationsTable
+          SES_SENDER_EMAIL: !Ref SesSenderEmail
+  OrderConfirmationEventSource:
+    Type: AWS::Lambda::EventSourceMapping
+    Properties:
+      EventSourceArn: !GetAtt OrderNotificationsTable.StreamArn
+      FunctionName: !Ref OrderConfirmationFunction
+      StartingPosition: LATEST
+      BatchSize: 10
+      BisectBatchOnFunctionError: true
+      MaximumRetryAttempts: 3
+      FunctionResponseTypes: [ReportBatchItemFailures]
+      DestinationConfig:
+        OnFailure:
+          Destination: !GetAtt OrderConfirmationDeadLetterQueue.Arn
   CheckoutApi:
     Type: AWS::ApiGatewayV2::Api
     Properties:
