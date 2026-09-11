@@ -47,6 +47,15 @@ describe('checkoutService', () => {
     expect(x.checkoutRepository.transitionOrderToPaid).toHaveBeenCalledWith({ order, stripePaymentIntentId: 'pi_async', stripeEventId: 'evt_async' });
     expect(result).toMatchObject({ handled: true, idempotent: false, duplicate: false });
   });
+  test('paid completion uses the same paid transition and unpaid completion schedules nothing', async () => {
+    const order = { orderId: 'order-1', paymentState: 'checkout_session_created' };
+    const paid = setup({ repo: { getOrderByStripeSessionId: jest.fn().mockResolvedValue(order), transitionOrderToPaid: jest.fn().mockResolvedValue(true) } });
+    await paid.service.handleWebhookEvent({ event: { id: 'evt_paid', type: 'checkout.session.completed', created: 1770000000, data: { object: { id: 'cs_paid', payment_status: 'paid', payment_intent: 'pi_paid' } } } });
+    expect(paid.checkoutRepository.transitionOrderToPaid).toHaveBeenCalledTimes(1);
+    const unpaid = setup({ repo: { getOrderByStripeSessionId: jest.fn().mockResolvedValue(order) } });
+    await unpaid.service.handleWebhookEvent({ event: { id: 'evt_unpaid', type: 'checkout.session.completed', created: 1770000001, data: { object: { id: 'cs_unpaid', payment_status: 'unpaid' } } } });
+    expect(unpaid.checkoutRepository.transitionOrderToPaid).not.toHaveBeenCalled();
+  });
   test('does not reprocess already claimed or concurrently processing events', async () => {
     const processed = setup({ repo: { claimStripeEvent: jest.fn().mockResolvedValue({ alreadyProcessed: true }) } });
     const concurrent = setup({ repo: { claimStripeEvent: jest.fn().mockResolvedValue({ duplicate: true }) } });

@@ -37,3 +37,25 @@ describe('Task 6.4 deployment readiness', () => {
     expect(buildScript).not.toContain('STRIPE_SECRET');
   });
 });
+
+describe('Task 6.5 order-confirmation source readiness', () => {
+  test('defines retained encrypted PAY_PER_REQUEST outbox storage with a stream', () => {
+    expect(template).toContain('TableName: divine-printing-order-notifications');
+    expect(template).toMatch(/OrderNotificationsTable:[\s\S]*?BillingMode: PAY_PER_REQUEST[\s\S]*?StreamViewType: NEW_IMAGE/);
+    expect(template).toMatch(/OrderNotificationsTable:[\s\S]*?PointInTimeRecoveryEnabled: true[\s\S]*?SSEEnabled: true/);
+  });
+  test('defines worker, partial batch handling, bounded retries, and encrypted dead letter destination', () => {
+    expect(template).toContain('Handler: orderConfirmationLambda.handler');
+    expect(template).toContain('FunctionResponseTypes: [ReportBatchItemFailures]');
+    expect(template).toContain('MaximumRetryAttempts: 3');
+    expect(template).toContain('BisectBatchOnFunctionError: true');
+    expect(template).toContain('Destination: !GetAtt OrderConfirmationDeadLetterQueue.Arn');
+    expect(template).toContain('SqsManagedSseEnabled: true');
+  });
+  test('passes only non-secret sender and table configuration', () => {
+    expect(template).toContain('SES_SENDER_EMAIL: !Ref SesSenderEmail');
+    expect(template).toContain('ORDER_NOTIFICATIONS_TABLE: !Ref OrderNotificationsTable');
+    expect(template).not.toContain('SES_SECRET');
+    expect(template).not.toContain('SES_API_KEY');
+  });
+});

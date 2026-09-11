@@ -63,4 +63,23 @@ describe('checkoutRepository', () => {
     expect(client.send.mock.calls[0][0].input).toMatchObject({ TableName: 'divine-printing-stripe-events', ConditionExpression: 'attribute_not_exists(stripeEventId)' });
     expect(client.send.mock.calls[1][0].input).toMatchObject({ ConsistentRead: true });
   });
+  test('atomically creates one deterministic confirmation outbox record with the paid transition', async () => {
+    const client = { send: jest.fn().mockResolvedValue({}) };
+    const order = { orderId: 'order-1', cartId: 'cart-1', cartVersion: 4, version: 2, paymentState: 'checkout_session_created' };
+    await expect(createCheckoutRepository({ client, now: () => new Date('2026-09-10T00:00:00Z') }).transitionOrderToPaid({ order, stripePaymentIntentId: 'pi_1', stripeEventId: 'evt_1' })).resolves.toBe(true);
+    const tx = client.send.mock.calls[0][0].input.TransactItems;
+    expect(tx).toHaveLength(3);
+    expect(tx[0].Update.ExpressionAttributeValues).toMatchObject({ ':paid': 'paid', ':confirmed': 'confirmed' });
+    expect(tx[2].Put).toMatchObject({
+      TableName: 'divine-printing-order-notifications',
+      ConditionExpression: 'attribute_not_exists(notificationId)',
+      Item: { notificationId: 'order-confirmation:order-1', notificationType: 'order_confirmation', orderId: 'order-1', deliveryState: 'pending', attemptCount: 0 },
+    });
+  });
+  test('does not create another confirmation when an immediate/async race finds the order paid', async () => {
+    const client = { send: jest.fn() };
+    const repo = createCheckoutRepository({ client });
+    await expect(repo.transitionOrderToPaid({ order: { orderId: 'order-1', paymentState: 'paid' }, stripePaymentIntentId: 'pi_1', stripeEventId: 'evt_2' })).resolves.toBe(false);
+    expect(client.send).not.toHaveBeenCalled();
+  });
 });

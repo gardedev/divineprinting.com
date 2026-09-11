@@ -61,3 +61,19 @@ describe('Task 6.3 review-only IAM and authorization', () => {
     expect(`${result.stderr}${result.stdout}`).not.toContain('ERR_REQUIRE_ESM');
   });
 });
+
+describe('Task 6.5 least-privilege order-confirmation IAM source', () => {
+  test('scopes outbox writes and worker state access to the notification table', () => {
+    expect(template).toMatch(/Sid: OrderConfirmationOutboxWrite[\s\S]*?Action: dynamodb:PutItem[\s\S]*?Resource: !GetAtt OrderNotificationsTable.Arn/);
+    expect(template).toMatch(/Sid: NotificationState[\s\S]*?Action: \[dynamodb:GetItem, dynamodb:UpdateItem\][\s\S]*?Resource: !GetAtt OrderNotificationsTable.Arn/);
+  });
+  test('uses one scoped SES action and an explicit sender identity resource', () => {
+    expect(template).toMatch(/Sid: ConfirmationEmailSend[\s\S]*?Action: ses:SendEmail[\s\S]*?Resource: !Ref SesSenderIdentityArn/);
+    expect(template).not.toMatch(/Action: ses:\*/);
+  });
+  test('scopes worker reads, stream access, dead-letter writes, and logs', () => {
+    expect(template).toMatch(/Sid: ConfirmationOrderRead[\s\S]*?Action: dynamodb:GetItem[\s\S]*?table\/divine-printing-orders-v2/);
+    expect(template).toMatch(/Sid: ConfirmationOrderItemRead[\s\S]*?Action: dynamodb:Query[\s\S]*?table\/divine-printing-order-items-v2/);
+    expect(template).toMatch(/Sid: ConfirmationDeadLetter[\s\S]*?Action: sqs:SendMessage[\s\S]*?OrderConfirmationDeadLetterQueue.Arn/);
+  });
+});

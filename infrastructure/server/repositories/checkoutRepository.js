@@ -10,6 +10,7 @@ const DEFAULT_TABLES = Object.freeze({
   orders: 'divine-printing-orders-v2',
   orderItems: 'divine-printing-order-items-v2',
   stripeEvents: 'divine-printing-stripe-events',
+  orderNotifications: process.env.ORDER_NOTIFICATIONS_TABLE || 'divine-printing-order-notifications',
 });
 const MAX_TRANSACTION_ACTIONS = 100;
 const MAX_TRANSACTION_BYTES = 3.5 * 1024 * 1024;
@@ -238,6 +239,7 @@ function createCheckoutRepository({ client = docClient, tables = {}, now = () =>
     if (order.paymentState === 'paid') return false;
 
     const at = now().toISOString();
+    const notificationId = `order-confirmation:${order.orderId}`;
     const transactItems = [
       {
         Update: {
@@ -285,6 +287,21 @@ function createCheckoutRepository({ client = docClient, tables = {}, now = () =>
             ':at': at,
             ':nextCartVersion': order.cartVersion + 2,
           },
+        },
+      },
+      {
+        Put: {
+          TableName: names.orderNotifications,
+          Item: {
+            notificationId,
+            notificationType: 'order_confirmation',
+            orderId: order.orderId,
+            deliveryState: 'pending',
+            attemptCount: 0,
+            createdAt: at,
+            updatedAt: at,
+          },
+          ConditionExpression: 'attribute_not_exists(notificationId)',
         },
       },
     ];
