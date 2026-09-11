@@ -2,8 +2,9 @@
 
 const express = require('express');
 const { createCheckoutRouter } = require('./api/checkoutApi');
+const { createOrderHistoryRouter } = require('./api/orderHistoryApi');
 
-function createCheckoutApp({ checkoutService, webhookValidator, jwtAuthMiddleware } = {}) {
+function createCheckoutApp({ checkoutService, orderService, webhookValidator, jwtAuthMiddleware } = {}) {
   const app = express();
   app.disable('x-powered-by');
   app.use(express.json({
@@ -11,6 +12,7 @@ function createCheckoutApp({ checkoutService, webhookValidator, jwtAuthMiddlewar
     type: (req) => req.path !== '/api/checkout/webhook' && Boolean(req.is('application/json')),
   }));
   app.use('/api/checkout', createCheckoutRouter({ checkoutService, webhookValidator, jwtAuthMiddleware }));
+  app.use('/api/orders', createOrderHistoryRouter({ orderService, jwtAuthMiddleware }));
   app.use((_req, res) => res.status(404).json({ code: 'NOT_FOUND', error: 'Not found.' }));
   return app;
 }

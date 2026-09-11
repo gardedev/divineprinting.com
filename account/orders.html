@@ -191,10 +191,12 @@
         <div class="filters">
           <select id="statusFilter">
             <option value="">All Statuses</option>
-            <option value="Processing">Processing</option>
-            <option value="Shipped">Shipped</option>
-            <option value="Delivered">Delivered</option>
-            <option value="Cancelled">Cancelled</option>
+            <option value="checkout_pending">Checkout pending</option>
+            <option value="submitted">Submitted</option>
+            <option value="in_production">In production</option>
+            <option value="ready_for_pickup_or_ship">Ready for pickup or shipping</option>
+            <option value="fulfilled">Fulfilled</option>
+            <option value="canceled">Canceled</option>
           </select>
           <input type="text" id="searchOrders" placeholder="Search orders...">
         </div>
@@ -277,108 +279,71 @@ function handleOrders(orders) {
 
 function renderOrders(orders) {
   var container = document.getElementById('ordersList');
+  container.textContent = '';
 
   if (!orders.length) {
-    container.innerHTML = '<p style="text-align:center;color:var(--gray);padding:32px;">No orders match your search.</p>';
+    var empty = document.createElement('p');
+    empty.style.cssText = 'text-align:center;color:var(--gray);padding:32px;';
+    empty.textContent = 'No orders match your search.';
+    container.appendChild(empty);
     return;
   }
 
-  container.innerHTML = orders.map(function (order) {
+  orders.forEach(function (order) {
     var date = order.createdAt ? new Date(order.createdAt).toLocaleDateString() : '';
-    var itemCount = (order.items || []).length;
-    var statusClass = 'status-' + (order.status || 'processing').toLowerCase();
-
-    var itemsHtml = (order.items || []).map(function (item) {
-      var customFieldsHtml = '';
-      if (item.customFields && Array.isArray(item.customFields)) {
-        customFieldsHtml = item.customFields.map(function (cf) {
-          return '<p>' + (cf.name || cf.key || '') + ': ' + (cf.value || '') + '</p>';
-        }).join('');
-      }
-      return '<div class="order-item">' +
-        '<div class="item-image">' +
-          (item.image ? '<img src="' + item.image + '" alt="' + item.name + '">' : '📷') +
-        '</div>' +
-        '<div class="item-details">' +
-          '<h4>' + item.name + '</h4>' +
-          '<p>Qty: ' + item.quantity + '</p>' +
-          customFieldsHtml +
-        '</div>' +
-        '<div class="item-price">$' + (item.totalPrice || 0).toFixed(2) + '</div>' +
-      '</div>';
-    }).join('');
-
-    var shippingHtml = '';
-    if (order.shippingAddress && order.shippingAddress.name) {
-      var addr = order.shippingAddress;
-      shippingHtml = '<div class="shipping-address">' +
-        '<strong>📦 Ship to:</strong> ' + addr.name +
-        (addr.address1 ? ', ' + addr.address1 : '') +
-        (addr.city ? ', ' + addr.city : '') +
-        (addr.province ? ' ' + addr.province : '') +
-        (addr.postalCode ? ' ' + addr.postalCode : '') +
-      '</div>';
-    }
-
-    // Design download (from localStorage, if available)
-    var designHtml = getDesignDownloadHtml(order.orderId);
-
-    return '<div class="order-card" data-status="' + (order.status || '') + '">' +
-      '<div class="order-header">' +
-        '<div>' +
-          '<h3>Order #' + order.orderId + '</h3>' +
-          '<div class="order-meta">' +
-            '<span>📅 ' + date + '</span>' +
-            '<span>📦 ' + itemCount + ' item(s)</span>' +
-          '</div>' +
-        '</div>' +
-        '<span class="order-status ' + statusClass + '">' + (order.status || 'Processing') + '</span>' +
-      '</div>' +
-      '<div class="order-body">' +
-        '<div class="order-items">' + itemsHtml + '</div>' +
-        shippingHtml +
-        designHtml +
-      '</div>' +
-      '<div class="order-footer">' +
-        '<div></div>' +
-        '<div class="order-totals">' +
-          '<div class="total-row"><span>Subtotal:</span><span>$' + (order.subtotal || 0).toFixed(2) + '</span></div>' +
-          '<div class="total-row"><span>Shipping:</span><span>$' + (order.shippingTotal || 0).toFixed(2) + '</span></div>' +
-          '<div class="total-row"><span>Tax:</span><span>$' + (order.taxesTotal || 0).toFixed(2) + '</span></div>' +
-          '<div class="total-row total"><span>Total:</span><span>$' + (order.total || 0).toFixed(2) + '</span></div>' +
-        '</div>' +
-      '</div>' +
-    '</div>';
-  }).join('');
-}
-
-// Design download from localStorage
-function getDesignDownloadHtml(orderToken) {
-  var pendingOrders = JSON.parse(localStorage.getItem('divinePrinting_pendingOrders') || '[]');
-  var orderDesign = pendingOrders.find(function (o) { return o.orderToken === orderToken; });
-  if (!orderDesign) return '';
-
-  return '<div style="margin-top:16px;padding:16px;background:var(--gold-pale);border-radius:12px;">' +
-    '<h4 style="color:var(--purple);margin-bottom:12px;">🎨 Design Files</h4>' +
-    '<div style="display:flex;gap:12px;flex-wrap:wrap;">' +
-      '<a href="' + orderDesign.previewImage + '" download="design-preview-' + orderToken + '.png" style="background:var(--purple);color:#fff;padding:10px 20px;border-radius:8px;text-decoration:none;font-weight:600;">📷 Download Preview</a>' +
-      '<a href="' + orderDesign.printableImage + '" download="design-printable-' + orderToken + '.png" style="background:var(--gold);color:var(--purple);padding:10px 20px;border-radius:8px;text-decoration:none;font-weight:600;">🖨️ Download Print File</a>' +
-    '</div>' +
-  '</div>';
+    var itemCount = Number.isInteger(order.itemCount) ? order.itemCount : 0;
+    var state = order.orderState || 'processing';
+    var card = document.createElement('div');
+    card.className = 'order-card';
+    card.dataset.status = state;
+    var header = document.createElement('div');
+    header.className = 'order-header';
+    var headingWrap = document.createElement('div');
+    var heading = document.createElement('h3');
+    heading.textContent = 'Order #' + (order.orderNumber || String(order.orderId || '').slice(0, 8));
+    var meta = document.createElement('div');
+    meta.className = 'order-meta';
+    var dateEl = document.createElement('span');
+    dateEl.textContent = '📅 ' + date;
+    var itemEl = document.createElement('span');
+    itemEl.textContent = '📦 ' + itemCount + ' item(s)';
+    meta.append(dateEl, itemEl);
+    headingWrap.append(heading, meta);
+    var status = document.createElement('span');
+    status.className = 'order-status status-' + state.replace(/[^a-z0-9_-]/gi, '').toLowerCase();
+    status.textContent = state.replace(/_/g, ' ');
+    header.append(headingWrap, status);
+    var footer = document.createElement('div');
+    footer.className = 'order-footer';
+    var spacer = document.createElement('div');
+    var totals = document.createElement('div');
+    totals.className = 'order-totals';
+    var total = document.createElement('div');
+    total.className = 'total-row total';
+    var label = document.createElement('span');
+    label.textContent = 'Total:';
+    var amount = document.createElement('span');
+    amount.textContent = '$' + ((order.totalCents || 0) / 100).toFixed(2);
+    total.append(label, amount);
+    totals.appendChild(total);
+    footer.append(spacer, totals);
+    card.append(header, footer);
+    container.appendChild(card);
+  });
 }
 
 // Filter functionality
 document.getElementById('statusFilter').addEventListener('change', function (e) {
   var status = e.target.value;
   if (!status) { renderOrders(allOrders); }
-  else { renderOrders(allOrders.filter(function (o) { return o.status === status; })); }
+  else { renderOrders(allOrders.filter(function (o) { return o.orderState === status; })); }
 });
 
 document.getElementById('searchOrders').addEventListener('input', function (e) {
   var query = e.target.value.toLowerCase();
   var filtered = allOrders.filter(function (o) {
     if (o.orderId && o.orderId.toLowerCase().indexOf(query) !== -1) return true;
-    return (o.items || []).some(function (i) { return i.name.toLowerCase().indexOf(query) !== -1; });
+    return o.orderNumber && o.orderNumber.toLowerCase().indexOf(query) !== -1;
   });
   renderOrders(filtered);
 });

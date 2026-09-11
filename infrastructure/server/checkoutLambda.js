@@ -3,6 +3,7 @@
 const serverlessExpress = require('@codegenie/serverless-express');
 const { createCheckoutApp } = require('./checkoutApp');
 const { createCheckoutService } = require('./services/checkoutService');
+const { createOrderService } = require('./services/orderService');
 const { createStripeCheckoutClient } = require('./integrations/stripeCheckoutClient');
 const { createStripeSecretProvider } = require('./integrations/stripeSecretProvider');
 const { createStripeWebhookSecretProvider } = require('./integrations/stripeWebhookSecretProvider');
@@ -18,10 +19,11 @@ const stripeClient = createStripeCheckoutClient({
   },
 });
 const checkoutService = createCheckoutService({ stripeClient });
+const orderService = createOrderService();
 const webhookValidator = createStripeWebhookValidator({
   secretProvider: createStripeWebhookSecretProvider(),
 });
-const app = createCheckoutApp({ checkoutService, webhookValidator, jwtAuthMiddleware: jwtAuth });
+const app = createCheckoutApp({ checkoutService, orderService, webhookValidator, jwtAuthMiddleware: jwtAuth });
 const handler = serverlessExpress({ app });
 
 module.exports = { handler };

@@ -42,7 +42,7 @@ const ACCOUNT_API_BASE = 'https://cad1wdj8c8.execute-api.us-east-1.amazonaws.com
  */
 async function getOrders(fetchFn) {
   // Use injected fetch function (for testing) or the global authenticatedFetch
-  const fetcher = fetchFn || (typeof authenticatedFetch !== 'undefined' ? authenticatedFetch : null);
+  const fetcher = fetchFn || (typeof authenticatedOrderFetch !== 'undefined' ? authenticatedOrderFetch : null);
 
   if (!fetcher) {
     console.warn('[account-api] authenticatedFetch not available. Load cognito-auth.js first.');
@@ -50,7 +50,7 @@ async function getOrders(fetchFn) {
   }
 
   try {
-    const response = await fetcher('/orders');
+    const response = await fetcher('/api/orders');
     if (!response.ok) {
       return { orders: [], count: 0 };
     }

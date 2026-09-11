@@ -5,7 +5,7 @@ const serverlessExpress = require('@codegenie/serverless-express');
 const { createCheckoutApp } = require('../../checkoutApp');
 const { verifyWebhookSignature } = require('../../integrations/stripeWebhookValidator');
 const secret = 'whsec_test_only_not_a_real_secret';
-function appFor(service, webhookValidator) { return createCheckoutApp({ checkoutService: service, webhookValidator, jwtAuthMiddleware: (req, _res, next) => { req.auth = { sub: 'trusted-sub', emailVerified: true }; next(); } }); }
+function appFor(service, webhookValidator) { return createCheckoutApp({ checkoutService: service, orderService: { listOwnOrders: jest.fn() }, webhookValidator, jwtAuthMiddleware: (req, _res, next) => { req.auth = { sub: 'trusted-sub', emailVerified: true }; next(); } }); }
 function signed(body, timestamp = 1770000000) { return `t=${timestamp},v1=${crypto.createHmac('sha256', secret).update(`${timestamp}.${body}`).digest('hex')}`; }
 describe('checkoutApi', () => {
   test('accepts only transport fields and returns safe hosted URL response', async () => {

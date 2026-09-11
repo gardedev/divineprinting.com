@@ -29,6 +29,7 @@ const CLIENT_ID = 'pf2ioscnn7vf7c4if5mjemos';
 
 const API_BASE = 'https://cad1wdj8c8.execute-api.us-east-1.amazonaws.com';
 const CART_API_ORIGIN = 'https://i3w6x21dzg.execute-api.us-east-1.amazonaws.com';
+const ORDER_API_ORIGIN = CART_API_ORIGIN;
 const BOOTSTRAP_PATH = '/api/customers/bootstrap';
 
 // Bootstrap retry configuration
@@ -692,7 +693,9 @@ async function authenticatedFetch(path, options = {}) {
 async function authenticatedFetchUrl(url, options = {}) {
   const target = new URL(url);
   const primaryOrigin = new URL(API_BASE).origin;
-  const allowed = target.origin === primaryOrigin || (target.origin === CART_API_ORIGIN && target.pathname.startsWith('/api/carts/'));
+  const allowed = target.origin === primaryOrigin ||
+    (target.origin === CART_API_ORIGIN && target.pathname.startsWith('/api/carts/')) ||
+    (target.origin === ORDER_API_ORIGIN && target.pathname === '/api/orders');
   if (!allowed) throw new TypeError('Authenticated request origin is not allowed');
   const accessToken = await ensureFreshAccessToken();
   if (!accessToken) {
@@ -739,13 +742,20 @@ async function authenticatedCartFetch(path, options = {}) {
   return authenticatedFetchUrl(`${CART_API_ORIGIN}${path}`, options);
 }
 
+async function authenticatedOrderFetch(path = '/api/orders', options = {}) {
+  if (typeof path !== 'string' || (path !== '/api/orders' && !path.startsWith('/api/orders?')) || path.includes('://')) {
+    throw new TypeError('Authenticated order path is not allowed');
+  }
+  return authenticatedFetchUrl(`${ORDER_API_ORIGIN}${path}`, options);
+}
+
 /**
  * Fetches orders from the API using the Access Token.
  * @returns {Promise<{orders: Array, count: number}>}
  */
 async function fetchOrders() {
   try {
-    const response = await authenticatedFetch('/orders');
+    const response = await authenticatedOrderFetch('/api/orders');
     if (!response.ok) {
       if (response.status === 401 || response.status === 403) {
         clearAllAuthState();
@@ -1007,39 +1017,49 @@ async function loadOrders() {
   const ordersListEl = document.getElementById('recentOrdersList');
   if (!ordersListEl) return;
 
-  ordersListEl.innerHTML = '<p>Loading orders...</p>';
+  ordersListEl.textContent = 'Loading orders...';
 
   try {
     const data = await fetchOrders();
     if (data.orders && data.orders.length > 0) {
-      ordersListEl.innerHTML = data.orders
-        .map(
-          order => `
-        <div class="order-card">
-          <div class="order-header">
-            <span class="order-id">Order #${order.invoiceNumber || order.orderId.slice(0, 8)}</span>
-            <span class="order-status ${order.status}">${order.status}</span>
-          </div>
-          <div class="order-date">${new Date(order.createdAt).toLocaleDateString()}</div>
-          <div class="order-items">${order.items.length} item(s)</div>
-          <div class="order-total">$${order.total.toFixed(2)}</div>
-        </div>
-      `
-        )
-        .join('');
+      ordersListEl.textContent = '';
+      data.orders.forEach(order => {
+        const card = document.createElement('div');
+        card.className = 'order-card';
+        const header = document.createElement('div');
+        header.className = 'order-header';
+        const id = document.createElement('span');
+        id.className = 'order-id';
+        id.textContent = `Order #${order.orderNumber || String(order.orderId || '').slice(0, 8)}`;
+        const status = document.createElement('span');
+        status.className = 'order-status';
+        status.textContent = order.orderState || 'Processing';
+        header.append(id, status);
+        const date = document.createElement('div');
+        date.className = 'order-date';
+        date.textContent = order.createdAt ? new Date(order.createdAt).toLocaleDateString() : '';
+        const items = document.createElement('div');
+        items.className = 'order-items';
+        items.textContent = `${Number.isInteger(order.itemCount) ? order.itemCount : 0} item(s)`;
+        const total = document.createElement('div');
+        total.className = 'order-total';
+        total.textContent = `$${((order.totalCents || 0) / 100).toFixed(2)}`;
+        card.append(header, date, items, total);
+        ordersListEl.appendChild(card);
+      });
 
       const totalOrdersEl = document.getElementById('totalOrders');
       const totalSpentEl = document.getElementById('totalSpent');
       if (totalOrdersEl) totalOrdersEl.textContent = data.count;
       if (totalSpentEl) {
-        const total = data.orders.reduce((sum, o) => sum + o.total, 0);
-        totalSpentEl.textContent = '$' + total.toFixed(2);
+        const totalCents = data.orders.reduce((sum, order) => sum + (order.totalCents || 0), 0);
+        totalSpentEl.textContent = '$' + (totalCents / 100).toFixed(2);
       }
     } else {
-      ordersListEl.innerHTML = '<p>No orders yet.</p>';
+      ordersListEl.textContent = 'No orders yet.';
     }
   } catch (_error) {
-    ordersListEl.innerHTML = '<p>Error loading orders.</p>';
+    ordersListEl.textContent = 'Error loading orders.';
   }
 }
 
@@ -1107,6 +1127,7 @@ if (typeof module !== 'undefined' && module.exports) {
     // Protected API
     authenticatedFetch,
     authenticatedCartFetch,
+    authenticatedOrderFetch,
     fetchOrders,
     // Error codes (for testing assertions)
     AUTH_ERRORS,
