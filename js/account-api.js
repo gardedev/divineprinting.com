@@ -40,23 +40,29 @@ const ACCOUNT_API_BASE = 'https://cad1wdj8c8.execute-api.us-east-1.amazonaws.com
  *                               Defaults to the global authenticatedFetch from cognito-auth.js.
  * @returns {Promise<{orders: Array, count: number}>}
  */
-async function getOrders(fetchFn) {
+async function getOrders(fetchFn, cursor) {
   // Use injected fetch function (for testing) or the global authenticatedFetch
   const fetcher = fetchFn || (typeof authenticatedOrderFetch !== 'undefined' ? authenticatedOrderFetch : null);
 
   if (!fetcher) {
     console.warn('[account-api] authenticatedFetch not available. Load cognito-auth.js first.');
-    return { orders: [], count: 0 };
+    throw new Error('Unable to load order history');
   }
 
   try {
-    const response = await fetcher('/api/orders');
+    const path = '/api/orders' + (cursor ? '?cursor=' + encodeURIComponent(cursor) : '');
+    const response = await fetcher(path);
     if (!response.ok) {
-      return { orders: [], count: 0 };
+      if ((response.status === 401 || response.status === 403) && typeof clearAllAuthState === 'function') {
+        clearAllAuthState();
+      }
+      throw new Error('Unable to load order history');
     }
-    return await response.json();
+    const data = await response.json();
+    if (!data || !Array.isArray(data.orders)) throw new Error('Unable to load order history');
+    return data;
   } catch (_error) {
-    return { orders: [], count: 0 };
+    throw new Error('Unable to load order history');
   }
 }
 

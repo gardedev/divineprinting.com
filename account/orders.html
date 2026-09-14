@@ -193,10 +193,12 @@
             <option value="">All Statuses</option>
             <option value="checkout_pending">Checkout pending</option>
             <option value="submitted">Submitted</option>
+            <option value="confirmed">Confirmed</option>
             <option value="in_production">In production</option>
             <option value="ready_for_pickup_or_ship">Ready for pickup or shipping</option>
             <option value="fulfilled">Fulfilled</option>
             <option value="canceled">Canceled</option>
+            <option value="cancelled">Cancelled</option>
           </select>
           <input type="text" id="searchOrders" placeholder="Search orders...">
         </div>
@@ -204,6 +206,11 @@
         <div id="ordersList" class="order-list">
           <p style="text-align:center;color:var(--gray);padding:24px;">Loading orders…</p>
         </div>
+        <div id="ordersError" role="alert" style="display:none;">
+          <p>Unable to load order history. Please try again.</p>
+          <button id="retryOrders" type="button">Retry</button>
+        </div>
+        <button id="loadMoreOrders" type="button" style="display:none;">Load more orders</button>
       </div>
       
       <!-- Empty state -->
@@ -233,6 +240,9 @@
 
 <script>
 var allOrders = [];
+var nextCursor = null;
+var ordersLoading = false;
+var retryCursor = null;
 
 // Mobile menu toggle
 function toggleMobileMenu() {
@@ -253,16 +263,37 @@ function showSignedIn() {
 }
 
 function showSignedOut() {
+  allOrders = [];
+  nextCursor = null;
   document.getElementById('loggedInContent').style.display = 'none';
   document.getElementById('loggedOutContent').style.display = 'block';
   document.getElementById('emptyState').style.display = 'none';
   document.getElementById('sidebarSignOut').style.display = 'none';
 }
 
-function loadOrders() {
-  getOrders()
-    .then(function (data) { handleOrders(data.orders || []); })
-    .catch(function () { handleOrders([]); });
+function loadOrders(cursor) {
+  if (ordersLoading) return;
+  ordersLoading = true;
+  retryCursor = cursor || null;
+  document.getElementById('ordersError').style.display = 'none';
+  document.getElementById('loadMoreOrders').disabled = true;
+  getOrders(undefined, cursor)
+    .then(function (data) {
+      nextCursor = data.nextCursor || null;
+      handleOrders(cursor ? allOrders.concat(data.orders) : data.orders);
+    })
+    .catch(function () {
+      if (!DivinePrintingAuth.isSignedIn()) { showSignedOut(); return; }
+      document.getElementById('emptyState').style.display = 'none';
+      document.getElementById('loggedInContent').style.display = 'block';
+      if (!allOrders.length) document.getElementById('ordersList').textContent = '';
+      document.getElementById('ordersError').style.display = 'block';
+    })
+    .finally(function () {
+      ordersLoading = false;
+      document.getElementById('loadMoreOrders').disabled = false;
+      document.getElementById('loadMoreOrders').style.display = nextCursor ? '' : 'none';
+    });
 }
 
 function handleOrders(orders) {
@@ -270,7 +301,7 @@ function handleOrders(orders) {
   if (orders.length > 0) {
     document.getElementById('emptyState').style.display = 'none';
     document.getElementById('loggedInContent').style.display = 'block';
-    renderOrders(orders);
+    filterOrders();
   } else {
     document.getElementById('emptyState').style.display = 'block';
     document.getElementById('loggedInContent').style.display = 'none';
@@ -292,7 +323,7 @@ function renderOrders(orders) {
   orders.forEach(function (order) {
     var date = order.createdAt ? new Date(order.createdAt).toLocaleDateString() : '';
     var itemCount = Number.isInteger(order.itemCount) ? order.itemCount : 0;
-    var state = order.orderState || 'processing';
+    var state = String(order.orderState || 'processing');
     var card = document.createElement('div');
     card.className = 'order-card';
     card.dataset.status = state;
@@ -333,20 +364,20 @@ function renderOrders(orders) {
 }
 
 // Filter functionality
-document.getElementById('statusFilter').addEventListener('change', function (e) {
-  var status = e.target.value;
-  if (!status) { renderOrders(allOrders); }
-  else { renderOrders(allOrders.filter(function (o) { return o.orderState === status; })); }
-});
-
-document.getElementById('searchOrders').addEventListener('input', function (e) {
-  var query = e.target.value.toLowerCase();
+function filterOrders() {
+  var status = document.getElementById('statusFilter').value;
+  var query = document.getElementById('searchOrders').value.toLowerCase();
   var filtered = allOrders.filter(function (o) {
-    if (o.orderId && o.orderId.toLowerCase().indexOf(query) !== -1) return true;
-    return o.orderNumber && o.orderNumber.toLowerCase().indexOf(query) !== -1;
+    return (!status || o.orderState === status) &&
+      (String(o.orderId || '').toLowerCase().indexOf(query) !== -1 ||
+       String(o.orderNumber || '').toLowerCase().indexOf(query) !== -1);
   });
   renderOrders(filtered);
-});
+}
+document.getElementById('statusFilter').addEventListener('change', filterOrders);
+document.getElementById('searchOrders').addEventListener('input', filterOrders);
+document.getElementById('loadMoreOrders').addEventListener('click', function () { loadOrders(nextCursor); });
+document.getElementById('retryOrders').addEventListener('click', function () { loadOrders(retryCursor); });
 
 // =========================================================================
 // Sign Out

@@ -29,7 +29,7 @@ const CLIENT_ID = 'pf2ioscnn7vf7c4if5mjemos';
 
 const API_BASE = 'https://cad1wdj8c8.execute-api.us-east-1.amazonaws.com';
 const CART_API_ORIGIN = 'https://i3w6x21dzg.execute-api.us-east-1.amazonaws.com';
-const ORDER_API_ORIGIN = CART_API_ORIGIN;
+const ORDER_API_ORIGIN = 'https://rw03moqybh.execute-api.us-east-1.amazonaws.com';
 const BOOTSTRAP_PATH = '/api/customers/bootstrap';
 
 // Bootstrap retry configuration
@@ -760,11 +760,13 @@ async function fetchOrders() {
       if (response.status === 401 || response.status === 403) {
         clearAllAuthState();
       }
-      return { orders: [], count: 0 };
+      throw new Error('Unable to load order history');
     }
-    return await response.json();
+    const data = await response.json();
+    if (!data || !Array.isArray(data.orders)) throw new Error('Unable to load order history');
+    return data;
   } catch (_error) {
-    return { orders: [], count: 0 };
+    throw new Error('Unable to load order history');
   }
 }
 
@@ -1050,7 +1052,7 @@ async function loadOrders() {
 
       const totalOrdersEl = document.getElementById('totalOrders');
       const totalSpentEl = document.getElementById('totalSpent');
-      if (totalOrdersEl) totalOrdersEl.textContent = data.count;
+      if (totalOrdersEl) totalOrdersEl.textContent = data.orders.length;
       if (totalSpentEl) {
         const totalCents = data.orders.reduce((sum, order) => sum + (order.totalCents || 0), 0);
         totalSpentEl.textContent = '$' + (totalCents / 100).toFixed(2);
@@ -1059,7 +1061,13 @@ async function loadOrders() {
       ordersListEl.textContent = 'No orders yet.';
     }
   } catch (_error) {
-    ordersListEl.textContent = 'Error loading orders.';
+    if (!getAccessToken()) { showLoginPrompt(); return; }
+    ordersListEl.textContent = 'Unable to load order history. Please try again. ';
+    const retry = document.createElement('button');
+    retry.type = 'button';
+    retry.textContent = 'Retry';
+    retry.addEventListener('click', loadOrders);
+    ordersListEl.appendChild(retry);
   }
 }
 
@@ -1129,6 +1137,7 @@ if (typeof module !== 'undefined' && module.exports) {
     authenticatedCartFetch,
     authenticatedOrderFetch,
     fetchOrders,
+    loadOrders,
     // Error codes (for testing assertions)
     AUTH_ERRORS,
     getRedirectUri,
