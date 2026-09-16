@@ -4,7 +4,6 @@ const crypto = require('crypto');
 const { Router } = require('express');
 const { jwtAuth } = require('../middleware/jwtAuth');
 const { requireGroup } = require('../middleware/authorization');
-const logger = require('../utils/logger');
 
 const SIMPLE = 'SIMPLE';
 const CONFIGURED_JOB = 'CONFIGURED_JOB';
@@ -147,23 +146,9 @@ function sendError(res, error, { anonymousCredential = false } = {}) {
   return res.status(status).json({ error: message, code });
 }
 
-function logUnexpectedError(req, error) {
-  if (STATUS_BY_CODE[error?.code]) return;
-  logger.error('Unexpected cart request failure', {
-    operation: `${req.method} ${req.route?.path || req.path}`,
-    requestId: req.id || req.headers?.['x-request-id'] || req.headers?.['x-amzn-trace-id'],
-    errorName: error?.name,
-    errorCode: error?.code,
-    awsRequestId: error?.$metadata?.requestId,
-  });
-}
-
 function asyncRoute(handler, options) {
   return async (req, res) => {
-    try { return await handler(req, res); } catch (error) {
-      logUnexpectedError(req, error);
-      return sendError(res, error, options);
-    }
+    try { return await handler(req, res); } catch (error) { return sendError(res, error, options); }
   };
 }
 

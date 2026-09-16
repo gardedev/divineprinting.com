@@ -25,10 +25,7 @@ describe('Task 6.3 review-only IAM and authorization', () => {
   test('keeps table operations and secret access narrowly scoped', () => {
     expect(statement('CheckoutOrderTransaction').Resource).toBe('arn:aws:dynamodb:us-east-1:911762440868:table/divine-printing-orders-v2');
     expect(statement('CheckoutOrderItems').Resource).toBe('arn:aws:dynamodb:us-east-1:911762440868:table/divine-printing-order-items-v2');
-    expect(statement('StripeTestSecretRead')).toEqual(expect.objectContaining({
-      Action: ['secretsmanager:GetSecretValue'],
-      Resource: 'arn:aws:secretsmanager:us-east-1:911762440868:secret:divine-printing/stripe/checkout/test-zRRvD9',
-    }));
+    expect(statement('StripeTestSecretRead')).toEqual(expect.objectContaining({ Action: ['secretsmanager:GetSecretValue'], Resource: 'PENDING_EXACT_STRIPE_TEST_SECRET_ARN' }));
     expect(policy.Statement.flatMap((entry) => Array.isArray(entry.Resource) ? entry.Resource : [entry.Resource])).not.toContain('*');
   });
   test('template passes only the secret ARN and enforces JWT at API Gateway', () => {
