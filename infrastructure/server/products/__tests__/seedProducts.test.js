@@ -32,8 +32,8 @@ describe('seedProducts', () => {
     expect(new Set(manifest.records.map((record) => record.productId))).toHaveProperty('size', 26);
     expect(new Set(manifest.records.map((record) => record.slug))).toHaveProperty('size', 26);
     expect(manifest.records.every((record) => record.sourcePage.startsWith('products/'))).toBe(true);
-    expect(manifest.records.filter((record) => record.requiresReview && record.status === 'draft')).toHaveLength(25);
-    expect(manifest.records.filter((record) => !record.requiresReview && record.status === 'active').map((record) => record.slug)).toEqual(['church-t-shirt']);
+    expect(manifest.records.filter((record) => record.requiresReview && record.status === 'draft')).toHaveLength(19);
+    expect(manifest.records.filter((record) => !record.requiresReview && record.status === 'active').map((record) => record.slug).sort()).toEqual(['church-flyers-standard','church-magnets-business-card','church-stickers-round','church-t-shirt','church-vinyl-banner-standard','church-yard-sign-standard','rollup-banner-standard']);
   });
 
   test('imports a valid reviewed record through ProductService and preserves its stable ID', async () => {

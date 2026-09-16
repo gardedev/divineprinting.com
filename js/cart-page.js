@@ -4,6 +4,9 @@
   const toastOverlay = document.getElementById('toast');
   if (toastOverlay) toastOverlay.style.pointerEvents = 'none';
   const money = cents => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format((cents || 0) / 100);
+  const authoritativeUnitPriceCents = priced => Number.isInteger(priced?.configuredUnitPriceCents)
+    ? priced.configuredUnitPriceCents
+    : Number.isInteger(priced?.unitPriceCents) ? priced.unitPriceCents : null;
   const node = (tag, text, className) => { const element = document.createElement(tag); if (text !== undefined) element.textContent = text; if (className) element.className = className; return element; };
 
   function configurationSummary(item) {
@@ -14,6 +17,15 @@
 
   function allocationLabel(allocation) {
     return Object.entries(allocation.selections || {}).map(([key, value]) => `${key}: ${value}`).join(', ');
+  }
+
+  function standardSummary(item, allocation, priced) {
+    if (item.pricingSnapshot?.schemaVersion !== 'standard-pricing-v1') return null;
+    const selected = allocationLabel(allocation);
+    const physical = priced.physicalQuantity || allocation.quantity;
+    return item.pricingSnapshot.quantityMode === 'PACKAGE_SELECTION'
+      ? `${selected} × ${allocation.quantity} pack${allocation.quantity === 1 ? '' : 's'} = ${physical} physical units`
+      : `${selected} · ${physical} unit${physical === 1 ? '' : 's'}`;
   }
 
   async function remove(item, cartVersion) {
@@ -92,14 +104,15 @@
       const grid = node('div', undefined, 'cart-grid'); const list = node('div', undefined, 'cart-items'); list.append(node('h2', `Cart Items (${items.length})`));
       for (const item of items) {
         const row = node('article', undefined, 'cart-item'); const details = node('div', undefined, 'cart-item-details');
-        details.append(node('h3', item.baseSku === 'DPT-CHURCH-TSHIRT' ? 'Custom Church T-Shirts' : item.sku || 'Configured product'), node('p', configurationSummary(item)));
+        details.append(node('h3', item.pricingSnapshot?.productName || (item.baseSku === 'DPT-CHURCH-TSHIRT' ? 'Custom Church T-Shirts' : item.sku || 'Configured product')), node('p', configurationSummary(item)));
         (item.variantAllocations || []).forEach((allocation, index) => {
           const priced = item.pricingSnapshot?.allocations?.[index] || {};
-          const line = node('label', undefined, 'allocation-row'); line.append(node('span', allocationLabel(allocation)));
+          const line = node('label', undefined, 'allocation-row'); line.append(node('span', standardSummary(item, allocation, priced) || allocationLabel(allocation)));
           const input = document.createElement('input'); input.type = 'number'; input.min = '0'; input.max = '10000'; input.value = allocation.quantity; input.setAttribute('aria-label', `${allocationLabel(allocation)} quantity`);
           input.addEventListener('change', () => updateAllocation(item, index, input.value, state.cart.version));
           const surcharge = priced.variantSurchargeCents ? ` (${money(priced.variantSurchargeCents)} size surcharge)` : '';
-          line.append(input, node('span', `${money(priced.configuredUnitPriceCents)} each${surcharge}`)); details.append(line);
+          const unitPrice = authoritativeUnitPriceCents(priced);
+          line.append(input, node('span', unitPrice === null ? 'Authoritative price unavailable' : `${money(unitPrice)} each${surcharge}`)); details.append(line);
         });
         const pricing = item.pricingSnapshot || {}; details.append(node('p', `Tier: ${pricing.tier?.minimumQuantity || 1}${pricing.tier?.maximumQuantity ? `–${pricing.tier.maximumQuantity}` : '+'} · ${item.totalQuantity || item.quantity} total`));
         const removeButton = node('button', 'Remove', 'remove-btn'); removeButton.type = 'button'; removeButton.addEventListener('click', () => remove(item, state.cart.version)); details.append(removeButton);
@@ -115,7 +128,7 @@
       container.replaceChildren(node('p', error.message || 'The cart could not be loaded.')); show('The cart could not be loaded.', true);
     }
   }
-  global.DivineCartPage = { render, configurationSummary, startCheckout };
+  global.DivineCartPage = { render, configurationSummary, startCheckout, authoritativeUnitPriceCents };
   document.addEventListener('DOMContentLoaded', render);
   global.addEventListener('cart:claim-success', render);
   global.addEventListener('auth:session-restored', render);

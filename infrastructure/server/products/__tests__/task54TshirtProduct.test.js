@@ -11,8 +11,9 @@ const configuration = designSource => ({
 });
 
 describe('approved Custom Church T-Shirt seed record', () => {
-  test('is the only reviewed active manifest product and validates exactly', () => {
-    expect(manifest.records.filter(record => !record.requiresReview)).toEqual([product]);
+  test('remains an approved active product in the exact seven-product reviewed catalog', () => {
+    expect(manifest.records.filter(record => !record.requiresReview && record.status === 'active')).toHaveLength(7);
+    expect(manifest.records.filter(record => !record.requiresReview && record.status === 'active').map(record => record.slug).sort()).toEqual(['church-flyers-standard','church-magnets-business-card','church-stickers-round','church-t-shirt','church-vinyl-banner-standard','church-yard-sign-standard','rollup-banner-standard']);
     expect(validateSeedProduct(product)).toMatchObject({ productId: 'd204cea4-ce22-4bc5-ad04-530f19fb3878', sku: 'DPT-CHURCH-TSHIRT', status: 'active' });
     expect(product.designTemplates).toHaveLength(16);
     expect(product.variants.map(entry => [entry.size, entry.surchargeCents])).toEqual([['S',0],['M',0],['L',0],['XL',0],['2XL',200],['3XL',300],['4XL',400],['5XL',500]]);

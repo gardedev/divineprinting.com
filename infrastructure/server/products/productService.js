@@ -17,6 +17,7 @@
 
 const productRepository = require('./productRepository');
 const { evaluateConfiguredProduct } = require('./configuredProduct');
+const { evaluateStandardConfiguredProduct } = require('./standardConfiguredProduct');
 
 /** Valid product status values (excluding the internal 'deleted' sentinel) */
 const VALID_STATUSES = ['active', 'draft', 'archived'];
@@ -240,7 +241,9 @@ async function evaluateCartConfiguration(productId, input, { repo = productRepos
     error.code = 'CART_PRODUCT_UNAVAILABLE';
     throw error;
   }
-  return evaluateConfiguredProduct(product, input, { assetVerifier, now });
+  return product.productType === 'standard-configurable'
+    ? evaluateStandardConfiguredProduct(product, input, { now })
+    : evaluateConfiguredProduct(product, input, { assetVerifier, now });
 }
 
 /**
