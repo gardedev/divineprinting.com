@@ -4,6 +4,8 @@ const crypto = require('crypto');
 const express = require('express');
 const request = require('supertest');
 jest.mock('../../carts/cartService', () => ({ createCartService: jest.fn(() => ({})) }));
+jest.mock('../../utils/logger', () => ({ error: jest.fn(), info: jest.fn(), warn: jest.fn() }));
+const logger = require('../../utils/logger');
 const { createCartRouter } = require('../cartApi');
 
 const TOKEN = 'A'.repeat(43);
@@ -204,8 +206,24 @@ describe('shopping cart API', () => {
   });
 
   test('returns safe 500 for unexpected failures', async () => {
-    const { app } = setup({ service: { getCurrentCart: jest.fn().mockRejectedValue(new Error('AWS secret detail')) } });
+    const internal = Object.assign(new Error('Validation failed for qa@example.com with A'.concat('x'.repeat(60))), {
+      name: 'ValidationException',
+      $metadata: { requestId: 'aws-request-id' },
+    });
+    const { app } = setup({ service: { getCurrentCart: jest.fn().mockRejectedValue(internal) } });
     const response = await request(app).get('/api/carts/current').expect(500);
     expect(response.body).toEqual({ error: 'An unexpected cart error occurred.', code: 'CART_API_FAILED' });
+    expect(logger.error).toHaveBeenCalledWith('Unexpected cart request failure', expect.objectContaining({
+      operation: 'GET /current', errorName: 'ValidationException', awsRequestId: 'aws-request-id',
+    }));
+    expect(JSON.stringify(logger.error.mock.calls)).not.toMatch(/qa@example\.com|Axxxxxxxx|Validation failed/);
+  });
+
+  test('does not log expected safe cart errors as internal failures', async () => {
+    logger.error.mockClear();
+    const error = Object.assign(new Error('expected conflict'), { code: 'CART_VERSION_CONFLICT' });
+    const { app } = setup({ service: { getCurrentCart: jest.fn().mockRejectedValue(error) } });
+    await request(app).get('/api/carts/current').expect(409);
+    expect(logger.error).not.toHaveBeenCalled();
   });
 });

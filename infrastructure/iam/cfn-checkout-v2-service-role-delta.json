@@ -1,0 +1,102 @@
+{
+  "TrustPolicyAddition": {
+    "Principal": {
+      "Service": "cloudformation.amazonaws.com"
+    },
+    "SourceAccount": "911762440868",
+    "SourceArn": "arn:aws:cloudformation:us-east-1:911762440868:stack/divine-printing-checkout-v2/*"
+  },
+  "PermissionsPolicy": {
+    "Version": "2012-10-17",
+    "Statement": [
+      {
+        "Sid": "ReadExactTask63CheckoutArtifact",
+        "Effect": "Allow",
+        "Action": "s3:GetObject",
+        "Resource": "arn:aws:s3:::cf-templates-1rvy5qsonbpgk-us-east-1/divineprinting/task-6.3/checkout/sha256-2842f1b6dc7b117eafc21491cf7190017b2f71b724d1a9a6c89ba12d7292e6e2/divine-printing-checkout-api.zip"
+      },
+      {
+        "Sid": "ManageDedicatedCheckoutRuntimeRole",
+        "Effect": "Allow",
+        "Action": [
+          "iam:CreateRole",
+          "iam:DeleteRole",
+          "iam:GetRole",
+          "iam:GetRolePolicy",
+          "iam:ListAttachedRolePolicies",
+          "iam:ListRolePolicies",
+          "iam:PutRolePolicy",
+          "iam:DeleteRolePolicy",
+          "iam:UpdateAssumeRolePolicy",
+          "iam:TagRole",
+          "iam:UntagRole"
+        ],
+        "Resource": "arn:aws:iam::911762440868:role/divine-printing-checkout-runtime"
+      },
+      {
+        "Sid": "PassDedicatedCheckoutRuntimeRoleToLambda",
+        "Effect": "Allow",
+        "Action": "iam:PassRole",
+        "Resource": "arn:aws:iam::911762440868:role/divine-printing-checkout-runtime",
+        "Condition": {
+          "StringEquals": {
+            "iam:PassedToService": "lambda.amazonaws.com"
+          }
+        }
+      },
+      {
+        "Sid": "ManageDedicatedCheckoutFunction",
+        "Effect": "Allow",
+        "Action": [
+          "lambda:CreateFunction",
+          "lambda:DeleteFunction",
+          "lambda:GetFunction",
+          "lambda:GetFunctionConfiguration",
+          "lambda:GetPolicy",
+          "lambda:ListTags",
+          "lambda:TagResource",
+          "lambda:UntagResource",
+          "lambda:UpdateFunctionCode",
+          "lambda:UpdateFunctionConfiguration",
+          "lambda:AddPermission",
+          "lambda:RemovePermission"
+        ],
+        "Resource": "arn:aws:lambda:us-east-1:911762440868:function:divine-printing-checkout"
+      },
+      {
+        "Sid": "ManageDedicatedCheckoutLogGroup",
+        "Effect": "Allow",
+        "Action": [
+          "logs:CreateLogGroup",
+          "logs:DeleteLogGroup",
+          "logs:PutRetentionPolicy",
+          "logs:DeleteRetentionPolicy",
+          "logs:ListTagsForResource",
+          "logs:TagResource",
+          "logs:UntagResource"
+        ],
+        "Resource": "arn:aws:logs:us-east-1:911762440868:log-group:/aws/lambda/divine-printing-checkout:*"
+      },
+      {
+        "Sid": "InspectCheckoutLogGroupCreation",
+        "Effect": "Allow",
+        "Action": "logs:DescribeLogGroups",
+        "Resource": "*"
+      },
+      {
+        "Sid": "ManageDedicatedCheckoutHttpApi",
+        "Effect": "Allow",
+        "Action": [
+          "apigateway:GET",
+          "apigateway:POST",
+          "apigateway:PATCH",
+          "apigateway:DELETE"
+        ],
+        "Resource": [
+          "arn:aws:apigateway:us-east-1::/apis",
+          "arn:aws:apigateway:us-east-1::/apis/*"
+        ]
+      }
+    ]
+  }
+}

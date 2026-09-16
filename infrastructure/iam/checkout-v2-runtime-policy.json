@@ -38,7 +38,7 @@
       "Sid": "StripeTestSecretRead",
       "Effect": "Allow",
       "Action": ["secretsmanager:GetSecretValue"],
-      "Resource": "PENDING_EXACT_STRIPE_TEST_SECRET_ARN"
+      "Resource": "arn:aws:secretsmanager:us-east-1:911762440868:secret:divine-printing/stripe/checkout/test-zRRvD9"
     },
     {
       "Sid": "AuthoritativeCustomerReads",

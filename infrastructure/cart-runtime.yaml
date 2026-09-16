@@ -192,6 +192,10 @@ Resources:
                 Effect: Allow
                 Action: dynamodb:DeleteItem
                 Resource: !GetAtt CartItemsTable.Arn
+              - Sid: ConditionCheckCustomerCartPointer
+                Effect: Allow
+                Action: dynamodb:ConditionCheckItem
+                Resource: !GetAtt CartsTable.Arn
               - Sid: WriteOwnedLogStream
                 Effect: Allow
                 Action:
@@ -276,6 +280,7 @@ Resources:
           - Idempotency-Key
           - If-Match
           - X-Cart-Item-Version
+          - X-Anonymous-Cart-Version
         ExposeHeaders: [ETag]
         MaxAge: 3600
       Tags:
