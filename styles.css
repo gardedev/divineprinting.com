@@ -820,6 +820,15 @@ body.snipcart-sidecart--opened {
   .footer-inner { grid-template-columns: 1fr; }
   .hero { padding: 56px 20px 44px; }
 }
+@media (max-width: 360px) {
+  .nav-inner { padding: 10px 12px; gap: 8px; }
+  .logo { gap: 8px; }
+  .logo-icon { width: 38px; height: 38px; }
+  .logo-text .brand { font-size: 1.1rem; }
+  .logo-text .tagline { font-size: .6rem; letter-spacing: .08em; }
+  .header-actions { gap: 4px; }
+  .header-icon, .mobile-menu-btn { padding: 7px; }
+}
 
 /* ========================================
    SNIPCART CLOSE BUTTON FIX - WORKING

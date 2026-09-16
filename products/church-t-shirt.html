@@ -434,6 +434,12 @@
 <script src="/js/cart-api.js"></script>
 <script src="tshirt-configurator.js"></script>
 <script>
+function toggleMobileMenu() {
+  const menu = document.getElementById('mobile-menu');
+  menu.classList.toggle('active');
+  document.body.style.overflow = menu.classList.contains('active') ? 'hidden' : '';
+}
+
 async function addToCart() {
   const message = document.getElementById('cartMessage');
   try {
