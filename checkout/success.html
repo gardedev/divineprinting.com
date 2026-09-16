@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Checkout Status | Divine Printing</title>
+<link rel="stylesheet" href="../styles.css">
+</head>
+<body>
+<main class="account-section" style="max-width:720px;margin:64px auto;padding:24px;">
+  <h1>Checkout return</h1>
+  <p id="statusMessage" role="status">Checking the current order status...</p>
+  <section id="orderStatus" aria-live="polite"></section>
+  <button id="refreshStatus" type="button">Refresh order status</button>
+  <p><a href="../account/login.html">Sign in</a></p>
+  <p><a href="../index.html">Continue shopping</a> | <a href="../account/orders.html">View my orders</a></p>
+</main>
+<script src="/js/cognito-auth.js"></script>
+<script src="/js/account-api.js"></script>
+<script>
+(function () {
+  'use strict';
+  var pendingKey = 'dp_checkout_pending_v1';
+
+  function readPending() {
+    try {
+      var value = JSON.parse(sessionStorage.getItem(pendingKey) || 'null');
+      return value && typeof value.orderId === 'string' ? value : null;
+    } catch (_) { return null; }
+  }
+
+  function text(tag, value) {
+    var element = document.createElement(tag);
+    element.textContent = value;
+    return element;
+  }
+
+  function renderStatus(order) {
+    var container = document.getElementById('orderStatus');
+    container.textContent = '';
+    if (!order) {
+      container.appendChild(text('p', 'Payment status is not available yet. Check My Orders shortly.'));
+      return;
+    }
+    var heading = text('h2', 'Order ' + (order.orderNumber || order.orderId));
+    var state = text('p', 'Order status: ' + String(order.orderState || 'unavailable').replace(/_/g, ' '));
+    var payment = text('p', 'Payment status: ' + String(order.paymentState || 'unavailable').replace(/_/g, ' '));
+    container.append(heading, state, payment);
+  }
+
+  var loading = false;
+  async function loadStatus() {
+    if (loading) return;
+    var message = document.getElementById('statusMessage');
+    var button = document.getElementById('refreshStatus');
+    if (typeof getAccessToken !== 'function' || !getAccessToken()) {
+      message.textContent = 'Sign in to view the authoritative order status. A checkout return does not confirm payment.';
+      renderStatus(null);
+      return;
+    }
+    var pending = readPending();
+    if (!pending || !pending.orderId.trim()) {
+      message.textContent = 'No local order context is available. Check My Orders for the authoritative status. A checkout return does not confirm payment.';
+      renderStatus(null);
+      return;
+    }
+    loading = true;
+    button.disabled = true;
+    message.textContent = 'Checking the current order status...';
+    renderStatus(null);
+    try {
+      var order;
+      var cursor;
+      var seen = new Set();
+      do {
+        var data = await getOrders(undefined, cursor);
+        order = data.orders.find(function (candidate) { return candidate.orderId === pending.orderId; });
+        cursor = data.nextCursor;
+        if (cursor && seen.has(cursor)) throw new Error('Repeated order cursor');
+        if (cursor) seen.add(cursor);
+      } while (!order && cursor);
+      if (!getAccessToken()) {
+        message.textContent = 'Sign in to view the authoritative order status.';
+        renderStatus(null);
+        return;
+      }
+      message.textContent = order
+        ? 'The payment redirect is not payment confirmation. The status below comes from Divine Printing order records.'
+        : 'The payment redirect is not payment confirmation. The order is not available in your order history yet. Refresh or check My Orders shortly.';
+      renderStatus(order);
+    } catch (_) {
+      message.textContent = getAccessToken()
+        ? 'The payment redirect is not payment confirmation. We could not read the order status. Refresh to try again.'
+        : 'Sign in to view the authoritative order status. A checkout return does not confirm payment.';
+      renderStatus(null);
+    } finally {
+      loading = false;
+      button.disabled = false;
+    }
+  }
+
+  document.getElementById('refreshStatus').addEventListener('click', loadStatus);
+  window.addEventListener('auth:login-success', loadStatus);
+  window.addEventListener('auth:session-restored', loadStatus);
+  window.addEventListener('auth:access-denied', loadStatus);
+  window.addEventListener('auth:email-unverified', loadStatus);
+  loadStatus();
+}());
+</script>
+</body>
+</html>

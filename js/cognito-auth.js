@@ -30,6 +30,7 @@ const CLIENT_ID = 'pf2ioscnn7vf7c4if5mjemos';
 const API_BASE = 'https://cad1wdj8c8.execute-api.us-east-1.amazonaws.com';
 const CART_API_ORIGIN = 'https://i3w6x21dzg.execute-api.us-east-1.amazonaws.com';
 const ORDER_API_ORIGIN = 'https://rw03moqybh.execute-api.us-east-1.amazonaws.com';
+const CHECKOUT_API_ORIGIN = 'https://rw03moqybh.execute-api.us-east-1.amazonaws.com';
 const BOOTSTRAP_PATH = '/api/customers/bootstrap';
 
 // Bootstrap retry configuration
@@ -695,7 +696,8 @@ async function authenticatedFetchUrl(url, options = {}) {
   const primaryOrigin = new URL(API_BASE).origin;
   const allowed = target.origin === primaryOrigin ||
     (target.origin === CART_API_ORIGIN && target.pathname.startsWith('/api/carts/')) ||
-    (target.origin === ORDER_API_ORIGIN && target.pathname === '/api/orders');
+    (target.origin === ORDER_API_ORIGIN && target.pathname === '/api/orders') ||
+    (target.origin === CHECKOUT_API_ORIGIN && target.pathname === '/api/checkout/session');
   if (!allowed) throw new TypeError('Authenticated request origin is not allowed');
   const accessToken = await ensureFreshAccessToken();
   if (!accessToken) {
@@ -747,6 +749,11 @@ async function authenticatedOrderFetch(path = '/api/orders', options = {}) {
     throw new TypeError('Authenticated order path is not allowed');
   }
   return authenticatedFetchUrl(`${ORDER_API_ORIGIN}${path}`, options);
+}
+
+async function authenticatedCheckoutFetch(path, options = {}) {
+  if (path !== '/api/checkout/session') throw new TypeError('Authenticated checkout path is not allowed');
+  return authenticatedFetchUrl(`${CHECKOUT_API_ORIGIN}/api/checkout/session`, options);
 }
 
 /**
@@ -1136,6 +1143,7 @@ if (typeof module !== 'undefined' && module.exports) {
     authenticatedFetch,
     authenticatedCartFetch,
     authenticatedOrderFetch,
+    authenticatedCheckoutFetch,
     fetchOrders,
     loadOrders,
     // Error codes (for testing assertions)

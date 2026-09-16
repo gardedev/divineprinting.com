@@ -26,12 +26,12 @@
     return typeof global.getAccessToken === 'function' && Boolean(global.getAccessToken());
   }
 
-  async function request(path, options, retry = true, authenticated = false) {
+  async function request(path, options, retry = true, authenticated = false, authenticatedFetcher = null) {
     try {
       const response = authenticated
-        ? await global.authenticatedCartFetch(path, options)
+        ? await (authenticatedFetcher || global.authenticatedCartFetch)(path, options)
         : await global.fetch(`${API_BASE}${path}`, options);
-      if (retry && RETRYABLE.has(response.status)) return request(path, options, false, authenticated);
+      if (retry && RETRYABLE.has(response.status)) return request(path, options, false, authenticated, authenticatedFetcher);
       const body = await response.json().catch(() => ({}));
       if (!response.ok) {
         const error = new Error(body.error || 'The cart request could not be completed.');
@@ -41,7 +41,7 @@
       }
       return body;
     } catch (error) {
-      if (retry && !error.status) return request(path, options, false, authenticated);
+      if (retry && !error.status) return request(path, options, false, authenticated, authenticatedFetcher);
       throw error;
     }
   }
@@ -121,6 +121,37 @@
     }
   }
 
+  async function startCheckout(cart, idempotencyKey) {
+    if (!authenticatedMode() || typeof global.authenticatedCheckoutFetch !== 'function') {
+      const error = new Error('Sign in to continue to secure checkout.');
+      error.code = 'CHECKOUT_AUTH_REQUIRED';
+      throw error;
+    }
+    if (!cart || typeof cart.cartId !== 'string' || !cart.cartId.trim() || !Number.isInteger(cart.version) || cart.version < 1) {
+      const error = new Error('The cart is not ready for checkout.');
+      error.code = 'CHECKOUT_CART_INVALID';
+      throw error;
+    }
+    const body = await request('/api/checkout/session', {
+      method: 'POST',
+      headers: {
+        Accept: 'application/json',
+        'Content-Type': 'application/json',
+        'Idempotency-Key': idempotencyKey || mutationId(),
+        'If-Match': String(cart.version),
+      },
+      body: JSON.stringify({ checkoutInput: { cartId: cart.cartId } }),
+    }, true, true, global.authenticatedCheckoutFetch);
+    let checkoutUrl;
+    try { checkoutUrl = new URL(body.checkoutUrl); } catch (_) { /* Reject malformed backend URLs below. */ }
+    if (!checkoutUrl || typeof body.checkoutUrl !== 'string' || checkoutUrl.origin !== 'https://checkout.stripe.com' || checkoutUrl.username || checkoutUrl.password || /[\\\s]/.test(body.checkoutUrl) || typeof body.orderId !== 'string' || !body.orderId.trim()) {
+      const error = new Error('Checkout returned an invalid payment URL.');
+      error.code = 'CHECKOUT_RESPONSE_INVALID';
+      throw error;
+    }
+    return body;
+  }
+
   function readClaim() {
     try {
       const value = JSON.parse(global.sessionStorage.getItem(CLAIM_STORAGE_KEY) || 'null');
@@ -192,6 +223,6 @@
     global.addEventListener('auth:session-restored', beginLoginTransition);
   }
 
-  global.DivineCart = { STORAGE_KEY, CLAIM_STORAGE_KEY, readSession, loadAnonymousCart, loadCustomerCart, loadCurrentCart, createAnonymousCart, addConfiguredJob, updateConfiguredJob, removeItem, claimPreservedAnonymousCart };
+  global.DivineCart = { STORAGE_KEY, CLAIM_STORAGE_KEY, readSession, loadAnonymousCart, loadCustomerCart, loadCurrentCart, createAnonymousCart, addConfiguredJob, updateConfiguredJob, removeItem, startCheckout, claimPreservedAnonymousCart };
   if (typeof module !== 'undefined') module.exports = global.DivineCart;
 }(typeof window !== 'undefined' ? window : globalThis));

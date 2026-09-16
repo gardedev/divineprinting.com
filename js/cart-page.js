@@ -1,5 +1,8 @@
 (function (global) {
   'use strict';
+  // Informational overlays must never intercept cart or checkout controls.
+  const toastOverlay = document.getElementById('toast');
+  if (toastOverlay) toastOverlay.style.pointerEvents = 'none';
   const money = cents => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format((cents || 0) / 100);
   const node = (tag, text, className) => { const element = document.createElement(tag); if (text !== undefined) element.textContent = text; if (className) element.className = className; return element; };
 
@@ -33,6 +36,47 @@
     setTimeout(() => toast.classList.remove('show'), 4000);
   }
 
+  let checkoutBusy = false;
+  let checkoutAttempt;
+
+  async function startCheckout(cart) {
+    if (checkoutBusy) return;
+    if (!global.getAccessToken || !global.getAccessToken()) {
+      global.location.href = '/account/login.html';
+      return;
+    }
+    checkoutBusy = true;
+    if (!checkoutAttempt) {
+      try { checkoutAttempt = JSON.parse(global.sessionStorage.getItem('dp_checkout_attempt_v1') || 'null'); } catch (_) { /* Retry state is optional. */ }
+    }
+    const sameAttempt = checkoutAttempt && checkoutAttempt.cartId === cart.cartId &&
+      typeof checkoutAttempt.key === 'string' && Number.isInteger(checkoutAttempt.version) &&
+      (checkoutAttempt.version === cart.version || (cart.status === 'pending_checkout' && checkoutAttempt.version + 1 === cart.version));
+    if (!sameAttempt) {
+      checkoutAttempt = { cartId: cart.cartId, version: cart.version, key: global.crypto?.randomUUID ? global.crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2)}` };
+    }
+    try { global.sessionStorage.setItem('dp_checkout_attempt_v1', JSON.stringify(checkoutAttempt)); } catch (_) { /* In-memory retries remain available. */ }
+    const button = document.getElementById('checkout-btn');
+    if (button) { button.disabled = true; button.textContent = 'Preparing checkout...'; }
+    try {
+      const result = await global.DivineCart.startCheckout({ cartId: cart.cartId, version: checkoutAttempt.version }, checkoutAttempt.key);
+      try { global.sessionStorage.setItem('dp_checkout_pending_v1', JSON.stringify({ orderId: result.orderId })); } catch (_) { /* Order history remains available if browser storage is disabled. */ }
+      global.location.href = result.checkoutUrl;
+    } catch (error) {
+      const conflict = ['CHECKOUT_CONFLICT', 'ORDER_CART_VERSION_CONFLICT', 'CART_VERSION_CONFLICT'].includes(error.code);
+      show(conflict
+        ? 'The cart changed. Reload it and try again.'
+        : error.message || 'Checkout could not be started.', true);
+      checkoutBusy = false;
+      if (conflict) {
+        checkoutAttempt = null;
+        try { global.sessionStorage.removeItem('dp_checkout_attempt_v1'); } catch (_) { /* Storage may be unavailable. */ }
+        await render();
+      }
+      if (button) { button.disabled = false; button.textContent = 'Continue to secure checkout'; }
+    }
+  }
+
   async function render() {
     const container = document.getElementById('cartContent');
     try {
@@ -63,12 +107,17 @@
       }
       const summary = node('aside', undefined, 'cart-summary'); summary.append(node('h2', 'Authoritative Cart Total'));
       const subtotal = node('div', undefined, 'summary-row'); subtotal.append(node('span', 'Subtotal'), node('span', money(state.cart.subtotalCents)));
-      const total = node('div', undefined, 'summary-row total'); total.append(node('span', 'Pre-checkout total'), node('span', money(state.cart.totalCents))); summary.append(subtotal, total, node('p', 'Tax, shipping, discounts, and checkout are not calculated in this cart yet.'));
+      const total = node('div', undefined, 'summary-row total'); total.append(node('span', 'Pre-checkout total'), node('span', money(state.cart.totalCents)));
+      const checkout = node('button', 'Continue to secure checkout', 'checkout-btn'); checkout.id = 'checkout-btn'; checkout.type = 'button'; checkout.addEventListener('click', () => startCheckout(state.cart));
+      summary.append(subtotal, total, node('p', 'Final payment totals are calculated by the secure checkout service.'), checkout);
       grid.append(list, summary); container.append(grid);
     } catch (error) {
       container.replaceChildren(node('p', error.message || 'The cart could not be loaded.')); show('The cart could not be loaded.', true);
     }
   }
-  global.DivineCartPage = { render, configurationSummary };
+  global.DivineCartPage = { render, configurationSummary, startCheckout };
   document.addEventListener('DOMContentLoaded', render);
+  global.addEventListener('cart:claim-success', render);
+  global.addEventListener('auth:session-restored', render);
+  global.addEventListener('auth:login-success', render);
 }(typeof window !== 'undefined' ? window : globalThis));
