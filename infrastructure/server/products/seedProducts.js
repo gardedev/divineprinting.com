@@ -3,13 +3,20 @@
 const fs = require('fs');
 const path = require('path');
 const defaultProductService = require('./productService');
+const { validateStandardConfigurableDefinition } = require('./standardConfiguredProduct');
 
 const DEFAULT_MANIFEST = path.join(__dirname, 'data', 'product-seed.json');
+
+// MANAGED_FIELDS: all fields that seedProducts compares and controls.
+// Additions here ensure materially different records are never misclassified as unchanged.
 const MANAGED_FIELDS = [
   'productId', 'name', 'slug', 'sku', 'supportedSkus', 'basePrice', 'currency', 'status',
   'image', 'productType', 'garment', 'options', 'variants', 'quantityPricing', 'designTemplates',
   'customization', 'designSnapshot', 'productionRules', 'businessReviewStatus', 'sellable',
   'availableForSale', 'operationalReadiness', 'version', 'pricingVersion', 'sourcePage',
+  // Standard-configurable fields omitted in the original MANAGED_FIELDS — now included:
+  'quantityMode', 'variantDimensions', 'minimumQuantity', 'quantityIncrement',
+  'requiresReview', 'reviewNotes',
 ];
 
 function canonical(value) {
@@ -33,10 +40,22 @@ function basicManifestRecord(record) {
 }
 
 function emptySummary(dryRun) {
-  return { CREATED: [], UNCHANGED: [], REQUIRES_REVIEW: [], INVALID: [], CONFLICTING: [], WOULD_CREATE: [], dryRun };
+  return { CREATED: [], UNCHANGED: [], REQUIRES_REVIEW: [], INVALID: [], CONFLICTING: [], WOULD_CREATE: [], UPDATED: [], WOULD_UPDATE: [], dryRun };
 }
 
-async function seedProducts({ manifest, manifestPath = DEFAULT_MANIFEST, productService = defaultProductService, dryRun = false } = {}) {
+/**
+ * Determine whether a manifest record is eligible for a controlled synchronization update.
+ *
+ * A record is sync-eligible when:
+ *   1. It already exists in the database by productId.
+ *   2. The slug belongs to the same productId (no slug hijack).
+ *   3. The managed fields differ (otherwise it would be UNCHANGED).
+ *
+ * Sync is a controlled, explicit action: the caller must pass `allowSync: true`.
+ * Without it, changed persisted records are still classified as CONFLICTING so that
+ * no accidental overwrite occurs in a plain seed run.
+ */
+async function seedProducts({ manifest, manifestPath = DEFAULT_MANIFEST, productService = defaultProductService, dryRun = false, allowSync = false } = {}) {
   const source = manifest || JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
   if (!source || !Array.isArray(source.records)) throw new Error('Manifest must contain a records array.');
   const summary = emptySummary(Boolean(dryRun));
@@ -80,21 +99,60 @@ async function seedProducts({ manifest, manifestPath = DEFAULT_MANIFEST, product
       continue;
     }
 
+    // For standard-configurable products, validate the structural definition
+    // (variantDimensions, variants, options coherence) before any persistence.
+    // This runs after validateSeedProduct() so lifecycle guards (requiresReview,
+    // status=active, etc.) are already enforced.
+    if (validated.productType === 'standard-configurable') {
+      try {
+        validateStandardConfigurableDefinition(validated);
+      } catch (error) {
+        summary.INVALID.push({ productId: validated.productId, reason: error.message });
+        continue;
+      }
+    }
+
     const [existingById, existingBySlug] = await Promise.all([
       productService.getProduct(validated.productId),
       productService.getProductBySlug(validated.slug),
     ]);
+
     if (existingById || existingBySlug) {
       const sameIdentity = (!existingById || existingById.productId === validated.productId) &&
         (!existingBySlug || existingBySlug.productId === validated.productId);
-      if (sameIdentity && existingById && sameManagedRecord(existingById, validated)) {
+
+      if (!sameIdentity) {
+        // Slug belongs to a different product — always a hard conflict.
+        summary.CONFLICTING.push({ productId: validated.productId, reason: 'slug belongs to another product' });
+        continue;
+      }
+
+      if (existingById && sameManagedRecord(existingById, validated)) {
         summary.UNCHANGED.push(validated.productId);
-      } else {
-        summary.CONFLICTING.push({ productId: validated.productId, reason: existingBySlug && existingBySlug.productId !== validated.productId ? 'slug belongs to another product' : 'existing authoritative fields differ' });
+        continue;
+      }
+
+      // Managed fields differ. With allowSync this is a controlled update; without it, report as CONFLICTING.
+      if (!allowSync) {
+        summary.CONFLICTING.push({ productId: validated.productId, reason: 'existing authoritative fields differ' });
+        continue;
+      }
+
+      // Controlled synchronization: update the existing record.
+      if (dryRun) {
+        summary.WOULD_UPDATE.push(validated.productId);
+        continue;
+      }
+      try {
+        await productService.updateSeedProduct(validated);
+        summary.UPDATED.push(validated.productId);
+      } catch (error) {
+        summary.CONFLICTING.push({ productId: validated.productId, reason: error.message });
       }
       continue;
     }
 
+    // No existing record — create.
     if (dryRun) {
       summary.WOULD_CREATE.push(validated.productId);
       continue;
@@ -111,7 +169,8 @@ async function seedProducts({ manifest, manifestPath = DEFAULT_MANIFEST, product
 
 if (require.main === module) {
   const dryRun = process.argv.includes('--dry-run');
-  seedProducts({ dryRun }).then((summary) => {
+  const allowSync = process.argv.includes('--allow-sync');
+  seedProducts({ dryRun, allowSync }).then((summary) => {
     process.stdout.write(`${JSON.stringify(summary, null, 2)}\n`);
     if (summary.INVALID.length || summary.CONFLICTING.length) process.exitCode = 1;
   }).catch((error) => {

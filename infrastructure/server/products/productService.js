@@ -233,6 +233,20 @@ async function createSeedProduct(product, _repo) {
   return repo.createProductWithId(validated);
 }
 
+/**
+ * Controlled synchronization update for a seed record that already exists.
+ * Validates the full record with validateSeedProduct, then applies all managed
+ * fields as a full replacement update to the existing persisted record.
+ * Only callable via seedProducts({ allowSync: true }) — never invoked on plain seed runs.
+ */
+async function updateSeedProduct(product, _repo) {
+  const repo = _repo || productRepository;
+  const validated = validateSeedProduct(product);
+  // Strip identity and timestamp fields — updateProduct handles updatedAt internally.
+  const { productId, createdAt, updatedAt, ...updates } = validated;
+  return repo.updateProduct(productId, updates);
+}
+
 async function evaluateCartConfiguration(productId, input, { repo = productRepository, assetVerifier, now } = {}) {
   if (typeof productId !== 'string' || !productId.trim()) throw new Error('productId must be a non-empty string.');
   const product = await repo.getProductById(productId.trim());
@@ -461,6 +475,7 @@ module.exports = {
   getProductBySlug,
   validateSeedProduct,
   createSeedProduct,
+  updateSeedProduct,
   evaluateCartConfiguration,
   listProducts,
   updateProduct,

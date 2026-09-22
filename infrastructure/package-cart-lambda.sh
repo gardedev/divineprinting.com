@@ -16,7 +16,7 @@ cp "${server_dir}/api/cartApi.js" "${staging_dir}/server/api/"
 cp "${server_dir}/carts/cartRepository.js" "${server_dir}/carts/cartService.js" "${staging_dir}/server/carts/"
 cp "${server_dir}/middleware/authorization.js" "${server_dir}/middleware/jwtAuth.js" "${staging_dir}/server/middleware/"
 cp "${server_dir}/products/configuredProduct.js" "${server_dir}/products/productRepository.js" \
-  "${server_dir}/products/productService.js" "${staging_dir}/server/products/"
+  "${server_dir}/products/productService.js" "${server_dir}/products/standardConfiguredProduct.js" "${staging_dir}/server/products/"
 cp "${server_dir}/utils/dynamoDbClient.js" "${server_dir}/utils/logger.js" "${staging_dir}/server/utils/"
 npm ci --omit=dev --ignore-scripts --prefix "${staging_dir}/server"
 node -e "require(process.argv[1])" "${staging_dir}/server/lambda-cart.js"

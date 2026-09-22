@@ -11,6 +11,13 @@
 
   function configurationSummary(item) {
     const options = item.customerConfiguration?.options || {};
+    const schema = item.pricingSnapshot?.schemaVersion;
+    // For standard-configurable products, render all options generically (e.g. cut, finish).
+    // For T-shirt configurable products, retain the curated display.
+    if (schema === 'standard-pricing-v1') {
+      const optionParts = Object.entries(options).map(([k, v]) => k + ': ' + v);
+      return optionParts.join(' · ');
+    }
     const template = item.customerConfiguration?.designConfiguration?.templateId;
     return [options.color, options.placement, template, item.customerConfiguration?.organizationName].filter(Boolean).join(' · ');
   }
@@ -21,6 +28,7 @@
 
   function standardSummary(item, allocation, priced) {
     if (item.pricingSnapshot?.schemaVersion !== 'standard-pricing-v1') return null;
+    // allocationLabel already renders all dimension keys generically.
     const selected = allocationLabel(allocation);
     const physical = priced.physicalQuantity || allocation.quantity;
     return item.pricingSnapshot.quantityMode === 'PACKAGE_SELECTION'

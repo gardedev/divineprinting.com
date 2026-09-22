@@ -207,7 +207,14 @@ function createCartService({ cartRepository = defaultCartRepository, productServ
     try {
       const owner = ownerFromContext(context);
       const configured = item?.cartItemType === CONFIGURED_JOB;
-      if (configured && ['price', 'unitPriceCents', 'lineTotalCents', 'pricingSnapshot', 'fulfillment', 'productionMethod', 'productionStatus'].some((key) => item[key] !== undefined)) {
+      // Reject any browser-supplied fields that must never appear in a configured-job submission.
+      // These are server-authoritative and must not be accepted from the client, not merely ignored.
+      const CONFIGURED_JOB_REJECTED_KEYS = [
+        'price', 'unitPriceCents', 'lineTotalCents', 'pricingSnapshot',
+        'baseSku', 'sku', 'physicalUnits', 'availability', 'availableForSale', 'sellable',
+        'fulfillment', 'productionMethod', 'productionStatus',
+      ];
+      if (configured && CONFIGURED_JOB_REJECTED_KEYS.some((key) => item[key] !== undefined)) {
         throw new CartServiceError('CART_INVALID_INPUT');
       }
       const idempotencyInput = configured
