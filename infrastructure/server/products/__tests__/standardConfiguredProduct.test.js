@@ -42,9 +42,11 @@ const input = (selections, quantity, opts = {}, extra = {}) => ({
 // ── Batch 1: existing active products ─────────────────────────────────────────
 
 describe('Batch 1 standard configured catalog evaluator', () => {
-  test('contains exactly the approved active standard products with permanent IDs and SKUs', () => {
+  test('contains the approved active standard products with permanent IDs and SKUs (Batch 1)', () => {
+    // After Batch 2 MVP activation there are 12 active standard-configurable products total.
+    // This test verifies only the 6 Batch 1 products; Batch 2 coverage is in its own describe.
     const active = manifest.records.filter(r => r.status === 'active' && r.productType === 'standard-configurable');
-    expect(active).toHaveLength(6);
+    expect(active.length).toBeGreaterThanOrEqual(6);
     for (const [name, [productId, sku]] of Object.entries(expected)) {
       expect(product(name)).toMatchObject({ productId, sku, status: 'active', availableForSale: true, requiresReview: false, productType: 'standard-configurable' });
     }
@@ -110,21 +112,32 @@ describe('Batch 1 standard configured catalog evaluator', () => {
   });
 });
 
-// ── Batch 2: seed record structure ───────────────────────────────────────────
+// ── Batch 2: seed record structure (MVP activated) ──────────────────────────
+
+const batch2Skus = {
+  'Church Flyer & Bulletin':  'DPT-FLYER-BULLETIN',
+  'Church Fridge Magnet':     'DPT-FRIDGE-MAGNET',
+  'Church Tablecloth':        'DPT-TABLECLOTH',
+  'Church Vinyl Sticker':     'DPT-VINYL-STICKER',
+  'Custom Ministry Flag':     'DPT-MINISTRY-FLAG',
+  'Magnetic Car Sign':        'DPT-MAGNETIC-CAR-SIGN',
+};
 
 describe('Batch 2 seed record structure', () => {
-  test.each(Object.entries(batch2))('%s is present with correct draft flags', (name, productId) => {
+  test.each(Object.entries(batch2))('%s is present with correct active/sellable MVP flags', (name, productId) => {
     const p = product(name);
     expect(p).toBeDefined();
     expect(p).toMatchObject({
       productId,
       productType: 'standard-configurable',
-      status: 'draft',
-      requiresReview: true,
-      availableForSale: false,
-      sellable: false,
-      sku: null,
+      status: 'active',
+      requiresReview: false,
+      availableForSale: true,
+      sellable: true,
+      sku: batch2Skus[name],
     });
+    // Confirm no DEVELOPMENT_ONLY guard survives in variants
+    expect(JSON.stringify(p.variants)).not.toContain('DEVELOPMENT_ONLY');
   });
 
   test('church-flyer-bulletin has 30 variants (A5/A4/A3 × 5 papers × 2 finishes)', () => {

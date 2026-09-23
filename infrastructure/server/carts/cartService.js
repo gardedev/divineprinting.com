@@ -257,7 +257,7 @@ function createCartService({ cartRepository = defaultCartRepository, productServ
           dedupeKey: key,
           quantity: evaluated.totalQuantity,
           currency: evaluated.pricingSnapshot.currency,
-          unitPriceCents: evaluated.pricingSnapshot.tier.baseUnitPriceCents,
+          unitPriceCents: evaluated.pricingSnapshot.tier?.baseUnitPriceCents ?? evaluated.pricingSnapshot.allocations?.[0]?.unitPriceCents,
           lineTotalCents: evaluated.lineTotalCents,
           productVersion: evaluated.pricingSnapshot.productVersion,
           pricingVersion: evaluated.pricingSnapshot.pricingVersion,

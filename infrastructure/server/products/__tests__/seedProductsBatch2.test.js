@@ -53,9 +53,9 @@ describe('MANAGED_FIELDS completeness', () => {
   });
 });
 
-// ── Batch 2 records stay in REQUIRES_REVIEW ────────────────────────────────────
+// ── Batch 2 records are MVP-activated (requiresReview=false, status=active) ───
 
-describe('Batch 2 seed records', () => {
+describe('Batch 2 seed records — MVP activated', () => {
   const batch2Ids = [
     'ec5e1b7e-cb16-4d71-8966-0d2483ff0597', // church-flyer-bulletin
     'd0b9bcc6-7515-4d1b-8b9e-b80b130a2c0f', // church-fridge-magnet
@@ -65,9 +65,28 @@ describe('Batch 2 seed records', () => {
     '9f22a476-4f58-436f-9609-491fb2077987', // magnetic-car-sign
   ];
 
-  test('batch 2 products land in REQUIRES_REVIEW during dry-run seed', async () => {
+  test('batch 2 products land in WOULD_CREATE (not REQUIRES_REVIEW) during dry-run seed', async () => {
+    // After MVP activation: requiresReview=false, status=active on all six products.
+    // They must pass validateSeedProduct + validateStandardConfigurableDefinition and
+    // proceed to WOULD_CREATE in a dry-run against an empty repository.
+    const validated = new Set();
     const mockProductService = {
-      validateSeedProduct: () => { throw new Error('Should not be called for requiresReview records'); },
+      validateSeedProduct: (r) => { validated.add(r.productId); return r; },
+      getProduct: async () => null,
+      getProductBySlug: async () => null,
+      createSeedProduct: async () => {},
+    };
+    const summary = await seedProducts({ dryRun: true, productService: mockProductService });
+    for (const id of batch2Ids) {
+      expect(summary.WOULD_CREATE).toContain(id);
+      expect(summary.REQUIRES_REVIEW.map(r => r.productId)).not.toContain(id);
+      expect(validated.has(id)).toBe(true);
+    }
+  });
+
+  test('batch 2 products are not present in REQUIRES_REVIEW in a dry-run seed', async () => {
+    const mockProductService = {
+      validateSeedProduct: (r) => r,
       getProduct: async () => null,
       getProductBySlug: async () => null,
       createSeedProduct: async () => {},
@@ -75,7 +94,23 @@ describe('Batch 2 seed records', () => {
     const summary = await seedProducts({ dryRun: true, productService: mockProductService });
     const reviewIds = summary.REQUIRES_REVIEW.map(r => r.productId);
     for (const id of batch2Ids) {
-      expect(reviewIds).toContain(id);
+      expect(reviewIds).not.toContain(id);
+    }
+  });
+
+  test('no batch 2 DEVELOPMENT_ONLY marker survives in any variant', async () => {
+    // Directly verify the manifest: DEVELOPMENT_ONLY must be absent from all
+    // six activated products so no lifecycle guard accidentally blocks purchase.
+    const fs = require('fs');
+    const path = require('path');
+    const manifest = JSON.parse(fs.readFileSync(
+      path.join(__dirname, '..', 'data', 'product-seed.json'), 'utf8'
+    ));
+    for (const id of batch2Ids) {
+      const p = manifest.records.find(r => r.productId === id);
+      expect(p).toBeDefined();
+      const serialized = JSON.stringify(p.variants);
+      expect(serialized).not.toContain('DEVELOPMENT_ONLY');
     }
   });
 });
