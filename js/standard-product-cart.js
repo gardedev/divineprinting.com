@@ -235,6 +235,7 @@
   });
 
   global.toggleMobileMenu = toggleMobileMenu;
+  global.updateCartBadge = updateCartBadge;
 
   document.addEventListener('DOMContentLoaded', function () {
     document.querySelectorAll('[data-standard-product]').forEach(packageSummary);

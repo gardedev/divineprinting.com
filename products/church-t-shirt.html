@@ -74,10 +74,9 @@
 .print-color-option:hover { transform: scale(1.1); }
 .print-color-option.selected { border-color: var(--purple); box-shadow: 0 0 0 2px #fff, 0 0 0 4px var(--purple); }
 
-/* Snipcart cart button styles */
-.snipcart-checkout { transition: all 0.2s; }
-.snipcart-checkout:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(201, 162, 39, 0.4); }
-.snipcart-modal__container { z-index: 9999 !important; }
+/* Cart checkout button styles */
+.cart-checkout { transition: all 0.2s; }
+.cart-checkout:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(201, 162, 39, 0.4); }
 
 /* Default Text Preview Styles */
 .preview-panel .default-text-preview {
@@ -169,6 +168,44 @@
   .color-swatch-circle { width: 32px; height: 32px; }
   .color-swatch-name { font-size: 0.6rem; max-width: 50px; }
 }
+
+/* Size quantity grid inputs */
+#variantAllocations label {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  font-weight: 600;
+  color: var(--purple);
+  font-size: 0.85rem;
+}
+#variantAllocations input[type="number"] {
+  width: 100%;
+  padding: 8px 6px;
+  border: 2px solid #e8e2f5;
+  border-radius: 8px;
+  font-size: 1rem;
+  text-align: center;
+  background: #fff;
+  color: var(--dark);
+  box-sizing: border-box;
+  min-width: 0;
+}
+#variantAllocations input[type="number"]:focus {
+  outline: none;
+  border-color: var(--gold);
+  box-shadow: 0 0 0 2px rgba(201, 162, 39, 0.2);
+}
+@media (max-width: 480px) {
+  #variantAllocations {
+    grid-template-columns: repeat(4, 1fr) !important;
+    gap: 6px !important;
+  }
+  #variantAllocations input[type="number"] {
+    padding: 6px 2px;
+    font-size: 0.9rem;
+  }
+}
 </style>
 </head>
 <body>
@@ -206,7 +243,7 @@
           <circle cx="20" cy="21" r="1"></circle>
           <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
         </svg>
-        <span class="snipcart-items-count" style="position:absolute;top:2px;right:6px;background:var(--gold);color:var(--dark);font-size:.65rem;font-weight:700;min-width:16px;height:16px;border-radius:50%;display:flex;align-items:center;justify-content:center;padding:0 4px;">0</span>
+        <span class="cart-count" id="cart-count" style="position:absolute;top:2px;right:6px;background:var(--gold);color:var(--dark);font-size:.65rem;font-weight:700;min-width:16px;height:16px;border-radius:50%;display:flex;align-items:center;justify-content:center;padding:0 4px;">0</span>
         <span class="icon-label">Cart</span>
       </a>
       <button class="mobile-menu-btn" aria-label="Open Menu" onclick="toggleMobileMenu()">
@@ -432,6 +469,7 @@
 
 <script src="/js/cognito-auth.js"></script>
 <script src="/js/cart-api.js"></script>
+<script src="/js/standard-product-cart.js"></script>
 <script src="tshirt-configurator.js"></script>
 <script>
 function toggleMobileMenu() {
@@ -445,7 +483,8 @@ async function addToCart() {
   try {
     const job = buildConfiguredJobRequest();
     await DivineCart.addConfiguredJob(job);
-    message.textContent = 'Added with authoritative pricing. View your cart to review the total.';
+    window.updateCartBadge();
+    window.location.href = '/cart.html';
   } catch (error) {
     message.textContent = error.message || 'The configured job could not be added.';
   }
