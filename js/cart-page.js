@@ -9,17 +9,66 @@
     : Number.isInteger(priced?.unitPriceCents) ? priced.unitPriceCents : null;
   const node = (tag, text, className) => { const element = document.createElement(tag); if (text !== undefined) element.textContent = text; if (className) element.className = className; return element; };
 
+  /**
+   * Resolve a raw option value to a human-readable label using the
+   * optionLabels map emitted by the server in pricingSnapshot.
+   * Falls back to the raw value when no label is available.
+   */
+  function resolveLabel(optionLabels, optionId, rawValue) {
+    if (!optionLabels) return rawValue;
+    const map = optionLabels[optionId];
+    if (!map) return rawValue;
+    return map[rawValue] || rawValue;
+  }
+
+  /**
+   * Build a human-readable configuration summary paragraph for a cart item.
+   *
+   * For standard-pricing-v1 products the option keys and values are already
+   * plain text.  For configured-pricing-v1 products (e.g. the T-shirt) the
+   * server now supplies optionLabels and designTemplate display names so raw
+   * internal identifiers such as "center-chest" or "cross-modern" are
+   * resolved to "Center Chest" / "Modern Cross" before display.
+   *
+   * organizationName, when present, is appended so the customer can verify
+   * their church name without the raw field key.
+   *
+   * The client never computes prices here — this is display only.
+   */
   function configurationSummary(item) {
     const options = item.customerConfiguration?.options || {};
-    const schema = item.pricingSnapshot?.schemaVersion;
-    // For standard-configurable products, render all options generically (e.g. cut, finish).
-    // For T-shirt configurable products, retain the curated display.
+    const snapshot = item.pricingSnapshot || {};
+    const schema = snapshot.schemaVersion;
+    const optionLabels = snapshot.optionLabels;
+
+    // Standard-configurable products: render all option key/value pairs.
     if (schema === 'standard-pricing-v1') {
       const optionParts = Object.entries(options).map(([k, v]) => k + ': ' + v);
       return optionParts.join(' · ');
     }
-    const template = item.customerConfiguration?.designConfiguration?.templateId;
-    return [options.color, options.placement, template, item.customerConfiguration?.organizationName].filter(Boolean).join(' · ');
+
+    // Configured products (e.g. custom t-shirt): resolve friendly labels.
+    const parts = [];
+
+    // Color — stored as a display-ready string in the configurator.
+    if (options.color) parts.push(options.color);
+
+    // Placement — resolve "center-chest" → "Center Chest" etc.
+    if (options.placement) {
+      parts.push(resolveLabel(optionLabels, 'placement', options.placement));
+    }
+
+    // Design template — resolve "cross-modern" → "Modern Cross" etc.
+    const templateId = item.customerConfiguration?.designConfiguration?.templateId;
+    if (templateId) {
+      parts.push(resolveLabel(optionLabels, 'design', templateId));
+    }
+
+    // Organization name — append as plain text without an internal key.
+    const orgName = item.customerConfiguration?.organizationName;
+    if (orgName) parts.push(orgName);
+
+    return parts.filter(Boolean).join(' · ');
   }
 
   function allocationLabel(allocation) {
@@ -34,6 +83,29 @@
     return item.pricingSnapshot.quantityMode === 'PACKAGE_SELECTION'
       ? `${selected} × ${allocation.quantity} pack${allocation.quantity === 1 ? '' : 's'} = ${physical} physical units`
       : `${selected} · ${physical} unit${physical === 1 ? '' : 's'}`;
+  }
+
+  /**
+   * Build a product image element from the server-authoritative productImageUrl
+   * stored in pricingSnapshot.  Returns null when no URL is available.
+   *
+   * The image path from the product seed is stored relative to the product
+   * page (e.g. "../images/…").  Cart pages live at the root, so we strip any
+   * leading "../" prefix and use an absolute path from the site root.
+   */
+  function buildProductImage(item) {
+    const rawUrl = item.pricingSnapshot?.productImageUrl;
+    if (!rawUrl) return null;
+    // Normalise "../images/…" → "/images/…" so it resolves from the cart page.
+    const src = rawUrl.replace(/^(\.\.\/)+/, '/');
+    const productName = item.pricingSnapshot?.productName || 'Product';
+    const img = document.createElement('img');
+    img.src = src;
+    img.alt = productName;
+    img.className = 'cart-item-image';
+    img.loading = 'lazy';
+    img.onerror = () => { img.style.display = 'none'; };
+    return img;
   }
 
   async function remove(item, cartVersion) {
@@ -111,7 +183,13 @@
       }
       const grid = node('div', undefined, 'cart-grid'); const list = node('div', undefined, 'cart-items'); list.append(node('h2', `Cart Items (${items.length})`));
       for (const item of items) {
-        const row = node('article', undefined, 'cart-item'); const details = node('div', undefined, 'cart-item-details');
+        const productImg = buildProductImage(item);
+        const row = node('article', undefined, productImg ? 'cart-item' : 'cart-item cart-item--no-image');
+
+        // Product image — server-authoritative URL from pricingSnapshot.
+        if (productImg) row.append(productImg);
+
+        const details = node('div', undefined, 'cart-item-details');
         details.append(node('h3', item.pricingSnapshot?.productName || (item.baseSku === 'DPT-CHURCH-TSHIRT' ? 'Custom Church T-Shirts' : item.sku || 'Configured product')), node('p', configurationSummary(item)));
         (item.variantAllocations || []).forEach((allocation, index) => {
           const priced = item.pricingSnapshot?.allocations?.[index] || {};
@@ -136,7 +214,7 @@
       container.replaceChildren(node('p', error.message || 'The cart could not be loaded.')); show('The cart could not be loaded.', true);
     }
   }
-  global.DivineCartPage = { render, configurationSummary, startCheckout, authoritativeUnitPriceCents };
+  global.DivineCartPage = { render, configurationSummary, buildProductImage, resolveLabel, startCheckout, authoritativeUnitPriceCents };
   document.addEventListener('DOMContentLoaded', render);
   global.addEventListener('cart:claim-success', render);
   global.addEventListener('auth:session-restored', render);

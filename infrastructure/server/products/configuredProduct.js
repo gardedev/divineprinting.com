@@ -208,6 +208,47 @@ async function trustedAssets(product, configuration, assetVerifier) {
   return verified;
 }
 
+/**
+ * Build a display-label map for product options so the frontend can render
+ * human-readable names without becoming authoritative for any pricing data.
+ *
+ * Returns an object shaped as:
+ *   { [optionId]: { [rawValue]: displayName } }
+ *
+ * Supported option schemas:
+ *   • Simple string values — the value is its own display name.
+ *   • Object values with a placementId + displayName (e.g. placement).
+ *
+ * designTemplates are flattened into a synthetic "design" entry so the
+ * templateId stored in designConfiguration can be resolved to a display name.
+ */
+function buildOptionLabels(product) {
+  const labels = {};
+  for (const option of (product.options || [])) {
+    const optionId = option.optionId;
+    if (!optionId) continue;
+    const map = {};
+    for (const value of (option.values || [])) {
+      if (typeof value === 'string') {
+        map[value] = value;
+      } else if (value && typeof value === 'object') {
+        // e.g. placement: { placementId, displayName }
+        const id = value.placementId || value.id || value.optionValueId;
+        const name = value.displayName || value.name || id;
+        if (id) map[id] = name;
+      }
+    }
+    if (Object.keys(map).length) labels[optionId] = map;
+  }
+  // Expose designTemplate names under a "design" key for frontend resolution.
+  const designMap = {};
+  for (const tmpl of (product.designTemplates || [])) {
+    if (tmpl.templateId) designMap[tmpl.templateId] = tmpl.displayName || tmpl.templateId;
+  }
+  if (Object.keys(designMap).length) labels.design = designMap;
+  return Object.keys(labels).length ? labels : undefined;
+}
+
 async function evaluateConfiguredProduct(product, input, { assetVerifier, now = () => new Date() } = {}) {
   if (!plainObject(product) || product.productType !== 'configurable') throw new ConfiguredProductError('CART_PRODUCT_UNAVAILABLE');
   if (product.currency !== 'USD') throw new ConfiguredProductError('CART_CURRENCY_MISMATCH');
@@ -265,6 +306,9 @@ async function evaluateConfiguredProduct(product, input, { assetVerifier, now = 
     customerInstructions: customerInstructions || undefined,
     pricingSnapshot: {
       schemaVersion: PRICING_SNAPSHOT_VERSION,
+      productName: product.name || undefined,
+      productImageUrl: product.image || undefined,
+      optionLabels: buildOptionLabels(product),
       productVersion: product.version,
       pricingVersion: product.pricingVersion,
       currency: product.currency || 'USD',

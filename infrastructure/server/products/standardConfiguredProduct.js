@@ -202,7 +202,7 @@ function evaluateStandardConfiguredProduct(product, input, { now = () => new Dat
   const priced = { selections: canonical(allocation.selections), quantity: allocation.quantity, physicalQuantity, unitPriceCents: variant.unitPriceCents, lineTotalCents };
   return {
     baseSku: product.sku, customerConfiguration, variantAllocations: [{ selections: priced.selections, quantity: priced.quantity }], totalQuantity: physicalQuantity,
-    pricingSnapshot: { schemaVersion: 'standard-pricing-v1', productName: product.name, productVersion: product.version, pricingVersion: product.pricingVersion, currency: 'USD', quantityMode: mode, allocations: [priced], subtotalCents: lineTotalCents, calculatedAt: now().toISOString() },
+    pricingSnapshot: { schemaVersion: 'standard-pricing-v1', productName: product.name, productImageUrl: product.image || undefined, productVersion: product.version, pricingVersion: product.pricingVersion, currency: 'USD', quantityMode: mode, allocations: [priced], subtotalCents: lineTotalCents, calculatedAt: now().toISOString() },
     lineTotalCents, dedupeVersion: 'standard-configured-v1',
   };
 }
