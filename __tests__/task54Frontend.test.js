@@ -1,6 +1,7 @@
 'use strict';
 const fs = require('fs');
 const path = require('path');
+const vm = require('vm');
 const read = file => fs.readFileSync(path.join(__dirname, '..', file), 'utf8');
 
 describe('Task 5.4 live T-shirt migration', () => {
@@ -18,10 +19,15 @@ describe('Task 5.4 live T-shirt migration', () => {
     expect(html.match(/data-size=/g)).toHaveLength(8);
     expect(html).toContain('Custom artwork upload coming soon');
     expect(script).toContain('variantAllocations: allocations');
-    expect(script).toContain("designSource: 'TEMPLATE'");
+    expect(read('js/tshirt-preview.js')).toContain("designSource: 'TEMPLATE'");
+    expect(script).toContain('DivineTshirtPreview.normalizeEditor');
+    expect(html).toContain('/js/tshirt-preview-assets.js');
+    expect(html).toContain('/js/tshirt-preview.js');
     expect(script).not.toMatch(/new FileReader|readAsDataURL/);
-    expect(script.match(/name: '[^']+', hex: '#[0-9A-F]{6}', image: '[^']+'/g).slice(-15)).toHaveLength(15);
-    expect(script.match(/^  '[^']+': \{ name: '[^']+', file: '[^']+' \},?$/gm)).toHaveLength(16);
+    const context = {}; vm.createContext(context);
+    vm.runInContext(read('js/tshirt-preview-assets.js'), context);
+    expect(context.DivineTshirtAssets.colors).toHaveLength(15);
+    expect(Object.keys(context.DivineTshirtAssets.templates)).toHaveLength(16);
   });
 
   test('cart page loads canonical API state and no Snipcart runtime', () => {

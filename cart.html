@@ -22,6 +22,13 @@
 .cart-item { display: grid; grid-template-columns: 100px minmax(0, 1fr) auto; gap: 16px; padding: 20px 0; border-bottom: 1px solid #e8e2f5; align-items: start; }
 .cart-item--no-image { grid-template-columns: minmax(0, 1fr) auto; }
 .cart-item:last-child { border-bottom: none; }
+.customized-preview { width: 140px; max-width: 100%; }
+.cart-customized-canvas { width: 140px; max-width: 100%; height: auto; border-radius: 12px; }
+.preview-status { font-size: .75rem; }
+.customization-details { margin: 12px 0; overflow-wrap: anywhere; }
+.customization-details summary { cursor: pointer; font-weight: 600; }
+.customization-details p { white-space: pre-wrap; }
+.text-color-swatch { display: inline-block; width: 16px; height: 16px; margin-left: 8px; border: 1px solid #777; vertical-align: middle; }
 .cart-item-image { width: 100px; height: 100px; border-radius: 12px; object-fit: cover; background: var(--light-bg); border: 2px solid #e8e2f5; }
 .cart-item-image.logo-fallback { object-fit: contain; padding: 16px; background: var(--gold-pale); border-color: var(--gold); }
 .cart-item-details h3 { font-family: 'Cinzel', serif; color: var(--purple); font-size: 1.1rem; margin-bottom: 4px; }
@@ -70,6 +77,10 @@
   .cart-item { grid-template-columns: 80px minmax(0, 1fr) auto; gap: 12px; }
   .cart-item--no-image { grid-template-columns: minmax(0, 1fr) auto; }
   .cart-item-price { grid-column: auto; font-size: 1.1rem; }
+  .cart-item--customized { grid-template-columns: minmax(0, 1fr) auto; }
+  .cart-item--customized > .customized-preview { grid-column: 1; grid-row: 1; }
+  .cart-item--customized > .cart-item-price { grid-column: 2; grid-row: 1; }
+  .cart-item--customized > .cart-item-details { grid-column: 1 / -1; grid-row: 2; min-width: 0; }
   .checkout-btn { font-size: 1.05rem; padding: 16px 20px; }
 }
 </style>
@@ -223,6 +234,8 @@ function toggleMobileMenu() {
 
 <script src="/js/cognito-auth.js"></script>
 <script src="/js/cart-api.js"></script>
+<script src="/js/tshirt-preview-assets.js"></script>
+<script src="/js/tshirt-preview.js"></script>
 <script src="/js/cart-page.js"></script>
 </body>
 </html>

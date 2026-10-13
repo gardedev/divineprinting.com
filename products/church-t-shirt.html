@@ -4,7 +4,7 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
 <title>Custom Church T-Shirts | Ministry Apparel - Divine Printing</title>
-<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@400;600;700&family=Oswald:wght@400;600&family=Lobster&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
 <link rel="stylesheet" href="../styles.css?v=3"/>
 <link rel="stylesheet" href="../product.css"/>
 <style>
@@ -321,7 +321,9 @@
   
   <div class="configurator-wrap">
     <div class="preview-panel">
-      <canvas id="tshirtCanvas" width="800" height="800" style="width:400px;height:400px;"></canvas>
+      <p id="previewStatus" role="status" aria-live="polite"></p>
+      <p>Full Back uses a front shirt photograph in this preview; a rear view is unavailable.</p>
+      <canvas id="tshirtCanvas" tabindex="0" aria-label="Shirt design positioning" width="800" height="800" style="width:400px;height:400px;"></canvas>
       <div class="default-text-preview">
         <div class="default-headline" contenteditable="true" spellcheck="false">Your Church Name</div>
         <div class="default-subtext" contenteditable="true" spellcheck="false">Your custom message here...</div>
@@ -343,7 +345,7 @@
       </button>
       
       <div class="control-group">
-        <label>Text Elements <button type="button" id="addTextBtn" style="margin-left:10px;padding:4px 12px;background:var(--gold);border:none;border-radius:6px;cursor:pointer;font-size:0.85rem;">+ Add Text</button></label>
+        <label>Text 1 and Text 2 (optional)</label>
         <div id="textControlsContainer" style="display:flex;flex-direction:column;gap:12px;">
           <!-- Text inputs will be generated here -->
         </div>
@@ -392,7 +394,7 @@
       </div>
       
       <div class="control-group">
-        <label>T-Shirt Color <span id="colorCount" style="font-weight:400;color:var(--gray);">(80 colors)</span></label>
+        <label>T-Shirt Color <span id="colorCount" style="font-weight:400;color:var(--gray);">(15 colors)</span></label>
         
         <!-- Color Tabs -->
         <div class="color-tabs" id="colorTabs">
@@ -470,6 +472,8 @@
 <script src="/js/cognito-auth.js"></script>
 <script src="/js/cart-api.js"></script>
 <script src="/js/standard-product-cart.js"></script>
+<script src="/js/tshirt-preview-assets.js"></script>
+<script src="/js/tshirt-preview.js"></script>
 <script src="tshirt-configurator.js"></script>
 <script>
 function toggleMobileMenu() {

@@ -147,7 +147,7 @@ describe('tshirt-configurator.js — buildConfiguredJobRequest contract', () => 
   });
 
   test('designSource is always TEMPLATE — no FileReader or arbitrary blob upload', () => {
-    expect(source).toContain("designSource: 'TEMPLATE'");
+    expect(read('js/tshirt-preview.js')).toContain("designSource: 'TEMPLATE'");
     expect(source).not.toMatch(/new FileReader|readAsDataURL/);
   });
 

@@ -1,175 +1,8 @@
 // T-Shirt Configurator JavaScript - Multi-text support
 
 // PNG Design options (replacing SVG crosses)
-const designOptions = {
-  'cross-modern': { name: 'Modern Cross', file: 'cross-1-isolated.png' },
-  'cross-celtic': { name: 'Celtic Cross', file: 'cross-celtic.png' },
-  'cross-flame': { name: 'Flame Cross', file: 'cross-flame.png' },
-  'cross-wood': { name: 'Rustic Wood Cross', file: 'cross-wood-rustic.png' },
-  'crown-thorns': { name: 'Crown of Thorns', file: 'crown-thorns-isolated.png' },
-  'dove': { name: 'Peace Dove', file: 'dove-isolated.png' },
-  'praying-hands': { name: 'Praying Hands', file: 'praying-hands.png' },
-  'heart-cross': { name: 'Heart with Cross', file: 'heart-cross.png' },
-  'anchor': { name: 'Anchor Cross', file: 'anchor-cross.png' },
-  'lamb': { name: 'Lamb of God', file: 'lamb-god.png' },
-  'bible': { name: 'Bible with Cross', file: 'bible-cross.png' },
-  'chi-rho': { name: 'Chi Rho Symbol', file: 'chi-rho.png' },
-  'three-crosses': { name: 'Three Crosses', file: 'three-crosses.png' },
-  'butterfly': { name: 'Butterfly Cross', file: 'butterfly-cross.png' },
-  'alpha-omega': { name: 'Alpha & Omega', file: 'alpha-omega.png' },
-  'fish': { name: 'Christian Fish', file: 'fish-isolated.png' }
-};
-
-// Preload design images
-const designImages = {};
-let designImagesLoaded = false;
-
-function loadDesignImages() {
-  const promises = Object.entries(designOptions).map(([key, option]) => {
-    return new Promise((resolve) => {
-      const img = new Image();
-      img.onload = () => resolve();
-      img.onerror = () => resolve(); // Resolve even on error to not block
-      img.src = `../images/designs/${option.file}`;
-      designImages[key] = img;
-    });
-  });
-  
-  Promise.all(promises).then(() => {
-    designImagesLoaded = true;
-    drawPreview(); // Redraw once all images are loaded
-  });
-}
-
-// Color categories for organized display
-const colorCategories = {
-  'Popular': [
-    { name: 'White', hex: '#FFFFFF', image: 'white.jpg' },
-    { name: 'Black', hex: '#1a1a1a', image: 'black.jpg' },
-    { name: 'Navy', hex: '#1a237e', image: 'navy.jpg' },
-    { name: 'Red', hex: '#c62828', image: 'red.jpg' },
-    { name: 'Purple', hex: '#3d1a6e', image: 'purple.jpg' },
-    { name: 'Gold', hex: '#c9a227', image: 'gold.jpg' },
-    { name: 'Forest Green', hex: '#1b5e20', image: 'forest-green.jpg' },
-  ],
-  'Neutrals': [
-    { name: 'Ash', hex: '#B2BEB5', image: 'ash.jpg' },
-    { name: 'Charcoal', hex: '#36454F', image: 'charcoal.jpg' },
-    { name: 'Dark Heather', hex: '#4A4A4A', image: 'dark-heather.jpg' },
-    { name: 'Graphite Heather', hex: '#5A5A5A', image: 'graphite-heather.jpg' },
-    { name: 'Gravel', hex: '#808080', image: 'gravel.jpg' },
-    { name: 'Ice Grey', hex: '#E0E0E0', image: 'ice-grey.jpg' },
-    { name: 'Natural', hex: '#F5F5DC', image: 'natural.jpg' },
-    { name: 'Off White', hex: '#FAF9F6', image: 'off-white.jpg' },
-    { name: 'Sport Grey', hex: '#A9A9A9', image: 'sport-grey.jpg' },
-    { name: 'Tweed', hex: '#8B8589', image: 'tweed.jpg' },
-  ],
-  'Blues': [
-    { name: 'Carolina Blue', hex: '#7BAFD4', image: 'carolina-blue.jpg' },
-    { name: 'Cobalt', hex: '#0047AB', image: 'cobalt.jpg' },
-    { name: 'Indigo Blue', hex: '#3F00FF', image: 'indigo-blue.jpg' },
-    { name: 'Iris', hex: '#5A4FCF', image: 'iris.jpg' },
-    { name: 'Light Blue', hex: '#ADD8E6', image: 'light-blue.jpg' },
-    { name: 'Midnight', hex: '#191970', image: 'midnight.jpg' },
-    { name: 'Royal', hex: '#4169E1', image: 'royal.jpg' },
-    { name: 'Sapphire', hex: '#0F52BA', image: 'sapphire.jpg' },
-    { name: 'Sky', hex: '#87CEEB', image: 'sky.jpg' },
-    { name: 'Tropical Blue', hex: '#00BFFF', image: 'tropical-blue.jpg' },
-    { name: 'Aquatic', hex: '#7FFFD4', image: 'aquatic.jpg' },
-    { name: 'Blue Dusk', hex: '#4A6FA5', image: 'blue-dusk.jpg' },
-  ],
-  'Greens': [
-    { name: 'Irish Green', hex: '#00A86B', image: 'irish-green.jpg' },
-    { name: 'Lime', hex: '#00FF00', image: 'lime.jpg' },
-    { name: 'Mint Green', hex: '#98FF98', image: 'mint-green.jpg' },
-    { name: 'Military Green', hex: '#4B5320', image: 'military-green.jpg' },
-    { name: 'Turf Green', hex: '#006400', image: 'turf-green.jpg' },
-    { name: 'Electric Green', hex: '#00FF00', image: 'electric-green.jpg' },
-    { name: 'Fan Dark Green', hex: '#013220', image: 'fan-dark-green.jpg' },
-    { name: 'Heather Military Green', hex: '#4B5320', image: 'heather-military-green.jpg' },
-    { name: 'Kiwi', hex: '#8EE53F', image: 'kiwi.jpg' },
-    { name: 'Safety Green', hex: '#00FF7F', image: 'safety-green.jpg' },
-    { name: 'Neon Green', hex: '#39FF14', image: 'neon-green.jpg' },
-  ],
-  'Reds & Pinks': [
-    { name: 'Cardinal', hex: '#C41E3A', image: 'cardinal.jpg' },
-    { name: 'Coral Silk', hex: '#F88379', image: 'coral-silk.jpg' },
-    { name: 'Dusty Rose', hex: '#DCAE96', image: 'dusty-rose.jpg' },
-    { name: 'Garnet', hex: '#733635', image: 'garnet.jpg' },
-    { name: 'Heather Red', hex: '#B85450', image: 'heather-red.jpg' },
-    { name: 'Heliconia', hex: '#FF69B4', image: 'heliconia.jpg' },
-    { name: 'Light Pink', hex: '#FFB6C1', image: 'light-pink.jpg' },
-    { name: 'Maroon', hex: '#800000', image: 'maroon.jpg' },
-    { name: 'Safety Pink', hex: '#FF69B4', image: 'safety-pink.jpg' },
-    { name: 'Azalea', hex: '#F4A6D7', image: 'azalea.jpg' },
-    { name: 'Berry', hex: '#8B008B', image: 'berry.jpg' },
-  ],
-  'Purples': [
-    { name: 'Fan Dark Purple', hex: '#301934', image: 'fan-dark-purple.jpg' },
-    { name: 'Heather Radiant Orchid', hex: '#B565A7', image: 'heather-radiant-orchid.jpg' },
-    { name: 'Lilac', hex: '#C8A2C8', image: 'lilac.jpg' },
-    { name: 'Violet', hex: '#8F00FF', image: 'violet.jpg' },
-    { name: 'Blackberry', hex: '#4A0E4E', image: 'blackberry.jpg' },
-  ],
-  'Yellows & Oranges': [
-    { name: 'Daisy', hex: '#FFE4B5', image: 'daisy.jpg' },
-    { name: 'Old Gold', hex: '#CFB53B', image: 'old-gold.jpg' },
-    { name: 'Orange', hex: '#FFA500', image: 'orange.jpg' },
-    { name: 'Safety Orange', hex: '#FF6700', image: 'safety-orange.jpg' },
-    { name: 'Sunset', hex: '#FD5E53', image: 'sunset.jpg' },
-    { name: 'Tangerine', hex: '#F28500', image: 'tangerine.jpg' },
-    { name: 'Tennessee Orange', hex: '#FF8200', image: 'tennessee-orange.jpg' },
-    { name: 'Texas Orange', hex: '#BF5700', image: 'texas-orange.jpg' },
-    { name: 'Yellow Haze', hex: '#FFFF00', image: 'yellow-haze.jpg' },
-    { name: 'Antique Orange', hex: '#CD853F', image: 'antique-orange.jpg' },
-  ],
-  'Antique & Heather': [
-    { name: 'Antique Cherry Red', hex: '#8B3A3A', image: 'antique-cherry-red.jpg' },
-    { name: 'Antique Irish Green', hex: '#4A7C59', image: 'antique-irish-green.jpg' },
-    { name: 'Antique Jade Dome', hex: '#5F9EA0', image: 'antique-jade-dome.jpg' },
-    { name: 'Antique Orange', hex: '#CD853F', image: 'antique-orange.jpg' },
-    { name: 'Antique Sapphire', hex: '#2F4F4F', image: 'antique-sapphire.jpg' },
-    { name: 'Heather Navy', hex: '#2C3E50', image: 'heather-navy.jpg' },
-    { name: 'Heather Sapphire', hex: '#3A5F8A', image: 'heather-sapphire.jpg' },
-  ],
-  'Browns & Earth': [
-    { name: 'Brown Savana', hex: '#8B4513', image: 'brown-savana.jpg' },
-    { name: 'Cornsilk', hex: '#FFF8DC', image: 'cornsilk.jpg' },
-    { name: 'Dark Chocolate', hex: '#3D2817', image: 'dark-chocolate.jpg' },
-    { name: 'Prairie Dust', hex: '#D2B48C', image: 'prairie-dust.jpg' },
-    { name: 'Russet', hex: '#80461B', image: 'russet.jpg' },
-    { name: 'Sand', hex: '#C2B280', image: 'sand.jpg' },
-  ]
-};
-
-// T-shirt images loaded dynamically based on selection
-const tshirtImages = {};
-let imagesLoaded = false;
-let currentShirtImage = null;
-
-function loadShirtImage(imageName) {
-  if (tshirtImages[imageName]) {
-    currentShirtImage = tshirtImages[imageName];
-    imagesLoaded = true;
-    drawPreview();
-    return;
-  }
-  
-  const img = new Image();
-  img.onload = () => {
-    tshirtImages[imageName] = img;
-    currentShirtImage = img;
-    imagesLoaded = true;
-    drawPreview();
-  };
-  img.onerror = () => {
-    // Fallback to color fill if image fails to load
-    currentShirtImage = null;
-    imagesLoaded = true;
-    drawPreview();
-  };
-  img.src = `../images/tshirts/${imageName}`;
-}
+const designOptions = DivineTshirtAssets.templates;
+const colorCategories = { Popular: DivineTshirtAssets.colors };
 
 // State
 let state = {
@@ -189,7 +22,7 @@ let state = {
   ]
 };
 
-let nextTextId = 2;
+
 
 // Current shirt image filename
 let currentShirtImageName = 'antique-cherry-red.jpg';
@@ -206,11 +39,11 @@ function getDefaultPositions() {
 // Movement
 const MOVE_STEP = 2;
 document.addEventListener('keydown', (e) => {
-  if (!state.selectedElement) return;
+  if (state.selectedElement === null || !['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key) || ['INPUT', 'TEXTAREA', 'SELECT'].includes(e.target?.tagName)) return;
   const { cx, cy, scale } = getDefaultPositions();
   
   if (state.selectedElement === 'design') {
-    if (!state.designX) { state.designX = cx; state.designY = cy; }
+    if (state.designX == null) { state.designX = cx; state.designY = cy; }
     switch(e.key) {
       case 'ArrowUp': state.designY -= MOVE_STEP; e.preventDefault(); break;
       case 'ArrowDown': state.designY += MOVE_STEP; e.preventDefault(); break;
@@ -220,7 +53,7 @@ document.addEventListener('keydown', (e) => {
   } else {
     const textObj = state.texts.find(t => t.id === state.selectedElement);
     if (textObj) {
-      if (!textObj.x) { textObj.x = cx; textObj.y = cy + scale/2 + 25; }
+      if (textObj.x == null) { textObj.x = cx; textObj.y = cy + scale/2 + 10 + state.texts.indexOf(textObj) * 22; }
       switch(e.key) {
         case 'ArrowUp': textObj.y -= MOVE_STEP; e.preventDefault(); break;
         case 'ArrowDown': textObj.y += MOVE_STEP; e.preventDefault(); break;
@@ -229,6 +62,9 @@ document.addEventListener('keydown', (e) => {
       }
     }
   }
+  state.designX = state.designX == null ? null : DivineTshirtPreview.coordinate(state.designX, 400);
+  state.designY = state.designY == null ? null : DivineTshirtPreview.coordinate(state.designY, 240);
+  state.texts.forEach(t => { if (t.x != null) t.x = DivineTshirtPreview.coordinate(t.x, 400); if (t.y != null) t.y = DivineTshirtPreview.coordinate(t.y, 330); });
   drawPreview();
 });
 
@@ -248,14 +84,15 @@ function getCanvasCoords(e) {
 }
 
 function handleDragStart(e) {
+  document.getElementById('tshirtCanvas').focus();
   const coords = getCanvasCoords(e);
   const { cx, cy, scale } = getDefaultPositions();
   
   for (let i = state.texts.length - 1; i >= 0; i--) {
     const textObj = state.texts[i];
     if (!textObj.text) continue;
-    const textX = textObj.x || cx;
-    const textY = textObj.y || (cy + scale/2 + 25);
+    const textX = textObj.x ?? cx;
+    const textY = textObj.y ?? (cy + scale/2 + 10 + state.texts.indexOf(textObj) * 22);
     if (Math.sqrt(Math.pow(coords.x - textX, 2) + Math.pow(coords.y - textY, 2)) < 60) {
       isDragging = true;
       state.selectedElement = textObj.id;
@@ -269,8 +106,8 @@ function handleDragStart(e) {
     }
   }
   
-  const designX = state.designX || cx;
-  const designY = state.designY || cy;
+  const designX = state.designX ?? cx;
+  const designY = state.designY ?? cy;
   if (Math.sqrt(Math.pow(coords.x - designX, 2) + Math.pow(coords.y - designY, 2)) < 50) {
     isDragging = true;
     state.selectedElement = 'design';
@@ -286,11 +123,11 @@ function handleDragMove(e) {
   if (!isDragging) return;
   const coords = getCanvasCoords(e);
   if (state.selectedElement === 'design') {
-    state.designX = coords.x + dragOffsetX;
-    state.designY = coords.y + dragOffsetY;
+    state.designX = DivineTshirtPreview.coordinate(coords.x + dragOffsetX, 400);
+    state.designY = DivineTshirtPreview.coordinate(coords.y + dragOffsetY, 330);
   } else {
     const textObj = state.texts.find(t => t.id === state.selectedElement);
-    if (textObj) { textObj.x = coords.x + dragOffsetX; textObj.y = coords.y + dragOffsetY; }
+    if (textObj) { textObj.x = DivineTshirtPreview.coordinate(coords.x + dragOffsetX, 400); textObj.y = DivineTshirtPreview.coordinate(coords.y + dragOffsetY, 330); }
   }
   e.preventDefault();
   drawPreview();
@@ -306,28 +143,6 @@ function handleDragEnd() {
 }
 
 // Text management
-function addTextInstance() {
-  const { cx, cy, scale } = getDefaultPositions();
-  state.texts.push({
-    id: nextTextId++,
-    text: '',
-    x: cx,
-    y: cy + scale/2 + 40 + state.texts.length * 25,
-    font: 'Cinzel',
-    size: 16,
-    color: state.printColor
-  });
-  renderTextControls();
-}
-
-function removeTextInstance(id) {
-  if (state.texts.length <= 1) return;
-  state.texts = state.texts.filter(t => t.id !== id);
-  if (state.selectedElement === id) state.selectedElement = null;
-  renderTextControls();
-  drawPreview();
-}
-
 function updateText(id, value) { 
   const t = state.texts.find(x => x.id === id); 
   if (t) { 
@@ -365,7 +180,7 @@ function syncTextInputs() {
   });
 }
 function updateTextFont(id, font) { const t = state.texts.find(x => x.id === id); if (t) { t.font = font; drawPreview(); } }
-function updateTextColor(id, color) { const t = state.texts.find(x => x.id === id); if (t) { t.color = color; drawPreview(); } }
+function updateTextColor(id, color) { const t = state.texts.find(x => x.id === id); if (t) { t.color = color.toUpperCase(); drawPreview(); } }
 function updateTextSize(id, size) { 
   const t = state.texts.find(x => x.id === id); 
   if (t) { 
@@ -401,39 +216,25 @@ function updateTextSelectionUI() {
 function renderTextControls() {
   const container = document.getElementById('textControlsContainer');
   if (!container) return;
-  container.innerHTML = state.texts.map((t, i) => `
-    <div class="text-instance ${state.selectedElement === t.id ? 'selected' : ''}" data-id="${t.id}">
-      <div class="text-instance-header">
-        <label>Text ${i + 1}</label>
-        ${state.texts.length > 1 ? `<button onclick="removeTextInstance(${t.id})" class="remove-text-btn">&times;</button>` : ''}
-      </div>
-      <input type="text" class="church-text-input ${state.selectedElement === t.id ? 'active' : ''}" placeholder="Enter text..." value="${t.text}" oninput="updateText(${t.id}, this.value)" onfocus="selectText(${t.id})"/>
-      <div class="text-controls-row">
-        <select onchange="updateTextFont(${t.id}, this.value)" class="font-select-small">
-          <option value="Cinzel" ${t.font === 'Cinzel' ? 'selected' : ''}>Cinzel</option>
-          <option value="Inter" ${t.font === 'Inter' ? 'selected' : ''}>Inter</option>
-          <option value="Georgia" ${t.font === 'Georgia' ? 'selected' : ''}>Georgia</option>
-          <option value="Brush Script MT" ${t.font === 'Brush Script MT' ? 'selected' : ''}>Script</option>
-          <option value="Impact" ${t.font === 'Impact' ? 'selected' : ''}>Impact</option>
-          <option value="Playfair Display" ${t.font === 'Playfair Display' ? 'selected' : ''}>Playfair</option>
-          <option value="Oswald" ${t.font === 'Oswald' ? 'selected' : ''}>Oswald</option>
-          <option value="Lobster" ${t.font === 'Lobster' ? 'selected' : ''}>Lobster</option>
-        </select>
-        <input type="color" value="${t.color}" onchange="updateTextColor(${t.id}, this.value)" class="color-picker-small" title="Text color">
-      </div>
-      <div class="size-control">
-        <label>Size: <span id="size-label-${t.id}">${t.size}px</span></label>
-        <input type="range" min="10" max="48" value="${t.size}" oninput="updateTextSize(${t.id}, this.value)" class="size-slider">
-      </div>
-      <div class="arch-control">
-        <label>Arch: <span id="arch-label-${t.id}">${t.arch || 0}°</span></label>
-        <input type="range" min="-30" max="30" value="${t.arch || 0}" oninput="updateTextArch(${t.id}, this.value)" class="arch-slider" title="Curve text up or down">
-      </div>
-    </div>
-  `).join('');
-  
-  // Sync the left-side preview panel with current state
-  syncDefaultTextPreview();
+  container.replaceChildren();
+  state.texts.forEach((t, i) => {
+    const panel = document.createElement('div'); panel.className = 'text-instance'; panel.dataset.id = t.id; panel.tabIndex = 0; panel.setAttribute('role', 'group'); panel.setAttribute('aria-label', `Text ${i + 1} positioning`); panel.addEventListener('focus', () => selectText(t.id));
+    const heading = document.createElement('label'); heading.textContent = `Text ${i + 1}`; heading.htmlFor = `text-input-${t.id}`; panel.append(heading);
+    const input = document.createElement('input'); input.type = 'text'; input.id = `text-input-${t.id}`; input.className = 'church-text-input'; input.maxLength = 100; input.value = t.text;
+    input.addEventListener('input', () => updateText(t.id, input.value)); input.addEventListener('focus', () => selectText(t.id)); panel.append(input);
+    const font = document.createElement('select'); font.className = 'font-select-small'; font.setAttribute('aria-label', `Text ${i + 1} font`);
+    Object.entries({ Cinzel: 'Cinzel', Inter: 'Inter', Georgia: 'Georgia', 'Brush Script MT': 'Script', Impact: 'Impact', 'Playfair Display': 'Playfair', Oswald: 'Oswald', Lobster: 'Lobster' }).forEach(([value, name]) => {
+      const option = document.createElement('option'); option.value = value; option.textContent = name; font.append(option);
+    }); font.value = t.font; font.addEventListener('change', () => updateTextFont(t.id, font.value)); panel.append(font);
+    const color = document.createElement('input'); color.type = 'color'; color.value = t.color; color.setAttribute('aria-label', `Text ${i + 1} color`); color.addEventListener('input', () => updateTextColor(t.id, color.value)); panel.append(color);
+    [['Size', 'size', 10, 48, updateTextSize, 'px'], ['Arch', 'arch', -30, 30, updateTextArch, '°']].forEach(([name, key, min, max, update, unit]) => {
+      const label = document.createElement('label'); label.textContent = `${name}: `;
+      const value = document.createElement('span'); value.id = `${key}-label-${t.id}`; value.textContent = `${t[key] || 0}${unit}`; label.append(value);
+      const slider = document.createElement('input'); slider.type = 'range'; slider.min = min; slider.max = max; slider.value = t[key] || 0; slider.setAttribute('aria-label', `Text ${i + 1} ${name.toLowerCase()}`); slider.addEventListener('input', () => update(t.id, slider.value)); panel.append(label, slider);
+    });
+    const note = document.createElement('small'); note.textContent = 'Other font selections use Inter in the preview; your selected font is saved.'; panel.append(note); container.append(panel);
+  });
+  updateTextSelectionUI(); syncDefaultTextPreview();
 }
 
 function resetPositions() {
@@ -452,324 +253,21 @@ function updateDesignSize(value) {
   drawPreview();
 }
 
-// Draw arched/curved text
-// arch: positive = upward curve (smile), negative = downward curve (frown), 0 = straight
-function drawArchedText(ctx, text, x, y, size, font, color, arch) {
-  if (!arch || arch === 0) {
-    // Fallback to straight text
-    ctx.fillStyle = color;
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.font = '600 ' + size + 'px "' + font + '", sans-serif';
-    ctx.fillText(text, x, y);
-    return;
-  }
-  
-  ctx.save();
-  ctx.font = '600 ' + size + 'px "' + font + '", sans-serif';
-  ctx.fillStyle = color;
-  
-  // Calculate total width by measuring each character
-  let totalWidth = 0;
-  const charWidths = [];
-  for (let i = 0; i < text.length; i++) {
-    const w = ctx.measureText(text[i]).width;
-    charWidths.push(w);
-    totalWidth += w;
-  }
-  
-  // Add small spacing between characters for better curve
-  const charSpacing = size * 0.05;
-  totalWidth += charSpacing * (text.length - 1);
-  
-  // Convert arch degrees to radians
-  const archRad = arch * Math.PI / 180;
-  
-  // Calculate radius based on desired arch angle and text width
-  // Use a minimum radius to prevent extreme curves on short text
-  const minRadius = totalWidth * 0.8;
-  const calculatedRadius = totalWidth / (2 * Math.sin(Math.abs(archRad) / 2));
-  const radius = Math.max(minRadius, calculatedRadius);
-  
-  // Determine curve direction
-  const curveDirection = arch > 0 ? 1 : -1; // Positive = curve up (smile)
-  
-  // Arc center is below the text for upward curve, above for downward
-  const arcCenterY = y + curveDirection * radius;
-  
-  // Calculate the angular width of the text along the arc
-  const angularWidth = 2 * Math.asin(totalWidth / (2 * radius));
-  
-  // Start angle (left side of text)
-  let currentAngle = -angularWidth / 2;
-  
-  // Draw each character
-  for (let i = 0; i < text.length; i++) {
-    const char = text[i];
-    const charWidth = charWidths[i];
-    
-    // Calculate the angle span for this character
-    const charAngleSpan = (charWidth + charSpacing) / radius;
-    
-    // Angle at the center of this character
-    const angle = currentAngle + charAngleSpan / 2;
-    
-    // Calculate position on the arc
-    const charX = x + radius * Math.sin(angle);
-    const charY = arcCenterY - curveDirection * radius * Math.cos(angle);
-    
-    // Rotation follows the curve tangent
-    const rotation = -curveDirection * angle;
-    
-    ctx.save();
-    ctx.translate(charX, charY);
-    ctx.rotate(rotation);
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText(char, 0, 0);
-    ctx.restore();
-    
-    // Move to next character position
-    currentAngle += charAngleSpan;
-  }
-  
-  ctx.restore();
-}
-
-function handleFileUpload(e) {
-  if (e?.target) e.target.value = '';
-  state.uploadedImage = null;
-  const label = document.getElementById('uploadedFileName');
-  if (label) label.textContent = 'Custom artwork upload coming soon';
-}
-
-// Drawing functions - Updated to fill canvas better
-function drawTShirt(ctx, canvasWidth, canvasHeight) {
-  if (currentShirtImage && currentShirtImage.complete && currentShirtImage.naturalWidth > 0) {
-    // Calculate dimensions to fill the canvas while maintaining aspect ratio
-    const imgAspect = currentShirtImage.width / currentShirtImage.height;
-    const canvasAspect = canvasWidth / canvasHeight;
-    
-    let drawWidth, drawHeight, drawX, drawY;
-    
-    // Zoom in to fill more of the canvas (crop the image slightly to remove excess margins)
-    // Use 108% zoom to crop out some empty space without cutting off the shirt
-    const zoomFactor = 1.08;
-    
-    if (imgAspect > canvasAspect) {
-      // Image is wider relative to canvas
-      drawHeight = canvasHeight * zoomFactor;
-      drawWidth = drawHeight * imgAspect;
-      drawX = (canvasWidth - drawWidth) / 2;
-      drawY = (canvasHeight - drawHeight) / 2;
-    } else {
-      // Image is taller relative to canvas - shift up slightly to show more of the shirt body
-      drawWidth = canvasWidth * zoomFactor;
-      drawHeight = drawWidth / imgAspect;
-      drawX = (canvasWidth - drawWidth) / 2;
-      drawY = (canvasHeight - drawHeight) / 2 - (canvasHeight * 0.02); // Shift up 2%
-    }
-    
-    ctx.drawImage(currentShirtImage, drawX, drawY, drawWidth, drawHeight);
-  } else {
-    // Fallback - draw simple t-shirt shape with selected color
-    const x = canvasWidth * 0.05;
-    const y = canvasHeight * 0.02;
-    const w = canvasWidth * 0.9;
-    const h = canvasHeight * 0.96;
-    const color = state.shirtColor;
-    
-    ctx.fillStyle = color;
-    ctx.strokeStyle = '#ddd';
-    ctx.lineWidth = 2;
-    
-    // Body
-    ctx.beginPath();
-    ctx.moveTo(x + w*0.25, y + h*0.15);
-    ctx.lineTo(x + w*0.75, y + h*0.15);
-    ctx.lineTo(x + w*0.85, y + h*0.25);
-    ctx.lineTo(x + w*0.75, y + h*0.35);
-    ctx.lineTo(x + w*0.75, y + h*0.90);
-    ctx.quadraticCurveTo(x + w*0.50, y + h*0.93, x + w*0.25, y + h*0.90);
-    ctx.lineTo(x + w*0.25, y + h*0.35);
-    ctx.lineTo(x + w*0.15, y + h*0.25);
-    ctx.closePath();
-    ctx.fill();
-    ctx.stroke();
-    
-    // Collar
-    ctx.beginPath();
-    ctx.moveTo(x + w*0.35, y + h*0.15);
-    ctx.quadraticCurveTo(x + w*0.50, y + h*0.22, x + w*0.65, y + h*0.15);
-    ctx.strokeStyle = 'rgba(0,0,0,0.15)';
-    ctx.stroke();
-    
-    // Sleeves
-    ctx.fillStyle = color;
-    ctx.strokeStyle = '#ddd';
-    ctx.beginPath();
-    ctx.moveTo(x + w*0.15, y + h*0.25);
-    ctx.lineTo(x + w*0.05, y + h*0.35);
-    ctx.lineTo(x + w*0.15, y + h*0.45);
-    ctx.closePath();
-    ctx.fill();
-    ctx.stroke();
-    
-    ctx.beginPath();
-    ctx.moveTo(x + w*0.85, y + h*0.25);
-    ctx.lineTo(x + w*0.95, y + h*0.35);
-    ctx.lineTo(x + w*0.85, y + h*0.45);
-    ctx.closePath();
-    ctx.fill();
-    ctx.stroke();
-  }
-}
-
-function drawCross(ctx, cx, cy, size, color, style) {
-  const s = size/100;
-  ctx.save();
-  if (style === 'classic') {
-    ctx.strokeStyle = color; ctx.lineWidth = 4*s; ctx.lineCap = 'round';
-    ctx.beginPath(); ctx.arc(cx, cy, 30*s, 0, Math.PI*2); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(cx, cy-20*s); ctx.lineTo(cx, cy+20*s); ctx.moveTo(cx-20*s, cy); ctx.lineTo(cx+20*s, cy); ctx.stroke();
-  } else if (style === 'celtic') {
-    ctx.strokeStyle = color; ctx.lineWidth = 3*s;
-    ctx.beginPath(); ctx.arc(cx, cy, 30*s, 0, Math.PI*2); ctx.stroke();
-    ctx.beginPath(); ctx.arc(cx, cy, 12*s, 0, Math.PI*2); ctx.stroke();
-    ctx.lineWidth = 4*s;
-    ctx.beginPath(); ctx.moveTo(cx, cy-25*s); ctx.lineTo(cx, cy+25*s); ctx.moveTo(cx-25*s, cy); ctx.lineTo(cx+25*s, cy); ctx.stroke();
-  } else if (style === 'ornate') {
-    ctx.fillStyle = color + '20'; ctx.beginPath(); ctx.arc(cx, cy, 35*s, 0, Math.PI*2); ctx.fill();
-    ctx.strokeStyle = color; ctx.lineWidth = 3*s; ctx.beginPath(); ctx.arc(cx, cy, 35*s, 0, Math.PI*2); ctx.stroke();
-    ctx.lineWidth = 4*s; ctx.lineCap = 'round';
-    ctx.beginPath(); ctx.moveTo(cx, cy-22*s); ctx.lineTo(cx, cy+22*s); ctx.moveTo(cx-22*s, cy); ctx.lineTo(cx+22*s, cy); ctx.stroke();
-    ctx.beginPath(); ctx.arc(cx, cy, 6*s, 0, Math.PI*2); ctx.fillStyle = color; ctx.fill();
-  } else if (style === 'flame') {
-    ctx.strokeStyle = color; ctx.lineWidth = 2*s; ctx.beginPath(); ctx.arc(cx, cy, 30*s, 0, Math.PI*2); ctx.stroke();
-    ctx.fillStyle = '#ff6b35'; ctx.globalAlpha = 0.8;
-    ctx.beginPath(); ctx.moveTo(cx, cy-18*s); ctx.quadraticCurveTo(cx-8*s, cy-5*s, cx-8*s, cy+8*s); ctx.quadraticCurveTo(cx-8*s, cy+18*s, cx, cy+22*s); ctx.quadraticCurveTo(cx+8*s, cy+18*s, cx+8*s, cy+8*s); ctx.quadraticCurveTo(cx+8*s, cy-5*s, cx, cy-18*s); ctx.fill();
-    ctx.globalAlpha = 1; ctx.strokeStyle = '#fff'; ctx.lineWidth = 2*s;
-    ctx.beginPath(); ctx.moveTo(cx, cy-12*s); ctx.lineTo(cx, cy+12*s); ctx.stroke();
-  } else if (style === 'royal') {
-    ctx.fillStyle = color; ctx.beginPath(); ctx.arc(cx, cy, 32*s, 0, Math.PI*2); ctx.fill();
-    ctx.strokeStyle = '#c9a227'; ctx.lineWidth = 3*s; ctx.lineCap = 'round';
-    ctx.beginPath(); ctx.moveTo(cx, cy-20*s); ctx.lineTo(cx, cy+20*s); ctx.moveTo(cx-20*s, cy); ctx.lineTo(cx+20*s, cy); ctx.stroke();
-    ctx.beginPath(); ctx.arc(cx, cy, 8*s, 0, Math.PI*2); ctx.fillStyle = '#c9a227'; ctx.fill();
-  } else if (style === 'emerald') {
-    ctx.strokeStyle = color; ctx.lineWidth = 2*s; ctx.beginPath(); ctx.arc(cx, cy, 30*s, 0, Math.PI*2); ctx.stroke();
-    ctx.fillStyle = '#4caf50';
-    ctx.beginPath(); ctx.moveTo(cx, cy-20*s); ctx.quadraticCurveTo(cx-10*s, cy-8*s, cx-10*s, cy+5*s); ctx.quadraticCurveTo(cx-10*s, cy+18*s, cx, cy+22*s); ctx.quadraticCurveTo(cx+10*s, cy+18*s, cx+10*s, cy+5*s); ctx.quadraticCurveTo(cx+10*s, cy-8*s, cx, cy-20*s); ctx.fill();
-    ctx.strokeStyle = color; ctx.lineWidth = 3*s;
-    ctx.beginPath(); ctx.moveTo(cx, cy-15*s); ctx.lineTo(cx, cy+15*s); ctx.moveTo(cx-15*s, cy); ctx.lineTo(cx+15*s, cy); ctx.stroke();
-  } else if (style === 'silver') {
-    const grad = ctx.createLinearGradient(cx-30*s, cy-30*s, cx+30*s, cy+30*s);
-    grad.addColorStop(0, '#e0e0e0'); grad.addColorStop(0.5, '#909090'); grad.addColorStop(1, '#e0e0e0');
-    ctx.fillStyle = grad; ctx.beginPath(); ctx.arc(cx, cy, 32*s, 0, Math.PI*2); ctx.fill();
-    ctx.strokeStyle = '#606060'; ctx.lineWidth = 2*s; ctx.stroke();
-    ctx.strokeStyle = color; ctx.lineWidth = 4*s; ctx.lineCap = 'round';
-    ctx.beginPath(); ctx.moveTo(cx, cy-22*s); ctx.lineTo(cx, cy+22*s); ctx.moveTo(cx-22*s, cy); ctx.lineTo(cx+22*s, cy); ctx.stroke();
-  } else if (style === 'heart') {
-    ctx.strokeStyle = color; ctx.lineWidth = 2*s; ctx.beginPath(); ctx.arc(cx, cy, 30*s, 0, Math.PI*2); ctx.stroke();
-    ctx.fillStyle = '#e91e63';
-    ctx.beginPath(); ctx.moveTo(cx, cy-8*s); ctx.bezierCurveTo(cx-15*s, cy-25*s, cx-30*s, cy-15*s, cx-30*s, cy); ctx.bezierCurveTo(cx-30*s, cy+15*s, cx, cy+28*s, cx, cy+28*s); ctx.bezierCurveTo(cx, cy+28*s, cx+30*s, cy+15*s, cx+30*s, cy); ctx.bezierCurveTo(cx+30*s, cy-15*s, cx+15*s, cy-25*s, cx, cy-8*s); ctx.fill();
-    ctx.strokeStyle = '#fff'; ctx.lineWidth = 2*s; ctx.beginPath(); ctx.moveTo(cx, cy-5*s); ctx.lineTo(cx, cy+15*s); ctx.stroke();
-  } else if (style === 'dove') {
-    ctx.fillStyle = '#e3f2fd'; ctx.beginPath(); ctx.arc(cx, cy, 32*s, 0, Math.PI*2); ctx.fill();
-    ctx.strokeStyle = color; ctx.lineWidth = 2*s; ctx.stroke();
-    ctx.fillStyle = '#fff'; ctx.strokeStyle = color; ctx.lineWidth = 1.5*s;
-    ctx.beginPath(); ctx.ellipse(cx-5*s, cy, 18*s, 10*s, 0, 0, Math.PI*2); ctx.fill(); ctx.stroke();
-    ctx.strokeStyle = color; ctx.lineWidth = 2*s; ctx.beginPath(); ctx.moveTo(cx, cy-18*s); ctx.lineTo(cx, cy+18*s); ctx.stroke();
-  } else if (style === 'ichthys') {
-    ctx.strokeStyle = '#c9a227'; ctx.lineWidth = 2*s; ctx.beginPath(); ctx.arc(cx, cy, 30*s, 0, Math.PI*2); ctx.stroke();
-    ctx.strokeStyle = color; ctx.lineWidth = 2.5*s;
-    ctx.beginPath(); ctx.moveTo(cx-18*s, cy); ctx.quadraticCurveTo(cx-5*s, cy-15*s, cx+15*s, cy); ctx.quadraticCurveTo(cx-5*s, cy+15*s, cx-18*s, cy); ctx.stroke();
-    ctx.fillStyle = color; ctx.beginPath(); ctx.arc(cx+10*s, cy-5*s, 3*s, 0, Math.PI*2); ctx.fill();
-  }
-  ctx.restore();
+function editorConfiguration() {
+  return DivineTshirtPreview.normalizeEditor(state, document.getElementById('selectedColorName')?.textContent || 'Black', (document.getElementById('organizationName')?.value || '').trim());
 }
 
 function drawPreview() {
   const canvas = document.getElementById('tshirtCanvas');
   if (!canvas) return;
-  const ctx = canvas.getContext('2d');
-
-  ctx.imageSmoothingEnabled = true;
-  ctx.imageSmoothingQuality = 'high';
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-  // Updated to use canvas dimensions for better fill
-  drawTShirt(ctx, canvas.width, canvas.height);
-
-  const { cx, cy, scale } = getDefaultPositions();
-  const designX = state.designX || cx;
-  const designY = state.designY || cy;
-
-  if (state.selectedElement === 'design' && !state.uploadedImage) {
-    ctx.save();
-    ctx.strokeStyle = '#c9a227'; ctx.lineWidth = 2; ctx.setLineDash([5, 5]);
-    ctx.strokeRect(designX - scale/2 - 5, designY - scale/2 - 5, scale + 10, scale + 10);
-    ctx.restore();
-  }
-
-  if (state.uploadedImage) {
-    // Uploaded images can stretch to fill the area
-    const dw = scale * state.uploadedImageScale;
-    const dh = scale * state.uploadedImageScale;
-    ctx.drawImage(state.uploadedImage, designX - dw/2, designY - dh/2, dw, dh);
-  } else if (state.selectedDesign && designImages[state.selectedDesign]) {
-    const designImg = designImages[state.selectedDesign];
-    if (designImg && designImg.complete && designImg.naturalWidth > 0) {
-      const aspect = designImg.width / designImg.height;
-      const baseScale = scale * state.designScale;
-      const dw = baseScale * (aspect > 1 ? 1 : aspect);
-      const dh = baseScale / (aspect > 1 ? aspect : 1);
-      ctx.drawImage(designImg, designX - dw/2, designY - dh/2, dw, dh);
-    }
-  }
-  
-  state.texts.forEach((textObj, index) => {
-    if (!textObj.text) return;
-    const x = textObj.x || cx;
-    // Position text closer to design: design is at cy, text starts just below it
-    const y = textObj.y || (cy + scale/2 + 10 + index * 22);
-    
-    if (state.selectedElement === textObj.id) {
-      ctx.save();
-      ctx.strokeStyle = '#3d1a6e'; ctx.lineWidth = 2; ctx.setLineDash([5, 5]);
-      ctx.font = textObj.size + 'px ' + textObj.font;
-      const metrics = ctx.measureText(textObj.text);
-      ctx.strokeRect(x - metrics.width/2 - 8, y - textObj.size/2 - 8, metrics.width + 16, textObj.size + 16);
-      ctx.restore();
-    }
-    
-    ctx.fillStyle = textObj.color || state.printColor;
-    
-    // Draw text with arch/curve support
-    if (textObj.arch && textObj.arch !== 0) {
-      drawArchedText(ctx, textObj.text, x, y, textObj.size, textObj.font, textObj.color, textObj.arch);
-    } else {
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      // Use bolder font weight and ensure crisp rendering
-      ctx.font = '600 ' + textObj.size + 'px "' + textObj.font + '", sans-serif';
-      ctx.fillText(textObj.text, x, y);
-    }
-  });
-  
+  const status = document.getElementById('previewStatus');
+  try { DivineTshirtPreview.render(canvas, editorConfiguration(), status); }
+  catch (error) { if (status) status.textContent = error.message; }
 }
 
 // Init
 function init() {
-  const approved = [
-    { name: 'Black', hex: '#1A1A1A', image: 'black.jpg' }, { name: 'White', hex: '#FFFFFF', image: 'white.jpg' },
-    { name: 'Navy', hex: '#1A237E', image: 'navy.jpg' }, { name: 'Royal Blue', hex: '#4169E1', image: 'royal.jpg' },
-    { name: 'Red', hex: '#C62828', image: 'red.jpg' }, { name: 'Maroon', hex: '#800000', image: 'maroon.jpg' },
-    { name: 'Forest Green', hex: '#1B5E20', image: 'forest-green.jpg' }, { name: 'Kelly Green', hex: '#00A86B', image: 'irish-green.jpg' },
-    { name: 'Purple', hex: '#3D1A6E', image: 'purple.jpg' }, { name: 'Orange', hex: '#FFA500', image: 'orange.jpg' },
-    { name: 'Yellow', hex: '#FFFF00', image: 'yellow-haze.jpg' }, { name: 'Light Blue', hex: '#ADD8E6', image: 'light-blue.jpg' },
-    { name: 'Light Pink', hex: '#FFB6C1', image: 'light-pink.jpg' }, { name: 'Gray', hex: '#A9A9A9', image: 'sport-grey.jpg' },
-    { name: 'Charcoal', hex: '#36454F', image: 'charcoal.jpg' }
-  ];
+  const approved = DivineTshirtAssets.colors;
   Object.keys(colorCategories).forEach(key => { colorCategories[key] = key === 'Popular' ? approved : []; });
   state.shirtColor = approved[0].hex; currentShirtImageName = approved[0].image;
   const selectedColorName = document.getElementById('selectedColorName');
@@ -777,10 +275,10 @@ function init() {
   if (selectedColorName) selectedColorName.textContent = approved[0].name;
   if (selectedColorPreview) selectedColorPreview.style.background = approved[0].hex;
   // Load initial shirt image
-  loadShirtImage(currentShirtImageName);
+  drawPreview();
   
   // Load design images
-  loadDesignImages();
+
   
   // Create design selector with PNG thumbnails
   const crossSelector = document.getElementById('crossSelector');
@@ -843,7 +341,6 @@ function init() {
       swatch.onclick = () => {
         state.shirtColor = color.hex;
         currentShirtImageName = color.image;
-        currentSelectedColorName = color.name;
         
         // Update UI
         document.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('selected'));
@@ -855,7 +352,7 @@ function init() {
         if (preview) preview.style.background = color.hex;
         if (nameEl) nameEl.textContent = color.name;
         
-        loadShirtImage(color.image);
+        drawPreview();
       };
       swatchesDiv.appendChild(swatch);
     });
@@ -887,14 +384,12 @@ function init() {
 
   document.getElementById('positionSelect').addEventListener('change', (e) => {
     state.position = e.target.value;
-    state.crossX = null; state.crossY = null;
+    state.designX = null; state.designY = null;
     state.texts.forEach(t => { t.x = null; t.y = null; });
     state.selectedElement = null;
     drawPreview();
   });
 
-  const addTextBtn = document.getElementById('addTextBtn');
-  if (addTextBtn) addTextBtn.addEventListener('click', addTextInstance);
 
   // Quantity and size change listeners
   const quantityInput = document.getElementById('quantityInput');
@@ -953,26 +448,11 @@ function buildConfiguredJobRequest() {
   const allocations = Array.from(document.querySelectorAll('#variantAllocations input[data-size]')).map(input => ({
     selections: { size: input.dataset.size }, quantity: Number(input.value || 0)
   })).filter(entry => Number.isInteger(entry.quantity) && entry.quantity > 0);
-  const placementMap = { center: 'center-chest', left: 'left-chest', back: 'full-back' };
-  const fontMap = { Cinzel: 'cinzel', Inter: 'inter', Georgia: 'georgia', 'Brush Script MT': 'script', Impact: 'impact', 'Playfair Display': 'playfair', Oswald: 'oswald', Lobster: 'lobster' };
-  const organizationName = (document.getElementById('organizationName')?.value || '').trim();
-  const textElements = state.texts.filter(entry => entry.text && entry.text.trim()).slice(0, 4).map((entry, index) => ({
-    elementRole: index === 0 && organizationName && entry.text.trim() === organizationName ? 'organizationName' : 'additionalText',
-    text: entry.text.trim(), fontId: fontMap[entry.font] || 'inter', color: String(entry.color || '#000000').toUpperCase(),
-    fontSize: Number(entry.size), archDegrees: Number(entry.arch || 0), position: { x: Number(entry.x), y: Number(entry.y) }, order: index
-  }));
-  const defaults = getDefaultPositions();
   if (!allocations.length) throw new Error('Enter a quantity for at least one size.');
   return {
     productId: 'd204cea4-ce22-4bc5-ad04-530f19fb3878',
     variantAllocations: allocations,
-    customerConfiguration: {
-      schemaVersion: 'custom-design-v1',
-      options: { color: document.getElementById('selectedColorName')?.textContent || 'Black', placement: placementMap[document.getElementById('positionSelect')?.value] || 'center-chest', designSource: 'TEMPLATE' },
-      ...(organizationName ? { organizationName } : {}),
-      designConfiguration: { canvasVersion: 'tshirt-800-v1', templateId: state.selectedDesign, templateVersion: 1,
-        designGeometry: { x: Number(state.designX ?? defaults.cx), y: Number(state.designY ?? defaults.cy) }, designScale: Number(state.designScale), textElements }
-    },
+    customerConfiguration: editorConfiguration(),
     customerInstructions: (document.getElementById('customerInstructions')?.value || '').trim()
   };
 }

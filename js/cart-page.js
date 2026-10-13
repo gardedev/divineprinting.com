@@ -108,6 +108,56 @@
     return img;
   }
 
+  function isChurchShirt(item) {
+    return item.productId === 'd204cea4-ce22-4bc5-ad04-530f19fb3878'
+      && item.customerConfiguration?.schemaVersion === 'custom-design-v1'
+      && item.customerConfiguration?.designConfiguration?.canvasVersion === 'tshirt-800-v1';
+  }
+
+  function buildCustomizationDetails(item) {
+    const configuration = item.customerConfiguration;
+    const design = configuration.designConfiguration;
+    const section = node('details', undefined, 'customization-details'); section.append(node('summary', 'View Customization'));
+    const add = (label, value) => section.append(node('p', `${label}: ${value ?? 'Not provided'}`));
+    const labels = item.pricingSnapshot?.optionLabels;
+    add('Shirt color', configuration.options.color);
+    add('Placement', resolveLabel(labels, 'placement', configuration.options.placement));
+    add('Design source', configuration.options.designSource);
+    add('Design', resolveLabel(labels, 'design', design.templateId));
+    add('Template version', design.templateVersion); add('Design size', `${design.designScale * 100}%`);
+    add('Design position', `x ${design.designGeometry.x}, y ${design.designGeometry.y} (800 × 800 canvas pixels)`);
+    add('Church / organization name', configuration.organizationName || 'Not provided');
+    add('Customer instructions', item.customerInstructions || 'Not provided');
+    const panels = [...(design.textElements || []), ...(design.blankTextPanels || [])].sort((a, b) => a.order - b.order);
+    panels.forEach(panel => {
+      section.append(node('h4', `Text ${panel.order + 1}${panel.text ? '' : ' (blank)'}`));
+      add('Content', panel.text || 'Blank'); add('Font', global.DivineTshirtAssets?.fonts?.[panel.fontId] || panel.fontId);
+      const note = global.DivineTshirtPreview?.fontNote(panel.fontId) || ''; if (note) section.append(node('small', note));
+      const color = node('p', `Color: ${panel.color}`); const swatch = node('span', undefined, 'text-color-swatch');
+      if (/^#[0-9A-F]{6}$/i.test(panel.color || '')) swatch.style.backgroundColor = panel.color;
+      color.append(swatch); section.append(color);
+      add('Size', `${panel.fontSize}px`); add('Arch', `${panel.archDegrees}°`);
+      add('Position', `x ${panel.position.x}, y ${panel.position.y}`); add('Element ID', panel.elementId); add('Order', panel.order);
+      if (panel.elementRole) add('Text role', panel.elementRole === 'organizationName' ? 'Organization name' : 'Additional text');
+    });
+    (item.variantAllocations || []).forEach(a => add('Size quantity', `${allocationLabel(a)} × ${a.quantity}`));
+    add('Total quantity', item.totalQuantity || item.quantity);
+    section.append(node('small', 'If a preview font is unavailable, the preview uses Arial; selected fonts remain saved.'));
+    if (configuration.options.placement === 'full-back') section.append(node('p', 'Full Back uses a front shirt photograph; a rear view is unavailable.'));
+    return section;
+  }
+
+  function buildCustomizedPreview(item) {
+    const wrap = node('div', undefined, 'customized-preview');
+    const canvas = node('canvas', undefined, 'cart-customized-canvas'); canvas.width = 800; canvas.height = 800;
+    canvas.setAttribute('role', 'img'); canvas.setAttribute('aria-label', 'Customized shirt preview');
+    const status = node('p', 'Loading customized preview…', 'preview-status'); status.setAttribute('role', 'status');
+    wrap.append(canvas, status);
+    if (global.DivineTshirtPreview) global.DivineTshirtPreview.render(canvas, item.customerConfiguration, status);
+    else { canvas.style.display = 'none'; status.textContent = 'Customized preview unavailable. Your saved settings remain available.'; }
+    return wrap;
+  }
+
   async function remove(item, cartVersion) {
     try { await global.DivineCart.removeItem(item, cartVersion); await render(); }
     catch (error) { show(error.code === 'CART_VERSION_CONFLICT' ? 'The cart changed. Review it and try again.' : error.message, true); await render(); }
@@ -183,8 +233,10 @@
       }
       const grid = node('div', undefined, 'cart-grid'); const list = node('div', undefined, 'cart-items'); list.append(node('h2', `Cart Items (${items.length})`));
       for (const item of items) {
-        const productImg = buildProductImage(item);
+        const isShirt = isChurchShirt(item);
+        const productImg = isShirt ? buildCustomizedPreview(item) : buildProductImage(item);
         const row = node('article', undefined, productImg ? 'cart-item' : 'cart-item cart-item--no-image');
+        if (isShirt) row.classList.add('cart-item--customized');
 
         // Product image — server-authoritative URL from pricingSnapshot.
         if (productImg) row.append(productImg);
@@ -201,6 +253,7 @@
           line.append(input, node('span', unitPrice === null ? 'Authoritative price unavailable' : `${money(unitPrice)} each${surcharge}`)); details.append(line);
         });
         const pricing = item.pricingSnapshot || {}; details.append(node('p', `Tier: ${pricing.tier?.minimumQuantity || 1}${pricing.tier?.maximumQuantity ? `–${pricing.tier.maximumQuantity}` : '+'} · ${item.totalQuantity || item.quantity} total`));
+        if (isShirt) details.append(buildCustomizationDetails(item));
         const removeButton = node('button', 'Remove', 'remove-btn'); removeButton.type = 'button'; removeButton.addEventListener('click', () => remove(item, state.cart.version)); details.append(removeButton);
         row.append(details, node('div', money(item.lineTotalCents), 'cart-item-price')); list.append(row);
       }
@@ -214,7 +267,7 @@
       container.replaceChildren(node('p', error.message || 'The cart could not be loaded.')); show('The cart could not be loaded.', true);
     }
   }
-  global.DivineCartPage = { render, configurationSummary, buildProductImage, resolveLabel, startCheckout, authoritativeUnitPriceCents };
+  global.DivineCartPage = { isChurchShirt, buildCustomizationDetails, buildCustomizedPreview, render, configurationSummary, buildProductImage, resolveLabel, startCheckout, authoritativeUnitPriceCents };
   document.addEventListener('DOMContentLoaded', render);
   global.addEventListener('cart:claim-success', render);
   global.addEventListener('auth:session-restored', render);
