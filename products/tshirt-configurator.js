@@ -222,17 +222,19 @@ function renderTextControls() {
     const heading = document.createElement('label'); heading.textContent = `Text ${i + 1}`; heading.htmlFor = `text-input-${t.id}`; panel.append(heading);
     const input = document.createElement('input'); input.type = 'text'; input.id = `text-input-${t.id}`; input.className = 'church-text-input'; input.maxLength = 100; input.value = t.text;
     input.addEventListener('input', () => updateText(t.id, input.value)); input.addEventListener('focus', () => selectText(t.id)); panel.append(input);
+    const fontRow = document.createElement('div'); fontRow.className = 'text-controls-row';
     const font = document.createElement('select'); font.className = 'font-select-small'; font.setAttribute('aria-label', `Text ${i + 1} font`);
-    Object.entries({ Cinzel: 'Cinzel', Inter: 'Inter', Georgia: 'Georgia', 'Brush Script MT': 'Script', Impact: 'Impact', 'Playfair Display': 'Playfair', Oswald: 'Oswald', Lobster: 'Lobster' }).forEach(([value, name]) => {
+    Object.entries({ Cinzel: 'Cinzel', Inter: 'Inter', Georgia: 'Libre Baskerville (replaces Georgia)', 'Brush Script MT': 'Great Vibes (replaces Script)', Impact: 'Anton (replaces Impact)', 'Playfair Display': 'Playfair', Oswald: 'Oswald', Lobster: 'Lobster' }).forEach(([value, name]) => {
       const option = document.createElement('option'); option.value = value; option.textContent = name; font.append(option);
-    }); font.value = t.font; font.addEventListener('change', () => updateTextFont(t.id, font.value)); panel.append(font);
-    const color = document.createElement('input'); color.type = 'color'; color.value = t.color; color.setAttribute('aria-label', `Text ${i + 1} color`); color.addEventListener('input', () => updateTextColor(t.id, color.value)); panel.append(color);
+    }); font.value = t.font; font.addEventListener('change', () => updateTextFont(t.id, font.value)); fontRow.append(font);
+    const color = document.createElement('input'); color.type = 'color'; color.className = 'color-picker-small'; color.value = t.color; color.setAttribute('aria-label', `Text ${i + 1} color`); color.addEventListener('input', () => updateTextColor(t.id, color.value)); fontRow.append(color); panel.append(fontRow);
     [['Size', 'size', 10, 48, updateTextSize, 'px'], ['Arch', 'arch', -30, 30, updateTextArch, '°']].forEach(([name, key, min, max, update, unit]) => {
+      const row = document.createElement('div'); row.className = `${key === 'size' ? 'size' : 'arch'}-control`;
       const label = document.createElement('label'); label.textContent = `${name}: `;
       const value = document.createElement('span'); value.id = `${key}-label-${t.id}`; value.textContent = `${t[key] || 0}${unit}`; label.append(value);
-      const slider = document.createElement('input'); slider.type = 'range'; slider.min = min; slider.max = max; slider.value = t[key] || 0; slider.setAttribute('aria-label', `Text ${i + 1} ${name.toLowerCase()}`); slider.addEventListener('input', () => update(t.id, slider.value)); panel.append(label, slider);
+      const slider = document.createElement('input'); slider.type = 'range'; slider.className = key === 'size' ? 'size-slider' : 'arch-slider'; slider.min = min; slider.max = max; slider.value = t[key] || 0; slider.setAttribute('aria-label', `Text ${i + 1} ${name.toLowerCase()}`); slider.addEventListener('input', () => update(t.id, slider.value)); row.append(label, slider); panel.append(row);
     });
-    const note = document.createElement('small'); note.textContent = 'Other font selections use Inter in the preview; your selected font is saved.'; panel.append(note); container.append(panel);
+    container.append(panel);
   });
   updateTextSelectionUI(); syncDefaultTextPreview();
 }

@@ -12,7 +12,7 @@ async function mockCart(page) {
     if (!url.pathname.startsWith('/api/')) {
       const file = path.resolve(__dirname, '..', '.' + url.pathname);
       if (!file.startsWith(path.resolve(__dirname, '..') + path.sep) || !fs.existsSync(file)) { await route.fulfill({ status: 404, body: '' }); return; }
-      const contentType = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.png': 'image/png', '.jpg': 'image/jpeg' }[path.extname(file)] || 'application/octet-stream';
+      const contentType = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.png': 'image/png', '.jpg': 'image/jpeg', '.ttf': 'font/ttf' }[path.extname(file)] || 'application/octet-stream';
       await route.fulfill({ body: fs.readFileSync(file), contentType }); return;
     }
     if (url.pathname.includes('checkout')) throw new Error('Checkout forbidden in local test');
@@ -33,10 +33,10 @@ test('local evaluated save/reload/quantity roundtrip preserves exact customized 
   const mock = await mockCart(page); await page.goto(origin + '/products/church-t-shirt.html');
   await expect(page.locator('.text-instance')).toHaveCount(2); await expect(page.locator('#addTextBtn, .remove-text-btn')).toHaveCount(0);
   await expect(page.locator('#previewStatus')).toContainText('Customized shirt preview');
-  await page.locator('#text-input-0').fill('  Grace 🙏  '); await page.locator('#text-input-1').fill('');
+  await page.locator('#text-input-0').fill('  Grace é  '); await page.locator('#text-input-1').fill('');
   await page.getByLabel('Text 1 font', { exact: true }).selectOption('Brush Script MT');
   await page.getByLabel('Text 1 arch', { exact: true }).fill('20');
-  await page.locator('#organizationName').fill('Grace 🙏'); await page.locator('#customerInstructions').fill('Keep this placement');
+  await page.locator('#organizationName').fill('Grace é'); await page.locator('#customerInstructions').fill('Keep this placement');
   await page.evaluate(() => { state.texts[0].x = 0; state.texts[0].y = 0; state.texts[1].color = '#123456'; drawPreview(); });
   await expect(page.locator('#previewStatus')).toContainText('Customized shirt preview');
   const before = await page.locator('#tshirtCanvas').evaluate(c => c.toDataURL());
@@ -46,9 +46,13 @@ test('local evaluated save/reload/quantity roundtrip preserves exact customized 
   await page.getByText('View Customization', { exact: true }).click(); await expect(page.locator('.customization-details')).toContainText('Text 2 (blank)'); await expect(page.locator('.customization-details')).toContainText('#123456');
   const configuration = JSON.parse(JSON.stringify(mock.saved().customerConfiguration));
   await page.reload(); await expect(page.locator('.preview-status')).toContainText('Customized shirt preview');
+  expect(await page.locator('.cart-customized-canvas').evaluate(c => c.toDataURL())).toBe(before);
   await page.getByLabel('size: L quantity').fill('26'); await page.getByLabel('size: L quantity').blur();
   await expect.poll(() => mock.saved().totalQuantity).toBe(26);
   expect(mock.saved().customerConfiguration).toEqual(configuration);
+  await expect(page.locator('.preview-status')).toHaveText('Customized shirt preview');
+  expect(await page.locator('.cart-customized-canvas').evaluate(c => c.toDataURL())).toBe(before);
+  await expect(page.locator('.customer-instructions')).toContainText('Keep this placement');
   const patch = mock.requests.find(r => r.method === 'PATCH'); expect(patch.body).toEqual({ itemType: 'CONFIGURED_JOB', variantAllocations: [{ selections: { size: 'L' }, quantity: 26 }] });
 });
 test('both blank panels survive save and full-back/reset/first-text keyboard behavior is explicit', async ({ page }) => {
@@ -90,4 +94,47 @@ test('customized mobile details use full row width at 320px and generic rows rem
   });
   await expect(page.locator('.cart-item')).toHaveCount(1); await expect(page.locator('.cart-item--customized')).toHaveCount(0);
   await expect(page.locator('.cart-item-image')).toHaveCount(1);
+});
+
+test('eight self-hosted faces are distinct, stacked controls and instructions are visible before expansion', async ({ page }, testInfo) => {
+  await mockCart(page); await page.goto(origin + '/products/church-t-shirt.html');
+  await page.locator('#text-input-0').fill('Grace Church'); await page.locator('#text-input-1').fill('Faith Hope Love');
+  const pictures = [];
+  const fonts = ['Cinzel', 'Inter', 'Georgia', 'Brush Script MT', 'Impact', 'Playfair Display', 'Oswald', 'Lobster'];
+  for (let i = 0; i < fonts.length; i++) {
+    await page.getByLabel('Text 1 font', { exact: true }).selectOption(fonts[i]);
+    await page.getByLabel('Text 1 arch', { exact: true }).fill('0');
+    await expect(page.locator('#previewStatus')).toHaveText('Customized shirt preview');
+    pictures.push(await page.locator('#tshirtCanvas').evaluate(c => c.toDataURL()));
+    await page.locator('#tshirtCanvas').screenshot({ path: `/tmp/divineprinting-font-${testInfo.project.name.replace(/ /g, '-')}-${i}.png` });
+  }
+  expect(new Set(pictures).size).toBe(8);
+  for (const arch of [-30, 0, 30]) {
+    await page.getByLabel('Text 1 arch', { exact: true }).fill(String(arch)); await expect(page.locator('#previewStatus')).toHaveText('Customized shirt preview');
+    await page.locator('#tshirtCanvas').screenshot({ path: `/tmp/divineprinting-arch-${testInfo.project.name.replace(/ /g, '-')}-${arch}.png` });
+  }
+  const layout = await page.locator('.text-instance').first().evaluate(panel => {
+    const font = panel.querySelector('.text-controls-row'), size = panel.querySelector('.size-control'), arch = panel.querySelector('.arch-control');
+    return { right: panel.getBoundingClientRect().right, viewport: innerWidth, fontTop: font.querySelector('select').getBoundingClientRect().top, colorTop: font.querySelector('input').getBoundingClientRect().top, fontBottom: font.getBoundingClientRect().bottom, sizeTop: size.getBoundingClientRect().top, sizeBottom: size.getBoundingClientRect().bottom, archTop: arch.getBoundingClientRect().top, overflow: panel.scrollWidth > panel.clientWidth };
+  });
+  expect(layout.fontTop).toBeCloseTo(layout.colorTop); expect(layout.sizeTop).toBeGreaterThanOrEqual(layout.fontBottom); expect(layout.archTop).toBeGreaterThanOrEqual(layout.sizeBottom); expect(layout.overflow).toBe(false); expect(layout.right).toBeLessThanOrEqual(layout.viewport);
+  await page.locator('#textControlsContainer').screenshot({ path: `/tmp/divineprinting-text-panels-${testInfo.project.name.replace(/ /g, '-')}.png` });
+  await page.locator('#customerInstructions').fill('Line one\n<keep exact text>');
+  await page.locator('#configuredAddButton').click(); await expect(page).toHaveURL(origin + '/cart.html');
+  await expect(page.locator('.customer-instructions')).toContainText('Line one\n<keep exact text>');
+  await expect(page.locator('.preview-status')).toHaveText('Customized shirt preview');
+  expect(await page.locator('.customization-details').getAttribute('open')).toBe(null);
+  expect(await page.locator('.customer-instructions').evaluate(p => getComputedStyle(p).whiteSpace)).toBe('pre-wrap');
+  await page.screenshot({ path: `/tmp/divineprinting-font-cart-${testInfo.project.name.replace(/ /g, '-')}.png`, fullPage: true });
+  await page.getByText('View Customization', { exact: true }).click();
+  await page.locator('.cart-item--customized').screenshot({ path: `/tmp/divineprinting-expanded-customization-${testInfo.project.name.replace(/ /g, '-')}.png` });
+});
+
+test('blocked licensed font and unsupported glyph fail clearly without substitutions', async ({ page }) => {
+  await mockCart(page); await page.route('**/fonts/tshirt/cinzel/*.ttf', route => route.abort());
+  await page.goto(origin + '/products/church-t-shirt.html');
+  await expect(page.locator('#previewStatus')).toContainText('Customized preview unavailable');
+  await page.getByLabel('Text 1 font', { exact: true }).selectOption('Inter'); await page.locator('#text-input-0').fill('Unsupported 🙏');
+  await expect(page.locator('#previewStatus')).toContainText('cannot render every character');
+  expect(await page.locator('#tshirtCanvas').evaluate(c => getComputedStyle(c).visibility)).toBe('hidden');
 });

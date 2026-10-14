@@ -142,7 +142,6 @@
     });
     (item.variantAllocations || []).forEach(a => add('Size quantity', `${allocationLabel(a)} × ${a.quantity}`));
     add('Total quantity', item.totalQuantity || item.quantity);
-    section.append(node('small', 'If a preview font is unavailable, the preview uses Arial; selected fonts remain saved.'));
     if (configuration.options.placement === 'full-back') section.append(node('p', 'Full Back uses a front shirt photograph; a rear view is unavailable.'));
     return section;
   }
@@ -253,6 +252,7 @@
           line.append(input, node('span', unitPrice === null ? 'Authoritative price unavailable' : `${money(unitPrice)} each${surcharge}`)); details.append(line);
         });
         const pricing = item.pricingSnapshot || {}; details.append(node('p', `Tier: ${pricing.tier?.minimumQuantity || 1}${pricing.tier?.maximumQuantity ? `–${pricing.tier.maximumQuantity}` : '+'} · ${item.totalQuantity || item.quantity} total`));
+        if (isShirt && item.customerInstructions) details.append(node('p', `Customer instructions: ${item.customerInstructions}`, 'customer-instructions'));
         if (isShirt) details.append(buildCustomizationDetails(item));
         const removeButton = node('button', 'Remove', 'remove-btn'); removeButton.type = 'button'; removeButton.addEventListener('click', () => remove(item, state.cart.version)); details.append(removeButton);
         row.append(details, node('div', money(item.lineTotalCents), 'cart-item-price')); list.append(row);

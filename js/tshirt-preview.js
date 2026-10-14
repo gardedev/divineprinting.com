@@ -33,8 +33,16 @@
   function supports(item) {
     return item.productId === assets.productId && item.customerConfiguration?.schemaVersion === 'custom-design-v1' && item.customerConfiguration?.designConfiguration?.canvasVersion === 'tshirt-800-v1';
   }
-  function fontFor(fontId) { return fontId === 'cinzel' ? 'Cinzel' : 'Inter'; }
-  function fontNote(fontId) { return fontId === 'cinzel' || fontId === 'inter' ? '' : 'Preview uses Inter; selected font is saved.'; }
+  function fontFor(fontId) {
+    const spec = assets.fontSpecs[fontId];
+    if (!spec) throw new Error('Selected preview font unavailable.');
+    return spec.family;
+  }
+  function fontNote() { return ''; }
+  function graphemes(text) {
+    if (!global.Intl?.Segmenter) throw new Error('Unicode text rendering unavailable in this browser.');
+    return Array.from(new global.Intl.Segmenter(undefined, { granularity: 'grapheme' }).segment(text), entry => entry.segment);
+  }
   function imageReady(src) {
     if (!images.has(src)) images.set(src, new Promise((resolve, reject) => {
       const img = new global.Image();
@@ -49,106 +57,55 @@
     const shirt = assets.colors.find(c => c.name === configuration.options.color);
     const template = assets.templates[design.templateId];
     if (!shirt || !template || design.templateVersion !== 1 || configuration.options.designSource !== 'TEMPLATE') throw new Error('Customized preview unavailable.');
-    const fonts = [...new Set(design.textElements.map(p => fontFor(p.fontId)))];
+    const fontIds = [...new Set(design.textElements.map(p => p.fontId))];
     const resolvedFonts = {};
-    const fontTasks = fonts.map(async font => {
+    const fontTasks = fontIds.map(async fontId => {
+      const spec = assets.fontSpecs[fontId];
+      if (!spec || !global.document.fonts) throw new Error('Selected preview font unavailable.');
+      const text = design.textElements.filter(p => p.fontId === fontId).map(p => p.text).join('');
+      for (const char of Array.from(text)) {
+        const code = char.codePointAt(0);
+        if (!spec.glyphRanges.some(([first, last]) => code >= first && code <= last)) throw new Error('Selected font cannot render every character.');
+      }
+      let timer;
       try {
-        let timer;
-        try {
-          const loaded = await Promise.race([
-            global.document.fonts?.load(`600 24px "${font}"`),
-            new Promise(resolve => { timer = global.setTimeout(() => resolve([]), 2000); })
-          ]);
-          resolvedFonts[font] = loaded?.length ? font : 'Arial';
-        } finally { global.clearTimeout(timer); }
-      } catch (_) { resolvedFonts[font] = 'Arial'; }
+        const loaded = await Promise.race([
+          global.document.fonts.load(`${spec.weight} 24px "${spec.family}"`, text),
+          new Promise((_, reject) => { timer = global.setTimeout(() => reject(new Error('Selected preview font unavailable.')), 5000); })
+        ]);
+        if (!loaded.length) throw new Error('Selected preview font unavailable.');
+        resolvedFonts[fontId] = spec;
+      } finally { global.clearTimeout(timer); }
     });
     const loaded = await Promise.all([imageReady(`/images/tshirts/${shirt.image}`), imageReady(`/images/designs/${template.file}`), ...fontTasks]);
     return { shirt: loaded[0], design: loaded[1], fonts: resolvedFonts };
   }
-function drawArchedText(ctx, text, x, y, size, font, color, arch) {
-  if (!arch || arch === 0) {
-    // Fallback to straight text
-    ctx.fillStyle = color;
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.font = '600 ' + size + 'px "' + font + '", sans-serif';
-    ctx.fillText(text, x, y);
-    return;
+  function archLayout(ctx, text, size, arch) {
+    const characters = graphemes(text);
+    if (!characters.length) return [];
+    const widths = characters.map(char => ctx.measureText(char).width);
+    const spacing = size * 0.05;
+    const width = widths.reduce((sum, w) => sum + w, 0) + spacing * (characters.length - 1);
+    if (!Number.isFinite(width) || width <= 0 || widths.every(w => w <= 0)) return [];
+    if (!arch || characters.length === 1) return characters.map((text, index) => ({ text, x: 0, y: 0, rotation: 0 }));
+    const direction = Math.sign(arch); const radius = width / (Math.abs(arch) * Math.PI / 180);
+    let before = 0;
+    return characters.map((text, index) => {
+      const angle = (before + widths[index] / 2 - width / 2) / radius;
+      before += widths[index] + spacing;
+      return { text, x: radius * Math.sin(angle), y: direction * radius * (1 - Math.cos(angle)), rotation: direction * angle };
+    });
   }
 
-  ctx.save();
-  ctx.font = '600 ' + size + 'px "' + font + '", sans-serif';
-  ctx.fillStyle = color;
-
-  // Calculate total width by measuring each character
-  const characters = Array.from(text);
-  let totalWidth = 0;
-  const charWidths = [];
-  for (let i = 0; i < characters.length; i++) {
-    const w = ctx.measureText(characters[i]).width;
-    charWidths.push(w);
-    totalWidth += w;
-  }
-
-  // Add small spacing between characters for better curve
-  const charSpacing = size * 0.05;
-  totalWidth += charSpacing * (text.length - 1);
-
-  // Convert arch degrees to radians
-  const archRad = arch * Math.PI / 180;
-
-  // Calculate radius based on desired arch angle and text width
-  // Use a minimum radius to prevent extreme curves on short text
-  const minRadius = totalWidth * 0.8;
-  const calculatedRadius = totalWidth / (2 * Math.sin(Math.abs(archRad) / 2));
-  const radius = Math.max(minRadius, calculatedRadius);
-
-  // Determine curve direction
-  const curveDirection = arch > 0 ? 1 : -1; // Positive = curve up (smile)
-
-  // Arc center is below the text for upward curve, above for downward
-  const arcCenterY = y + curveDirection * radius;
-
-  // Calculate the angular width of the text along the arc
-  const angularWidth = 2 * Math.asin(totalWidth / (2 * radius));
-
-  // Start angle (left side of text)
-  let currentAngle = -angularWidth / 2;
-
-  // Draw each character
-  for (let i = 0; i < characters.length; i++) {
-    const char = characters[i];
-    const charWidth = charWidths[i];
-
-    // Calculate the angle span for this character
-    const charAngleSpan = (charWidth + charSpacing) / radius;
-
-    // Angle at the center of this character
-    const angle = currentAngle + charAngleSpan / 2;
-
-    // Calculate position on the arc
-    const charX = x + radius * Math.sin(angle);
-    const charY = arcCenterY - curveDirection * radius * Math.cos(angle);
-
-    // Rotation follows the curve tangent
-    const rotation = -curveDirection * angle;
-
-    ctx.save();
-    ctx.translate(charX, charY);
-    ctx.rotate(rotation);
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText(char, 0, 0);
+  function drawArchedText(ctx, text, x, y, size, font, color, arch, weight) {
+    if (!text) return;
+    ctx.save(); ctx.font = `${weight} ${size}px "${font}"`; ctx.fillStyle = color; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    if (!arch) ctx.fillText(text, x, y);
+    else archLayout(ctx, text, size, arch).forEach(glyph => {
+      ctx.save(); ctx.translate(x + glyph.x, y + glyph.y); ctx.rotate(glyph.rotation); ctx.fillText(glyph.text, 0, 0); ctx.restore();
+    });
     ctx.restore();
-
-    // Move to next character position
-    currentAngle += charAngleSpan;
   }
-
-  ctx.restore();
-}
-
 
   function paint(canvas, configuration, loaded) {
     const ctx = canvas.getContext('2d'); canvas.width = 800; canvas.height = 800;
@@ -160,7 +117,7 @@ function drawArchedText(ctx, text, x, y, size, font, color, arch) {
     const designAspect = loaded.design.width / loaded.design.height;
     const dw = size * (designAspect > 1 ? 1 : designAspect); const dh = size / (designAspect > 1 ? designAspect : 1);
     ctx.drawImage(loaded.design, d.designGeometry.x - dw / 2, d.designGeometry.y - dh / 2, dw, dh);
-    [...d.textElements].sort((a, b) => a.order - b.order).forEach(p => drawArchedText(ctx, p.text.trim(), p.position.x, p.position.y, p.fontSize, loaded.fonts?.[fontFor(p.fontId)] || 'Arial', p.color, p.archDegrees));
+    [...d.textElements].sort((a, b) => a.order - b.order).forEach(p => drawArchedText(ctx, p.text.trim(), p.position.x, p.position.y, p.fontSize, loaded.fonts[p.fontId].family, p.color, p.archDegrees, loaded.fonts[p.fontId].weight));
   }
   async function render(canvas, configuration, status) {
     const generation = (generations.get(canvas) || 0) + 1; generations.set(canvas, generation);
@@ -170,12 +127,12 @@ function drawArchedText(ctx, text, x, y, size, font, color, arch) {
       const loaded = await ready(configuration);
       if (generations.get(canvas) !== generation) return false;
       paint(canvas, configuration, loaded); canvas.style.visibility = 'visible';
-      if (status) status.textContent = (configuration.options.placement === 'full-back' ? 'Full Back placement: this preview uses a front photo, not a rear view.' : 'Customized shirt preview') + (Object.values(loaded.fonts).includes('Arial') ? ' Unavailable preview fonts use Arial; your selected fonts are saved.' : '');
+      if (status) status.textContent = (configuration.options.placement === 'full-back' ? 'Full Back placement: this preview uses a front photo, not a rear view.' : 'Customized shirt preview');
       return true;
     } catch (error) {
-      if (generations.get(canvas) === generation && status) status.textContent = 'Customized preview unavailable. Your saved settings remain available.';
+      if (generations.get(canvas) === generation && status) status.textContent = `Customized preview unavailable: ${error.message} Your saved settings remain available.`;
       return false;
     }
   }
-  global.DivineTshirtPreview = { normalizeEditor, defaults, coordinate, supports, fontFor, fontNote, ready, paint, render };
+  global.DivineTshirtPreview = { normalizeEditor, graphemes, archLayout, defaults, coordinate, supports, fontFor, fontNote, ready, paint, render };
 })(typeof window !== 'undefined' ? window : globalThis);
