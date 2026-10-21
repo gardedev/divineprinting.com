@@ -1,0 +1,378 @@
+[
+  {
+    "id": "custom-embroidered-church-chasuble",
+    "slug": "custom-embroidered-church-chasuble",
+    "name": "Custom Embroidered Church Chasuble",
+    "category": "apparel",
+    "purchaseMode": "quote",
+    "image": "images/custom-embroidered-church-chasuble.jpg",
+    "alt": "A chasuble with a central panel of gold and silver floral scrollwork, a sacred figure medallion and gold piping.",
+    "description": "A chasuble with a central panel of gold and silver floral scrollwork, a sacred figure medallion and gold piping.",
+    "specifications": {
+      "Sizing": "Made to measure",
+      "Embroidery": "Custom designs available"
+    },
+    "colors": [
+      "White",
+      "Red",
+      "Green",
+      "Purple",
+      "Gold"
+    ],
+    "quoteFields": [
+      {
+        "name": "dimensions",
+        "label": "Garment size / made-to-measure requirements"
+      },
+      {
+        "name": "embroidery",
+        "label": "Embroidery / emblem requirements"
+      }
+    ],
+    "source": {
+      "page": 3,
+      "imageIndex": 1
+    }
+  },
+  {
+    "id": "embroidered-clergy-alb-with-gold-cincture",
+    "slug": "embroidered-clergy-alb-with-gold-cincture",
+    "name": "Embroidered Clergy Alb with Gold Cincture",
+    "category": "apparel",
+    "purchaseMode": "quote",
+    "image": "images/embroidered-clergy-alb-with-gold-cincture.jpg",
+    "alt": "A white stand-collar alb with gold floral embroidery at the cuffs and hem, supplied with a braided gold cincture.",
+    "description": "A white stand-collar alb with gold floral embroidery at the cuffs and hem, supplied with a braided gold cincture.",
+    "specifications": {
+      "Sizing": "Adult and youth, made to measure",
+      "Included": "Gold braided cincture"
+    },
+    "colors": [
+      "White"
+    ],
+    "quoteFields": [
+      {
+        "name": "dimensions",
+        "label": "Garment size / made-to-measure requirements"
+      },
+      {
+        "name": "embroidery",
+        "label": "Embroidery / emblem requirements"
+      }
+    ],
+    "source": {
+      "page": 3,
+      "imageIndex": 0
+    }
+  },
+  {
+    "id": "custom-liturgical-stoles",
+    "slug": "custom-liturgical-stoles",
+    "name": "Custom Liturgical Stoles",
+    "category": "apparel",
+    "purchaseMode": "quote",
+    "image": "images/custom-liturgical-stoles.jpg",
+    "alt": "V-shaped seasonal stoles with gold braid trim and a gold embroidered chalice and IHS emblem.",
+    "description": "V-shaped seasonal stoles with gold braid trim and a gold embroidered chalice and IHS emblem.",
+    "specifications": {
+      "Trim": "Gold braid",
+      "Emblem": "Custom embroidery available"
+    },
+    "colors": [
+      "White",
+      "Green",
+      "Purple",
+      "Red"
+    ],
+    "quoteFields": [
+      {
+        "name": "dimensions",
+        "label": "Requested dimensions / length / width"
+      },
+      {
+        "name": "embroidery",
+        "label": "Embroidery / emblem requirements"
+      }
+    ],
+    "source": {
+      "page": 4,
+      "imageIndex": 1
+    }
+  },
+  {
+    "id": "embroidered-clergy-stole-with-gold-fringe",
+    "slug": "embroidered-clergy-stole-with-gold-fringe",
+    "name": "Embroidered Clergy Stole with Gold Fringe",
+    "category": "apparel",
+    "purchaseMode": "quote",
+    "image": "images/embroidered-clergy-stole-with-gold-fringe.jpg",
+    "alt": "A satin-finish stole with gold cross embroidery and gold bullion fringe at the ends.",
+    "description": "A satin-finish stole with gold cross embroidery and gold bullion fringe at the ends.",
+    "specifications": {
+      "Finish": "Gold fringe",
+      "Emblem": "Custom designs available"
+    },
+    "colors": [
+      "White",
+      "Red",
+      "Green",
+      "Purple",
+      "Black"
+    ],
+    "quoteFields": [
+      {
+        "name": "dimensions",
+        "label": "Requested dimensions / length / width"
+      },
+      {
+        "name": "embroidery",
+        "label": "Embroidery / emblem requirements"
+      }
+    ],
+    "source": {
+      "page": 4,
+      "imageIndex": 0
+    }
+  },
+  {
+    "id": "custom-embroidered-altar-and-lectern-runner",
+    "slug": "custom-embroidered-altar-and-lectern-runner",
+    "name": "Custom Embroidered Altar and Lectern Runner",
+    "category": "apparel",
+    "purchaseMode": "quote",
+    "image": "images/custom-embroidered-altar-and-lectern-runner.jpg",
+    "alt": "A runner with a gold embroidered cross and grapevine design, woven cross-pattern border and gold fringe.",
+    "description": "A runner with a gold embroidered cross and grapevine design, woven cross-pattern border and gold fringe.",
+    "specifications": {
+      "Finish": "Gold fringe"
+    },
+    "colors": [
+      "Blue",
+      "Red",
+      "Green",
+      "White",
+      "Purple"
+    ],
+    "quoteFields": [
+      {
+        "name": "dimensions",
+        "label": "Requested dimensions / length / width"
+      },
+      {
+        "name": "embroidery",
+        "label": "Embroidery / emblem requirements"
+      }
+    ],
+    "source": {
+      "page": 5,
+      "imageIndex": 0
+    }
+  },
+  {
+    "id": "custom-church-processional-banner",
+    "slug": "custom-church-processional-banner",
+    "name": "Custom Church Processional Banner",
+    "category": "apparel",
+    "purchaseMode": "quote",
+    "image": "images/custom-church-processional-banner.jpg",
+    "alt": "A rod-hung banner with a gold IHS sunburst, crossed keys and crown, an ornate border and tassels.",
+    "description": "A rod-hung banner with a gold IHS sunburst, crossed keys and crown, an ornate border and tassels.",
+    "specifications": {
+      "Size": "Custom"
+    },
+    "colors": [
+      "Cream",
+      "Red",
+      "Blue"
+    ],
+    "quoteFields": [
+      {
+        "name": "dimensions",
+        "label": "Requested dimensions / length / width"
+      },
+      {
+        "name": "embroidery",
+        "label": "Embroidery / emblem requirements"
+      }
+    ],
+    "source": {
+      "page": 5,
+      "imageIndex": 1
+    }
+  },
+  {
+    "id": "decorative-metallic-vestment-trim",
+    "slug": "decorative-metallic-vestment-trim",
+    "name": "Decorative Metallic Vestment Trim",
+    "category": "apparel",
+    "purchaseMode": "quote",
+    "image": "images/decorative-metallic-vestment-trim.jpg",
+    "alt": "Woven jacquard trim ribbons with scroll and floral patterns for vestment edges and borders.",
+    "description": "Woven jacquard trim ribbons with scroll and floral patterns for vestment edges and borders.",
+    "specifications": {
+      "Ordering unit": "By the roll"
+    },
+    "colors": [
+      "Gold",
+      "Antique Gold",
+      "Silver"
+    ],
+    "quoteFields": [
+      {
+        "name": "dimensions",
+        "label": "Requested dimensions / length / width"
+      },
+      {
+        "name": "embroidery",
+        "label": "Intended application / finishing requirements"
+      },
+      {
+        "name": "unit",
+        "label": "Quantity unit (roll, piece, pair or requested length)"
+      }
+    ],
+    "source": {
+      "page": 10,
+      "imageIndex": 0
+    }
+  },
+  {
+    "id": "gold-braided-vestment-lace",
+    "slug": "gold-braided-vestment-lace",
+    "name": "Gold Braided Vestment Lace",
+    "category": "apparel",
+    "purchaseMode": "quote",
+    "image": "images/gold-braided-vestment-lace.jpg",
+    "alt": "Gold braid lace with a geometric weave for edging and finishing.",
+    "description": "Gold braid lace with a geometric weave for edging and finishing.",
+    "specifications": {
+      "Widths": "Various; request measurements",
+      "Ordering unit": "By the roll"
+    },
+    "colors": [
+      "Gold"
+    ],
+    "quoteFields": [
+      {
+        "name": "dimensions",
+        "label": "Requested dimensions / length / width"
+      },
+      {
+        "name": "embroidery",
+        "label": "Intended application / finishing requirements"
+      },
+      {
+        "name": "unit",
+        "label": "Quantity unit (roll, piece, pair or requested length)"
+      }
+    ],
+    "source": {
+      "page": 10,
+      "imageIndex": 2
+    }
+  },
+  {
+    "id": "gold-woven-grape-and-vine-vestment-trim",
+    "slug": "gold-woven-grape-and-vine-vestment-trim",
+    "name": "Gold Woven Grape and Vine Vestment Trim",
+    "category": "apparel",
+    "purchaseMode": "quote",
+    "image": "images/gold-woven-grape-and-vine-vestment-trim.jpg",
+    "alt": "Gold woven bands with a grape and vine motif for chasubles, stoles and banners.",
+    "description": "Gold woven bands with a grape and vine motif for chasubles, stoles and banners.",
+    "specifications": {
+      "Widths": "Various; request measurements",
+      "Ordering unit": "By the roll"
+    },
+    "colors": [
+      "Gold"
+    ],
+    "quoteFields": [
+      {
+        "name": "dimensions",
+        "label": "Requested dimensions / length / width"
+      },
+      {
+        "name": "embroidery",
+        "label": "Intended application / finishing requirements"
+      },
+      {
+        "name": "unit",
+        "label": "Quantity unit (roll, piece, pair or requested length)"
+      }
+    ],
+    "source": {
+      "page": 10,
+      "imageIndex": 1
+    }
+  },
+  {
+    "id": "gold-bullion-church-tassels",
+    "slug": "gold-bullion-church-tassels",
+    "name": "Gold Bullion Church Tassels",
+    "category": "apparel",
+    "purchaseMode": "quote",
+    "image": "images/gold-bullion-church-tassels.jpg",
+    "alt": "Handcrafted gold thread tassels with layered caps and beaded drops for cords, banners, curtains and vestments.",
+    "description": "Handcrafted gold thread tassels with layered caps and beaded drops for cords, banners, curtains and vestments.",
+    "specifications": {
+      "Sizes": "Various; request measurements",
+      "Ordering unit": "By the piece or pair"
+    },
+    "colors": [
+      "Gold"
+    ],
+    "quoteFields": [
+      {
+        "name": "dimensions",
+        "label": "Requested dimensions / length / width"
+      },
+      {
+        "name": "embroidery",
+        "label": "Intended application / finishing requirements"
+      },
+      {
+        "name": "unit",
+        "label": "Quantity unit (roll, piece, pair or requested length)"
+      }
+    ],
+    "source": {
+      "page": 11,
+      "imageIndex": 0
+    }
+  },
+  {
+    "id": "gold-braided-liturgical-cincture-cord",
+    "slug": "gold-braided-liturgical-cincture-cord",
+    "name": "Gold Braided Liturgical Cincture Cord",
+    "category": "apparel",
+    "purchaseMode": "quote",
+    "image": "images/gold-braided-liturgical-cincture-cord.jpg",
+    "alt": "Braided gold rope cord finished with tassel ends for cinctures and stoles.",
+    "description": "Braided gold rope cord finished with tassel ends for cinctures and stoles.",
+    "specifications": {
+      "Length": "Custom"
+    },
+    "colors": [
+      "Gold"
+    ],
+    "quoteFields": [
+      {
+        "name": "dimensions",
+        "label": "Requested dimensions / length / width"
+      },
+      {
+        "name": "embroidery",
+        "label": "Intended application / finishing requirements"
+      },
+      {
+        "name": "unit",
+        "label": "Quantity unit (roll, piece, pair or requested length)"
+      }
+    ],
+    "source": {
+      "page": 11,
+      "imageIndex": 1
+    }
+  }
+]

@@ -6,7 +6,7 @@ const path = require('node:path');
 const htmlDirectories = new Set(['products', 'account', 'admin', 'blog', 'checkout']);
 const rootAssets = new Set([
   'cart.js', 'snipcart-custom.js', 'snipcart-close-fix.js',
-  'styles.css', 'product.css', 'snipcart-custom.css', 'cognito-hosted-ui.css',
+  'styles.css', 'product.css', 'vestments.css', 'snipcart-custom.css', 'cognito-hosted-ui.css',
   'favicon.ico', 'robots.txt', 'sitemap.xml', '_redirects',
 ]);
 const imageExtension = /\.(?:avif|gif|ico|jpe?g|png|svg|webp)$/i;
