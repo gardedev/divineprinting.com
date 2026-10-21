@@ -2,9 +2,10 @@ version: 1
 frontend:
   phases:
     build:
-      commands: []
+      commands:
+        - node scripts/build-static.js
   artifacts:
-    baseDirectory: /
+    baseDirectory: dist
     files:
       - '**/*'
   cache:

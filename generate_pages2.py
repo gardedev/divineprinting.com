@@ -362,6 +362,7 @@ def render_page(p):
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="../styles.css" />
   <link rel="stylesheet" href="../product.css" />
+<script src="https://js.hcaptcha.com/1/api.js" async defer></script>
 </head>
 <body>
 
@@ -436,7 +437,7 @@ def render_page(p):
     </div>
 
     <div class="quote-form" id="quoteFormWrap">
-      <form id="quoteForm" onsubmit="submitQuote(event)">
+      <form id="quoteForm" action="https://formspree.io/f/xqeydkya" method="POST" onsubmit="submitQuote(event)">
         <input type="hidden" name="product" value="{p['name']}" />
 
         <div class="form-row">
@@ -514,6 +515,7 @@ def render_page(p):
           <input type="checkbox" id="consent" required />
           <label for="consent">I agree to be contacted by Divine Printing regarding this quote request. We respect your privacy and will never share your information.</label>
         </div>
+        <div class="h-captcha" data-sitekey="a5f28750-0a52-40f2-a1b0-eee4c19022ae"></div>
         <button type="submit" class="btn-submit" id="submitBtn">✝ Send My Quote Request</button>
       </form>
 
@@ -567,28 +569,36 @@ def render_page(p):
 <script>
 async function submitQuote(e) {{
   e.preventDefault();
+  // Get token directly at submit time - most reliable approach
+  const token = hcaptcha.getResponse();
+  if (!token) {{
+    alert('Please complete the CAPTCHA to continue.');
+    return;
+  }}
   const btn = document.getElementById('submitBtn');
-  btn.textContent = 'Sending...';
-  btn.disabled = true;
-
-  const form = document.getElementById('quoteForm');
-  const data = new FormData(form);
-
+  btn.textContent = 'Sending...'; btn.disabled = true;
   try {{
-    const res = await fetch('../send-quote.php', {{ method: 'POST', body: data }});
+    const formData = new FormData(document.getElementById('quoteForm'));
+    // Remove any stale h-captcha-response field and set fresh token
+    formData.delete('h-captcha-response');
+    formData.append('h-captcha-response', token);
+    const res = await fetch('https://formspree.io/f/xqeydkya', {{
+      method: 'POST',
+      body: formData,
+      headers: {{ 'Accept': 'application/json' }}
+    }});
     const json = await res.json();
-    if (json.success) {{
-      document.getElementById('quoteForm').style.display = 'none';
-      document.getElementById('formSuccess').style.display = 'block';
+    if (res.ok) {{
+      window.location.href = '../thank-you.html';
     }} else {{
-      btn.textContent = '✝ Send My Quote Request';
-      btn.disabled = false;
-      alert(json.message || 'Something went wrong. Please try again.');
+      btn.textContent = '&#10013; Send My Quote Request'; btn.disabled = false;
+      hcaptcha.reset();
+      alert((json.errors && json.errors.map(e => e.message).join(', ')) || 'Something went wrong. Please try again.');
     }}
   }} catch(err) {{
-    // Fallback: show success anyway (mailto fallback)
-    document.getElementById('quoteForm').style.display = 'none';
-    document.getElementById('formSuccess').style.display = 'block';
+    btn.textContent = '&#10013; Send My Quote Request'; btn.disabled = false;
+    hcaptcha.reset();
+    alert('Network error. Please try again.');
   }}
 }}
 </script>

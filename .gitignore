@@ -15,3 +15,6 @@ coverage/
 !.env.example
 *.log
 .DS_Store
+
+# Allowlisted Amplify deployment artifact
+/dist/
