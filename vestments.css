@@ -1,9 +1,12 @@
-/* Keep all product details visible in the storefront's 4:3 image frames. */
-.product-main-img img { object-fit: contain; background: #f7f5f0; width: 100%; height: 100%; }
+/* Reframed images keep complete visible products inside the 4:3 cover crop. */
+.vestment-product .product-main-img img { object-fit: cover; background: #f7f5f0; width: 100%; height: 100%; }
 .product-main-img { aspect-ratio: 4 / 3; }
 .breadcrumb { padding: 16px 24px; }
 #quoteStatus { min-height: 1.5em; }
 @media (max-width: 600px) { .breadcrumb { font-size: .8rem; } }
 
-/* Contain wide stoles and trim groups in category/listing cards as well. */
-.vestment-card .product-img img { object-fit: contain; background: #f7f5f0; }
+/* New card assets use the same subject-safe framing as the product hero. */
+.vestment-card .product-img img { object-fit: cover; background: #f7f5f0; }
+
+.vestment-product #quote { scroll-margin-top: var(--quote-header-offset, 120px); }
+.vestment-product #quoteHeading:focus-visible { outline: 2px solid var(--gold); outline-offset: 6px; }

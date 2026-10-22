@@ -95,8 +95,20 @@ function jpegDimensions(bytes){
  }
  throw Error('JPEG frame not found');
 }
-test('all eleven optimized images are 900 by 490 and new 4:3 cards preserve the full image',()=>{
+test('all eleven reframed images are 900 by 490 and new 4:3 panels use subject-safe cover',()=>{
  for(const product of products){assert.deepEqual(jpegDimensions(fs.readFileSync(path.join(root,product.image))),{height:490,width:900})}
- const css=fs.readFileSync(path.join(root,'vestments.css'),'utf8');assert.match(css,/\.vestment-card \.product-img img\s*\{\s*object-fit: contain;/);
+ const css=fs.readFileSync(path.join(root,'vestments.css'),'utf8');assert.match(css,/\.vestment-card \.product-img img\s*\{\s*object-fit: cover;/);
+ assert.match(css,/\.vestment-product \.product-main-img img\s*\{\s*object-fit: cover;/);
  const home=fs.readFileSync(path.join(root,'index.html'),'utf8');assert.match(home,/href="\/vestments.css"/);assert.equal((home.match(/class="product-card vestment-card"/g)||[]).length,11);
+});
+
+test('new quote cards target their own bottom form and existing quote cards preserve routes',()=>{
+ const {card,renderProduct}=require('./render-vestments');
+ for(const product of products){
+  assert.ok(card(product).includes(`class="btn-order" href="products/${product.slug}.html#quote"`));
+  assert.ok(renderProduct(product).includes('id="quoteHeading" tabindex="-1"'));
+  assert.ok(renderProduct(product).includes('class="vestment-product"'));
+ }
+ const old=card({id:'existing',slug:'stage-backdrop-banner',name:'Stage',purchaseMode:'quote',image:'images/backdrop.jpg'});
+ assert.ok(old.includes('class="btn-order" href="products/stage-backdrop-banner.html"'));
 });
