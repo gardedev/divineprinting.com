@@ -12,6 +12,32 @@ const rootAssets = new Set([
 const imageExtension = /\.(?:avif|gif|ico|jpe?g|png|svg|webp)$/i;
 const fontExtension = /\.(?:woff2?|ttf|otf|eot|css)$/i;
 
+const gtmHead = `<!-- Google Tag Manager -->
+<script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+})(window,document,'script','dataLayer','GTM-MZXJHMD5');</script>
+<!-- End Google Tag Manager -->`;
+const gtmBody = `<!-- Google Tag Manager (noscript) -->
+<noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-MZXJHMD5"
+height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+<!-- End Google Tag Manager (noscript) -->`;
+
+function addTagManager(html) {
+  // Non-document fixtures and assets must remain byte-for-byte copies.
+  if (!/<head\b[^>]*>/i.test(html) || !/<body\b[^>]*>/i.test(html)) return html;
+  if (html.split(gtmHead).length === 2 && html.split(gtmBody).length === 2 &&
+      (html.match(/GTM-[A-Z0-9]+/gi) || []).length === 2 &&
+      /<head\b[^>]*>\s*<!-- Google Tag Manager -->/i.test(html) &&
+      /<body\b[^>]*>\s*<!-- Google Tag Manager \(noscript\) -->/i.test(html)) return html;
+  if (/googletagmanager\.com\/(?:gtm\.js|ns\.html)|GTM-[A-Z0-9]+/i.test(html)) {
+    throw new Error('Existing Google Tag Manager installation requires review');
+  }
+  return html.replace(/<head\b[^>]*>/i, opening => `${opening}\n${gtmHead}`)
+    .replace(/<body\b[^>]*>/i, opening => `${opening}\n${gtmBody}`);
+}
+
 function isPublicAsset(relativePath) {
   if (relativePath.includes('\\')) return false;
   const parts = relativePath.split('/');
@@ -55,10 +81,15 @@ function buildStatic(sourceDirectory = path.resolve(__dirname, '..')) {
   for (const relative of files) {
     const target = path.join(destination, relative);
     fs.mkdirSync(path.dirname(target), { recursive: true });
-    fs.copyFileSync(path.join(source, relative), target);
+    if (/\.html$/i.test(relative) && !relative.startsWith('admin/')) {
+      const original = fs.readFileSync(path.join(source, relative));
+      const html = original.toString('utf8');
+      const transformed = addTagManager(html);
+      fs.writeFileSync(target, transformed === html ? original : transformed);
+    } else fs.copyFileSync(path.join(source, relative), target);
   }
   return files;
 }
 
 if (require.main === module) console.log(`Built ${buildStatic().length} public assets in dist/`);
-module.exports = { buildStatic, isPublicAsset };
+module.exports = { buildStatic, isPublicAsset, addTagManager };

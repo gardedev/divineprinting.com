@@ -100,7 +100,12 @@ test('real artifact preserves every public route and existing local HTML/CSS ass
   const published = new Set(buildStatic(temporary));
   for (const name of storefront) expect(published.has(name)).toBe(true);
   for (const name of published) {
-    expect(fs.readFileSync(path.join(temporary, 'dist', name)).equals(fs.readFileSync(path.join(root, name)))).toBe(true);
+    const artifact = fs.readFileSync(path.join(temporary, 'dist', name));
+    const original = fs.readFileSync(path.join(root, name));
+    if (/\.html$/i.test(name) && !name.startsWith('admin/')) {
+      const withoutGtm = artifact.toString('utf8').replace(/\n<!-- Google Tag Manager(?: \(noscript\))? -->[\s\S]*?<!-- End Google Tag Manager(?: \(noscript\))? -->/g, '');
+      expect(withoutGtm).toBe(original.toString('utf8'));
+    } else expect(artifact.equals(original)).toBe(true);
     if (!/\.(html|css)$/.test(name)) continue;
     const text = fs.readFileSync(path.join(root, name), 'utf8');
     const references = [...text.matchAll(/(?:src|href)\s*=\s*["']([^"']+)["']|url\(\s*["']?([^\s)'"?]+)["']?\s*\)/gi)].map(match => match[1] || match[2]);
