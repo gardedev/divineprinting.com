@@ -14,24 +14,24 @@ test('all eleven catalog products are quote only with supported fields and botto
   assert.match(html,/name="name"[^>]*required/);assert.match(html,/name="email"[^>]*required/);assert.match(html,/name="consent"[^>]*required/);
   assert.ok(html.includes(`name="product_id" value="${p.id}"`));assert.match(html,/name="product_page_url"/);
   assert.ok(html.indexOf('id="quote"')>html.indexOf('class="product-desc"'));
-  assert.doesNotMatch(html,/snipcart|addToCart|send-quote\.php|Valor et Virtus|Masonic/i);
+  assert.doesNotMatch(html,/snipcart-add-item|snipcart\.js|addToCart|send-quote\.php|Valor et Virtus|Masonic/i);
  }
 });
 test('discovery preserves category key and contains every product',()=>{
  const home=fs.readFileSync(path.join(root,'index.html'),'utf8');const listing=fs.readFileSync(path.join(root,'custom-quote-products.html'),'utf8');
- assert.match(home,/'Apparel and Vestments':\s*'apparel'/);assert.ok(home.includes('products/church-t-shirt.html'));
+ assert.equal((home.match(/data-filter="apparel"/g)||[]).length,2);assert.ok(home.includes('products/church-t-shirt.html'));
  for(const p of products){assert.ok(home.includes(`products/${p.slug}.html`));assert.ok(listing.includes(`products/${p.slug}.html`));}
  assert.ok(listing.includes('products/stage-backdrop-banner.html'));
 });
 function runtime({valid=true,token='captcha-token',ok=true,network=false}={}){
  let submit;const button={disabled:false,textContent:'Send'};const status={textContent:''};let resets=0,calls=[];
- const form={action:'https://formspree.io/f/xqeydkya',reportValidity:()=>valid,addEventListener:(type,fn)=>submit=fn};
- const context={document:{getElementById:id=>({quoteForm:form,submitBtn:button,quoteStatus:status}[id])},window:{hcaptcha:{getResponse:()=>token,reset:()=>resets++},location:{}},FormData:class{constructor(){this.values={}}set(k,v){this.values[k]=v}},fetch:async(url,options)=>{calls.push({url,options});if(network)throw Error('offline');return {ok,json:async()=>({errors:[{message:'Please try again'}]})}}};
+ const form={dataset:{},action:'https://formspree.io/f/xqeydkya',reportValidity:()=>valid,addEventListener:(type,fn)=>submit=fn};
+ const context={document:{getElementById:id=>({quoteForm:form,submitBtn:button,quoteStatus:status}[id])},window:{DivineQuoteConfig:require('../js/quote-config.js'),hcaptcha:{getResponse:()=>token,reset:()=>resets++},location:{href:'https://www.divineprinting.com/products/test.html#quote',pathname:'/products/test.html'}},URL,AbortController,setTimeout,clearTimeout,FormData:class{constructor(){this.values={}}set(k,v){this.values[k]=v}},fetch:async(url,options)=>{calls.push({url,options});if(network)throw Error('offline');return {ok,status:ok?200:422,text:async()=>JSON.stringify(ok?{}:{errors:[{message:'Please try again'}]})}}};
  vm.runInNewContext(fs.readFileSync(path.join(root,'js/vestment-quote.js'),'utf8'),context);
  return {submit:()=>submit({preventDefault(){}}),button,status,calls,context,resets:()=>resets};
 }
 test('invalid form and missing captcha never submit',async()=>{for(const settings of [{valid:false},{token:''}]){const r=runtime(settings);await r.submit();assert.equal(r.calls.length,0)}});
-test('successful mocked Formspree submission uses fresh captcha and thank-you redirect',async()=>{const r=runtime();await r.submit();assert.equal(r.calls.length,1);const {url,options}=r.calls[0];assert.equal(url,'https://formspree.io/f/xqeydkya');assert.equal(options.method,'POST');assert.equal(options.headers.Accept,'application/json');assert.equal(options.body.values['h-captcha-response'],'captcha-token');assert.equal(r.context.window.location.href,'../thank-you.html')});
+test('successful mocked Formspree submission uses fresh captcha and thank-you redirect',async()=>{const r=runtime();await r.submit();assert.equal(r.calls.length,1);const {url,options}=r.calls[0];assert.equal(url,'https://formspree.io/f/xqeydkya');assert.equal(options.method,'POST');assert.equal(options.headers.Accept,'application/json');assert.equal(options.body.values['h-captcha-response'],'captcha-token');assert.equal(r.context.window.location.href,'/thank-you.html')});
 test('server and network errors restore form and captcha',async()=>{for(const settings of [{ok:false},{network:true}]){const r=runtime(settings);await r.submit();assert.equal(r.button.disabled,false);assert.ok(r.status.textContent);assert.equal(r.resets(),1)}});
 test('double submit blocked while request is pending',async()=>{const r=runtime();r.button.disabled=true;await r.submit();assert.equal(r.calls.length,0)});
 test('private sources excluded and new stylesheet published',()=>{const {isPublicAsset}=require('./build-static');assert.equal(isPublicAsset('vestments.css'),true);for(const f of ['scripts/vestment-products.json','scripts/render-vestments.js','vendor-references/source.pdf','review/manifest.json','.env'])assert.equal(isPublicAsset(f),false)});

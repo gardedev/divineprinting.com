@@ -873,3 +873,54 @@ body.snipcart-sidecart--opened {
   display: block !important;
   margin-top: -2px !important;
 }
+
+/* Shared public storefront header; topbar content and business scripts stay local. */
+.site-header .nav-inner { min-height: 90px; gap: 20px; padding: 12px 24px; }
+.site-header .desktop-nav { flex: 1; justify-content: center; gap: 16px; }
+.site-header .desktop-nav a { font-size: .82rem; white-space: nowrap; }
+.site-header .logo { flex-shrink: 0; }
+.site-header .logo .brand { font-family: 'Cinzel', serif; font-size: 1.15rem; }
+.site-header .header-actions { flex-shrink: 0; }
+.site-header .cart-icon { position: relative; }
+.site-header #cart-count { position:absolute;top:0;right:2px;min-width:16px;height:16px;padding:0 3px;border-radius:50%;background:var(--gold);color:var(--dark);font-size:.65rem;display:none;align-items:center;justify-content:center; }
+.site-header .mobile-menu-close { font-size: 2rem; }
+.site-header .mobile-menu[aria-hidden="true"] { display: none; }
+.collection-nav { display:flex;justify-content:center;gap:16px;flex-wrap:wrap;margin:32px 0 48px; }
+.collection-nav a,.collection-link { display:inline-block;background:var(--purple);color:white;text-decoration:none;border:2px solid var(--gold);border-radius:8px;padding:13px 22px;font-weight:600; }
+.collection-nav a:hover,.collection-link:hover { background:var(--purple-mid); }
+.product-collection { margin-top:56px;scroll-margin-top:var(--storefront-anchor-offset,120px); }
+.product-collection .section-header h2 { color:var(--purple);font-family:'Cinzel',serif; }
+.product-collection .cat-tabs button { font:inherit;cursor:pointer; }
+.product-collection .product-body { display:flex;flex-direction:column;flex:1; }
+.product-collection .product-meta { margin-top:auto; }
+.product-collection .btn-order { margin-top:16px; }
+.product-meta { display:flex;flex-wrap:wrap;gap:6px; }
+.product-collection [tabindex="-1"]:focus-visible { outline:2px solid var(--gold);outline-offset:6px; }
+@media(max-width:1100px) and (min-width:901px){.site-header .nav-inner{gap:10px}.site-header .desktop-nav{gap:9px}.site-header .desktop-nav a{font-size:.72rem}.site-header .tagline{font-size:.58rem}}
+@media(max-width:900px){.site-header .desktop-nav{display:none}.site-header .mobile-menu-btn{display:flex}.site-header .nav-inner{min-height:90px;justify-content:space-between}.site-header .logo .brand{font-size:1rem}}
+[data-product-collection] .product-card[hidden] { display: none; }
+main.section-inner > .product-grid .product-body { display:flex;flex-direction:column;flex:1; }
+main.section-inner > .product-grid .product-meta { margin-top:auto; }
+main.section-inner > .product-grid .btn-order { margin-top:16px; }
+@media(max-width:360px){.site-header .nav-inner{padding:10px 12px;gap:8px}.site-header .logo-icon{width:38px;height:38px}.site-header .logo .brand{font-size:.88rem}.site-header .tagline{font-size:.5rem}.site-header .header-actions{gap:2px}.site-header .header-icon,.site-header .mobile-menu-btn{padding:6px}}
+/* Header typography uses existing local fonts so every page has the same metrics. */
+@font-face { font-family:'Divine Header Inter';src:url('/fonts/tshirt/inter/Inter[opsz,wght].ttf') format('truetype');font-weight:100 900;font-style:normal;font-display:swap; }
+@font-face { font-family:'Divine Header Cinzel';src:url('/fonts/tshirt/cinzel/Cinzel[wght].ttf') format('truetype');font-weight:400 900;font-style:normal;font-display:swap; }
+.site-header { font-family:'Divine Header Inter',Arial,sans-serif;line-height:1.4; }
+.site-header > .nav-inner { height:90px;min-height:90px; }
+.site-header .logo-text .brand { font-family:'Divine Header Cinzel',serif;line-height:1.2;white-space:nowrap; }
+.site-header .logo-text .tagline { line-height:1.2;white-space:nowrap; }
+.site-header .mobile-cart-count { position:static;display:inline; }
+@media(max-width:900px){
+ .site-header .nav-inner{padding:10px 16px;gap:10px}
+ .site-header .logo{gap:8px}
+ .site-header .logo-text{width:125px;min-width:0}
+ .site-header .logo-text .brand{white-space:normal;font-size:1rem}
+ .site-header .logo-text .tagline{white-space:normal;font-size:.55rem;letter-spacing:.05em}
+ .site-header .header-actions{gap:4px}
+ .site-header .header-icon,.site-header .mobile-menu-btn{padding:8px}
+}
+@media(max-width:360px){.site-header .nav-inner{padding:10px 12px;gap:8px}.site-header .logo-text{width:115px}.site-header .logo-text .brand{font-size:.88rem}.site-header .header-icon,.site-header .mobile-menu-btn{padding:6px}}
+.site-header .desktop-nav { flex-wrap:nowrap;gap:10px;min-width:0; }
+.site-header .desktop-nav a { padding:8px 6px;font-size:.78rem; }
+@media(max-width:1150px){.site-header .desktop-nav{display:none}.site-header .mobile-menu-btn{display:flex}}

@@ -32,7 +32,19 @@
     "source": {
       "page": 3,
       "imageIndex": 1
-    }
+    },
+    "featureLabels": [
+      "Made to measure",
+      "Gold & silver panel",
+      "Custom embroidery"
+    ],
+    "overview": [
+      "This chasuble has a white body with a central decorative panel of gold and silver floral scrollwork. A sacred figure medallion sits within the panel, with gold piping finishing the garment edges.",
+      "For clergy selecting a vestment for church services, the panel design and overall fit are useful starting points. Available colors are white, red, green, purple and gold, with made-to-measure sizing and custom embroidery designs."
+    ],
+    "ordering": [
+      "Include your measurements or sizing requirements, preferred listed color and quantity. If you are requesting a different embroidered design, describe the artwork and placement so those details can be reviewed with your quote."
+    ]
   },
   {
     "id": "embroidered-clergy-alb-with-gold-cincture",
@@ -63,7 +75,19 @@
     "source": {
       "page": 3,
       "imageIndex": 0
-    }
+    },
+    "featureLabels": [
+      "Gold cincture included",
+      "Cuff & hem embroidery",
+      "Adult & youth sizing"
+    ],
+    "overview": [
+      "The white alb has a stand collar and gold floral embroidery on the cuffs and hem. A braided gold cincture is included, bringing the waist detail together with the embroidered borders.",
+      "Adult and youth made-to-measure sizing is available in white. Include your fit requirements when requesting a garment for worship services, and add any other color preferences as a custom request for review."
+    ],
+    "ordering": [
+      "Tell us whether the alb is for an adult or youth, provide the required measurements and state the quantity. Add any fit or color questions in your notes so the garment and included cincture can be considered together."
+    ]
   },
   {
     "id": "custom-liturgical-stoles",
@@ -97,7 +121,19 @@
     "source": {
       "page": 4,
       "imageIndex": 1
-    }
+    },
+    "featureLabels": [
+      "Four seasonal colors",
+      "Gold braid trim",
+      "Chalice & IHS emblem"
+    ],
+    "overview": [
+      "These V-shaped stoles are shown in white, green, purple and red. Gold braid follows the edges, and the embroidered chalice and IHS emblem give the front a distinct liturgical design.",
+      "Use the listed colors when planning a set for your church or selecting an individual stole. Custom emblem embroidery is available; describe your requested emblem clearly for quotation."
+    ],
+    "ordering": [
+      "Specify each color and quantity needed, along with any requested dimensions. For an emblem change, describe the artwork and intended placement; the design details will need confirmation with the quote."
+    ]
   },
   {
     "id": "embroidered-clergy-stole-with-gold-fringe",
@@ -132,7 +168,19 @@
     "source": {
       "page": 4,
       "imageIndex": 0
-    }
+    },
+    "featureLabels": [
+      "Satin-finish appearance",
+      "Gold cross design",
+      "Gold bullion fringe"
+    ],
+    "overview": [
+      "The stole combines a satin-finish appearance with gold cross embroidery and gold bullion fringe at its ends. Its decorative surface and embroidered details create a coordinated finish for church services.",
+      "White, red, green, purple and black are listed. The cross and fringe are the main visual details to consider when coordinating the stole with existing clergy garments. Custom emblem designs are available for review."
+    ],
+    "ordering": [
+      "Include the preferred listed color, quantity and any dimension requirements. Describe any requested emblem design and placement, and note whether matching an existing church garment is part of the request."
+    ]
   },
   {
     "id": "custom-embroidered-altar-and-lectern-runner",
@@ -166,7 +214,19 @@
     "source": {
       "page": 5,
       "imageIndex": 0
-    }
+    },
+    "featureLabels": [
+      "Gold fringe",
+      "Cross & grapevine",
+      "Five listed colors"
+    ],
+    "overview": [
+      "This altar and lectern runner features a gold embroidered cross and grapevine design, a woven cross-pattern border and gold fringe. The shown royal blue version places the gold design against a strong contrasting field.",
+      "Blue, red, green, white and purple are listed. When planning its position on an altar or lectern, consider how the main design and fringed ends will be visible from the congregation."
+    ],
+    "ordering": [
+      "Provide the requested width and length, listed color and quantity. Describe the intended altar or lectern and any design questions so the proportions and decorative placement can be reviewed before ordering."
+    ]
   },
   {
     "id": "custom-church-processional-banner",
@@ -198,7 +258,19 @@
     "source": {
       "page": 5,
       "imageIndex": 1
-    }
+    },
+    "featureLabels": [
+      "IHS & crossed keys",
+      "Custom size",
+      "Border & tassels"
+    ],
+    "overview": [
+      "The church banner has a cream field with a gold IHS sunburst, crossed keys and crown. An ornate gold border and tassels frame the design, and the banner hangs from a rod.",
+      "Cream, red and blue are listed, with custom sizing. For church display or processional planning, review the banner dimensions and how it will be hung; confirm hanging hardware requirements with your quote."
+    ],
+    "ordering": [
+      "State the desired dimensions, listed color, quantity and intended use. Include hanging requirements, accessory needs and artwork questions for review with the quote."
+    ]
   },
   {
     "id": "decorative-metallic-vestment-trim",
@@ -234,7 +306,19 @@
     "source": {
       "page": 10,
       "imageIndex": 0
-    }
+    },
+    "featureLabels": [
+      "Woven jacquard",
+      "Gold & silver finishes",
+      "By the roll"
+    ],
+    "overview": [
+      "These metallic jacquard trim ribbons use woven scroll and floral patterns for vestment edges and decorative borders. Available finishes are gold, antique gold and silver.",
+      "Compare the pattern scale and finish with the garment or church textile being edged. Different patterns are shown in the reference selection, so identify the particular appearance you need when requesting a quote."
+    ],
+    "ordering": [
+      "Describe the pattern or finish, required width and quantity of rolls. Add the intended application and any length requirements; confirm exact widths and roll lengths with your quote."
+    ]
   },
   {
     "id": "gold-braided-vestment-lace",
@@ -269,7 +353,19 @@
     "source": {
       "page": 10,
       "imageIndex": 2
-    }
+    },
+    "featureLabels": [
+      "Geometric weave",
+      "Gold finish",
+      "Various widths"
+    ],
+    "overview": [
+      "The gold braid lace has a geometric weave for edging and finishing. It is listed in various widths and sold by the roll.",
+      "For a vestment or church textile project, the width of the edging and the scale of the geometric pattern should suit the surrounding fabric and decorative details."
+    ],
+    "ordering": [
+      "Provide the required width, number of rolls and intended application. Include any length or matching requirements so the suitable roll dimensions and pattern can be confirmed in the quote."
+    ]
   },
   {
     "id": "gold-woven-grape-and-vine-vestment-trim",
@@ -304,7 +400,19 @@
     "source": {
       "page": 10,
       "imageIndex": 1
-    }
+    },
+    "featureLabels": [
+      "Woven grape & vine",
+      "Gold bands",
+      "By the roll"
+    ],
+    "overview": [
+      "These wide gold bands carry a woven grape and vine motif. The decorative woven motif suits edging and panels on chasubles, stoles and banners.",
+      "Various widths are listed, with the bands sold by the roll. Consider the motif scale and border width alongside the garment or banner panel where the band will be placed."
+    ],
+    "ordering": [
+      "Request the width and quantity of rolls you need, and describe the intended garment or banner. Include any required length and matching notes; exact dimensions should be confirmed with the quote."
+    ]
   },
   {
     "id": "gold-bullion-church-tassels",
@@ -339,7 +447,19 @@
     "source": {
       "page": 11,
       "imageIndex": 0
-    }
+    },
+    "featureLabels": [
+      "Gold thread",
+      "Layered caps",
+      "Piece or pair"
+    ],
+    "overview": [
+      "The gold thread tassels have layered caps and beaded drops. These handcrafted details are available in various sizes, ordered by the piece or pair.",
+      "They are shown for cords, banners, curtains and vestments. The cap shape and drop arrangement are useful details to compare when matching an existing church textile or accessory."
+    ],
+    "ordering": [
+      "Specify the quantity and whether you need pieces or pairs. Include the requested size, intended application and matching details, so the proportions and attachment requirements can be reviewed."
+    ]
   },
   {
     "id": "gold-braided-liturgical-cincture-cord",
@@ -373,6 +493,18 @@
     "source": {
       "page": 11,
       "imageIndex": 1
-    }
+    },
+    "featureLabels": [
+      "Braided gold cord",
+      "Tassel ends",
+      "Custom length"
+    ],
+    "overview": [
+      "This braided gold cord is finished with tassel ends. Custom lengths are available for cinctures and stoles.",
+      "When planning a cincture or stole detail, consider the complete required cord length together with the tassel ends. The braided surface and hanging drops should be reviewed when matching another liturgical accessory."
+    ],
+    "ordering": [
+      "Provide the required length, quantity and intended use. Add any fit, attachment or matching questions, and ask for clarification of whether your measurement includes the tassel ends."
+    ]
   }
 ]
