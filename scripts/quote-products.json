@@ -1,0 +1,390 @@
+{
+  "church-vinyl-banner": {
+    "name": "Church Vinyl Banner",
+    "adapter": "form",
+    "newForm": false,
+    "optionFields": [
+      "size",
+      "quantity",
+      "timeline",
+      "design"
+    ]
+  },
+  "mesh-banner": {
+    "name": "Wind-Resistant Mesh Banner",
+    "adapter": "form",
+    "newForm": false,
+    "optionFields": [
+      "size",
+      "quantity",
+      "timeline",
+      "design"
+    ]
+  },
+  "fabric-sanctuary-banner": {
+    "name": "Fabric Sanctuary Banner",
+    "adapter": "form",
+    "newForm": false,
+    "optionFields": [
+      "size",
+      "quantity",
+      "timeline",
+      "design"
+    ]
+  },
+  "custom-ministry-flag": {
+    "name": "Custom Ministry Flag",
+    "adapter": "standard",
+    "newForm": false,
+    "optionFields": [
+      "size",
+      "quantity",
+      "timeline",
+      "design"
+    ]
+  },
+  "feather-teardrop-flag": {
+    "name": "Feather & Teardrop Flag",
+    "adapter": "form",
+    "newForm": false,
+    "optionFields": [
+      "size",
+      "quantity",
+      "timeline",
+      "design"
+    ]
+  },
+  "a-frame-popup-banner": {
+    "name": "A-Frame Pop-Up Banner",
+    "adapter": "form",
+    "newForm": false,
+    "optionFields": [
+      "size",
+      "quantity",
+      "timeline",
+      "design"
+    ]
+  },
+  "retractable-rollup-banner": {
+    "name": "Retractable Roll-Up Banner",
+    "adapter": "form",
+    "newForm": false,
+    "optionFields": [
+      "size",
+      "quantity",
+      "timeline",
+      "design"
+    ]
+  },
+  "church-yard-sign": {
+    "name": "Church Yard Sign",
+    "adapter": "form",
+    "newForm": false,
+    "optionFields": [
+      "size",
+      "quantity",
+      "timeline",
+      "design"
+    ]
+  },
+  "acrylic-pvc-sign": {
+    "name": "Acrylic & PVC Sign",
+    "adapter": "form",
+    "newForm": false,
+    "optionFields": [
+      "size",
+      "quantity",
+      "timeline",
+      "design"
+    ]
+  },
+  "church-vinyl-sticker": {
+    "name": "Church Vinyl Sticker",
+    "adapter": "standard",
+    "newForm": false,
+    "optionFields": [
+      "size",
+      "quantity",
+      "timeline",
+      "design"
+    ]
+  },
+  "floor-decal": {
+    "name": "Floor Decal",
+    "adapter": "form",
+    "newForm": false,
+    "optionFields": [
+      "size",
+      "quantity",
+      "timeline",
+      "design"
+    ]
+  },
+  "church-fridge-magnet": {
+    "name": "Church Fridge Magnet",
+    "adapter": "standard",
+    "newForm": false,
+    "optionFields": [
+      "size",
+      "quantity",
+      "timeline",
+      "design"
+    ]
+  },
+  "magnetic-car-sign": {
+    "name": "Magnetic Car Sign",
+    "adapter": "standard",
+    "newForm": false,
+    "optionFields": [
+      "size",
+      "quantity",
+      "timeline",
+      "design"
+    ]
+  },
+  "church-tablecloth": {
+    "name": "Church Tablecloth",
+    "adapter": "standard",
+    "newForm": false,
+    "optionFields": [
+      "size",
+      "quantity",
+      "timeline",
+      "design"
+    ]
+  },
+  "church-t-shirt": {
+    "name": "Custom Church T-Shirts",
+    "adapter": "tshirt",
+    "newForm": true,
+    "optionFields": []
+  },
+  "church-flyer-bulletin": {
+    "name": "Church Flyer & Bulletin",
+    "adapter": "standard",
+    "newForm": false,
+    "optionFields": [
+      "size",
+      "quantity",
+      "timeline",
+      "design"
+    ]
+  },
+  "church-vinyl-banner-standard": {
+    "name": "Church Vinyl Banner - Standard Sizes",
+    "adapter": "standard",
+    "newForm": true,
+    "optionFields": []
+  },
+  "church-yard-sign-standard": {
+    "name": "Church Yard Sign - 18x24 Standard",
+    "adapter": "standard",
+    "newForm": true,
+    "optionFields": []
+  },
+  "church-stickers-round": {
+    "name": "Church Stickers - Round",
+    "adapter": "standard",
+    "newForm": true,
+    "optionFields": []
+  },
+  "church-magnets-business-card": {
+    "name": "Church Magnets - Business Card Size",
+    "adapter": "standard",
+    "newForm": true,
+    "optionFields": []
+  },
+  "church-flyers-standard": {
+    "name": "Church Flyers - Standard 8.5x11",
+    "adapter": "standard",
+    "newForm": true,
+    "optionFields": []
+  },
+  "rollup-banner-standard": {
+    "name": "Retractable Banner - Standard",
+    "adapter": "standard",
+    "newForm": true,
+    "optionFields": []
+  },
+  "ministry-canopy-tent": {
+    "name": "Ministry Canopy Tent",
+    "adapter": "form",
+    "newForm": false,
+    "optionFields": [
+      "size",
+      "quantity",
+      "timeline",
+      "design"
+    ]
+  },
+  "stage-backdrop-banner": {
+    "name": "Stage Backdrop Banner",
+    "adapter": "form",
+    "newForm": false,
+    "optionFields": [
+      "size",
+      "quantity",
+      "timeline",
+      "design"
+    ]
+  },
+  "window-transfer-decal": {
+    "name": "Window Transfer Decal",
+    "adapter": "form",
+    "newForm": false,
+    "optionFields": [
+      "size",
+      "quantity",
+      "timeline",
+      "design"
+    ]
+  },
+  "car-van-wrap": {
+    "name": "Car / Van Wrap",
+    "adapter": "form",
+    "newForm": false,
+    "optionFields": [
+      "size",
+      "quantity",
+      "timeline",
+      "design"
+    ]
+  },
+  "custom-embroidered-church-chasuble": {
+    "name": "Custom Embroidered Church Chasuble",
+    "adapter": "form",
+    "newForm": false,
+    "optionFields": [
+      "quantity",
+      "color",
+      "dimensions",
+      "embroidery",
+      "delivery_date"
+    ]
+  },
+  "embroidered-clergy-alb-with-gold-cincture": {
+    "name": "Embroidered Clergy Alb with Gold Cincture",
+    "adapter": "form",
+    "newForm": false,
+    "optionFields": [
+      "quantity",
+      "color",
+      "dimensions",
+      "embroidery",
+      "delivery_date"
+    ]
+  },
+  "custom-liturgical-stoles": {
+    "name": "Custom Liturgical Stoles",
+    "adapter": "form",
+    "newForm": false,
+    "optionFields": [
+      "quantity",
+      "color",
+      "dimensions",
+      "embroidery",
+      "delivery_date"
+    ]
+  },
+  "embroidered-clergy-stole-with-gold-fringe": {
+    "name": "Embroidered Clergy Stole with Gold Fringe",
+    "adapter": "form",
+    "newForm": false,
+    "optionFields": [
+      "quantity",
+      "color",
+      "dimensions",
+      "embroidery",
+      "delivery_date"
+    ]
+  },
+  "custom-embroidered-altar-and-lectern-runner": {
+    "name": "Custom Embroidered Altar and Lectern Runner",
+    "adapter": "form",
+    "newForm": false,
+    "optionFields": [
+      "quantity",
+      "color",
+      "dimensions",
+      "embroidery",
+      "delivery_date"
+    ]
+  },
+  "custom-church-processional-banner": {
+    "name": "Custom Church Processional Banner",
+    "adapter": "form",
+    "newForm": false,
+    "optionFields": [
+      "quantity",
+      "color",
+      "dimensions",
+      "embroidery",
+      "delivery_date"
+    ]
+  },
+  "decorative-metallic-vestment-trim": {
+    "name": "Decorative Metallic Vestment Trim",
+    "adapter": "form",
+    "newForm": false,
+    "optionFields": [
+      "quantity",
+      "color",
+      "dimensions",
+      "embroidery",
+      "unit",
+      "delivery_date"
+    ]
+  },
+  "gold-braided-vestment-lace": {
+    "name": "Gold Braided Vestment Lace",
+    "adapter": "form",
+    "newForm": false,
+    "optionFields": [
+      "quantity",
+      "color",
+      "dimensions",
+      "embroidery",
+      "unit",
+      "delivery_date"
+    ]
+  },
+  "gold-woven-grape-and-vine-vestment-trim": {
+    "name": "Gold Woven Grape and Vine Vestment Trim",
+    "adapter": "form",
+    "newForm": false,
+    "optionFields": [
+      "quantity",
+      "color",
+      "dimensions",
+      "embroidery",
+      "unit",
+      "delivery_date"
+    ]
+  },
+  "gold-bullion-church-tassels": {
+    "name": "Gold Bullion Church Tassels",
+    "adapter": "form",
+    "newForm": false,
+    "optionFields": [
+      "quantity",
+      "color",
+      "dimensions",
+      "embroidery",
+      "unit",
+      "delivery_date"
+    ]
+  },
+  "gold-braided-liturgical-cincture-cord": {
+    "name": "Gold Braided Liturgical Cincture Cord",
+    "adapter": "form",
+    "newForm": false,
+    "optionFields": [
+      "quantity",
+      "color",
+      "dimensions",
+      "embroidery",
+      "unit",
+      "delivery_date"
+    ]
+  }
+}

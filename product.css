@@ -418,3 +418,8 @@
 @media (max-width: 600px) {
   .product-hero { margin: 24px auto; }
 }
+
+/* All public quote forms clear the shared sticky header when opened. */
+#quote { scroll-margin-top: var(--quote-header-offset, 120px); }
+#quoteHeading:focus-visible { outline: 2px solid var(--gold); outline-offset: 6px; }
+#quoteStatus { min-height: 1.5em; }

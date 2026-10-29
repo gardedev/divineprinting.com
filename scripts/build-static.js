@@ -3,6 +3,8 @@
 // Only browser assets belong in Amplify's public artifact. Never copy the repo wholesale.
 const fs = require('node:fs');
 const path = require('node:path');
+const { assertBuildMode } = require('./storefront-policy');
+const { projectHtml, deniedAssets } = require('./quote-only');
 const htmlDirectories = new Set(['products', 'account', 'admin', 'blog', 'checkout']);
 const rootAssets = new Set([
   'cart.js', 'snipcart-custom.js', 'snipcart-close-fix.js',
@@ -51,7 +53,9 @@ function isPublicAsset(relativePath) {
   return false;
 }
 
-function buildStatic(sourceDirectory = path.resolve(__dirname, '..')) {
+function buildStatic(sourceDirectory = path.resolve(__dirname, '..'), options = {}) {
+  const mode = options.mode || assertBuildMode();
+  if (!['quote_only', 'commerce'].includes(mode)) throw new Error('Invalid storefront build mode');
   const source = path.resolve(sourceDirectory);
   if (fs.lstatSync(source).isSymbolicLink() || fs.realpathSync(source) !== source) throw new Error('Source must be a real directory without symlink ancestors');
   const destination = path.join(source, 'dist');
@@ -78,18 +82,23 @@ function buildStatic(sourceDirectory = path.resolve(__dirname, '..')) {
     fs.rmSync(destination, { recursive: true });
   }
   fs.mkdirSync(destination);
-  for (const relative of files) {
+  const publish = files.filter(relative => mode !== 'quote_only' || !deniedAssets.has(relative));
+  for (const relative of publish) {
     const target = path.join(destination, relative);
     fs.mkdirSync(path.dirname(target), { recursive: true });
     if (/\.html$/i.test(relative) && !relative.startsWith('admin/')) {
       const original = fs.readFileSync(path.join(source, relative));
       const html = original.toString('utf8');
-      const transformed = addTagManager(html);
+      const projected = mode === 'quote_only' ? projectHtml(relative, html, source) : html;
+      const transformed = addTagManager(projected);
       fs.writeFileSync(target, transformed === html ? original : transformed);
     } else fs.copyFileSync(path.join(source, relative), target);
   }
-  return files;
+  return publish;
 }
 
-if (require.main === module) console.log(`Built ${buildStatic().length} public assets in dist/`);
+if (require.main === module) {
+  if (assertBuildMode() !== 'quote_only') throw new Error('Public builds require quote_only. Use scripts/preview-cart.js for private cart development.');
+  console.log(`Built ${buildStatic().length} public assets in dist/`);
+}
 module.exports = { buildStatic, isPublicAsset, addTagManager };

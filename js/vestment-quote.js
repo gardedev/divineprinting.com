@@ -36,6 +36,7 @@
     try {
       controller = new AbortController();
       const data = new FormData(form);
+      try { window.DivineQuoteOptions?.prepare(form, data); } catch (error) { announce(error.message || 'Please review your product selections.'); return; }
       data.set('h-captcha-response', token);
       // Canonical identity stays stable even when the customer arrives with #quote.
       data.set('product_page_url', new URL(window.location.href).origin + window.location.pathname);
@@ -74,7 +75,7 @@
   });
 })();
 // Navigation is separate from quote submission and applies only to these products.
-if (document.body?.classList?.contains('vestment-product')) {
+if (document.getElementById('quoteForm')) {
   const quoteSection = document.getElementById('quote');
   const quoteHeading = document.getElementById('quoteHeading');
   const header = document.querySelector('header');

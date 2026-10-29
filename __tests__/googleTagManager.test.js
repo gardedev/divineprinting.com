@@ -21,14 +21,14 @@ test('every public storefront directory receives GTM; admin, assets and source r
   pages.forEach(name => put(name, source));
   put('admin/index.html', source); put('js/store.js', 'window.store = true;');
   const binary = Buffer.from([0, 42, 255]); put('binary.html', binary);
-  buildStatic(temporary);
+  buildStatic(temporary, { mode: 'commerce' });
   const first = pages.map(name => fs.readFileSync(path.join(temporary, 'dist', name), 'utf8'));
   first.forEach(verify);
   pages.forEach(name => expect(fs.readFileSync(path.join(temporary, name), 'utf8')).toBe(source));
   expect(fs.readFileSync(path.join(temporary, 'dist/admin/index.html'), 'utf8')).toBe(source);
   expect(fs.readFileSync(path.join(temporary, 'dist/binary.html'))).toEqual(binary);
   expect(fs.readFileSync(path.join(temporary, 'dist/js/store.js'), 'utf8')).toBe('window.store = true;');
-  buildStatic(temporary);
+  buildStatic(temporary, { mode: 'commerce' });
   expect(pages.map(name => fs.readFileSync(path.join(temporary, 'dist', name), 'utf8'))).toEqual(first);
 });
 test('an existing exact installation is preserved and conflicting or partial installations require review', () => {

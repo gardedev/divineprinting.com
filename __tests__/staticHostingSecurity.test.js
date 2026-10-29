@@ -16,17 +16,17 @@ test('publishes browser assets only, preserves bytes and removes stale artifacts
   const denied = ['send-quote.php', 'images/leak.php', 'fonts/secret.json', '.env', 'package.json', 'amplify.yml', 'generate_pages2.py', 'infrastructure/server/server.js', 'docs/index.html', 'node_modules/foo.js', 'images/.env', 'test-report/index.html'];
   [...allowed, ...denied].forEach(name => put(name, Buffer.from([0, 42, 255])));
   put('dist/send-quote.php', 'stale');
-  expect(buildStatic(temporary).sort()).toEqual(allowed.sort());
+  expect(buildStatic(temporary, { mode: 'commerce' }).sort()).toEqual(allowed.sort());
   for (const name of allowed) expect(fs.readFileSync(path.join(temporary, 'dist', name))).toEqual(fs.readFileSync(path.join(temporary, name)));
   for (const name of denied) expect(fs.existsSync(path.join(temporary, 'dist', name))).toBe(false);
-  expect(buildStatic(temporary).sort()).toEqual(allowed.sort());
+  expect(buildStatic(temporary, { mode: 'commerce' }).sort()).toEqual(allowed.sort());
 });
 test('refuses linked public assets and unsafe dist destinations', () => {
   put('index.html'); fs.symlinkSync(path.join(temporary, 'index.html'), path.join(temporary, 'cart.js'));
-  expect(() => buildStatic(temporary)).toThrow(/Symlink/);
+  expect(() => buildStatic(temporary, { mode: 'commerce' })).toThrow(/Symlink/);
   fs.unlinkSync(path.join(temporary, 'cart.js'));
   fs.symlinkSync(os.tmpdir(), path.join(temporary, 'dist'));
-  expect(() => buildStatic(temporary)).toThrow(/unsafe dist/);
+  expect(() => buildStatic(temporary, { mode: 'commerce' })).toThrow(/unsafe dist/);
 });
 test.each(['../index.html', 'images/../secret.png', '/index.html', 'images\\file.png', 'images/.hidden/file.png'])('rejects unsafe policy path %s', name => expect(isPublicAsset(name)).toBe(false));
 
@@ -97,7 +97,7 @@ test('real artifact preserves every public route and existing local HTML/CSS ass
     }
   };
   walk(root);
-  const published = new Set(buildStatic(temporary));
+  const published = new Set(buildStatic(temporary, { mode: 'commerce' }));
   for (const name of storefront) expect(published.has(name)).toBe(true);
   for (const name of published) {
     const artifact = fs.readFileSync(path.join(temporary, 'dist', name));
