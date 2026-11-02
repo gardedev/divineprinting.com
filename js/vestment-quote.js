@@ -8,6 +8,9 @@
   const button = document.getElementById('submitBtn');
   const status = document.getElementById('quoteStatus');
   let inFlight = false;
+  let completed = false;
+  // Identity only; only an accepted HTTPS provider response authorizes conversion.
+  const submissionId = window.crypto?.randomUUID?.() || ('quote-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2));
   let captchaProblem = '';
   function announce(message) { status.textContent = message; }
   function resetCaptcha() { try { window.hcaptcha?.reset(); } catch (_) { /* Keep entered fields usable. */ } }
@@ -17,7 +20,7 @@
   if (window.divineQuoteCaptchaLoadFailed) window.divineQuoteCaptchaError();
   form.addEventListener('submit', async event => {
     event.preventDefault();
-    if (inFlight || button.disabled || !form.reportValidity()) return;
+    if (completed || inFlight || button.disabled || !form.reportValidity()) return;
     if (!config || form.action !== config.endpoint) { announce('The quote form is unavailable. Please contact Divine Printing. Your details have been kept.'); return; }
     let token;
     try {
@@ -38,6 +41,10 @@
       const data = new FormData(form);
       try { window.DivineQuoteOptions?.prepare(form, data); } catch (error) { announce(error.message || 'Please review your product selections.'); return; }
       data.set('h-captcha-response', token);
+      data.set('submission_id', submissionId);
+      try {
+        for (const [key, value] of Object.entries(window.DivineMeta?.attribution() || {})) data.set('meta_' + key, value);
+      } catch (_) { /* Advertising must not prevent quote submission. */ }
       // Canonical identity stays stable even when the customer arrives with #quote.
       data.set('product_page_url', new URL(window.location.href).origin + window.location.pathname);
       const timeout = new Promise((_, reject) => {
@@ -51,13 +58,16 @@
         }
         let payload;
         if (text) { try { payload = JSON.parse(text); } catch (_) { throw new Error('unexpected-response'); } }
-        const explicitError = payload && (payload.ok === false || payload.error || (Array.isArray(payload.errors) && payload.errors.length));
+        const explicitError = payload && ((Object.prototype.hasOwnProperty.call(payload, 'ok') && payload.ok !== true) || payload.error || (Array.isArray(payload.errors) && payload.errors.length));
         const unexpected = response.status !== 204 && (!payload || typeof payload !== 'object' || Array.isArray(payload));
         if (explicitError || unexpected) throw new Error('unexpected-response');
         // Formspree's documented AJAX success uses response.ok; no optional ok:true required.
         return true;
       })();
       await Promise.race([request, timeout]);
+      clearTimeout(timer);
+      completed = true;
+      try { await window.DivineMeta?.acceptedQuote(submissionId); } catch (_) { /* Tracking failure must not prevent confirmation. */ }
       announce('Formspree accepted your request. Opening the confirmation page…');
       window.location.href = config.thankYouUrl;
     } catch (error) {
@@ -69,7 +79,7 @@
     } finally {
       clearTimeout(timer);
       inFlight = false;
-      button.disabled = false;
+      button.disabled = completed;
       button.textContent = '✝ Send My Quote Request';
     }
   });

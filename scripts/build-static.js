@@ -5,6 +5,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { assertBuildMode } = require('./storefront-policy');
 const { projectHtml, deniedAssets } = require('./quote-only');
+const { addMetaTracking } = require('./meta-tracking');
 const htmlDirectories = new Set(['products', 'account', 'admin', 'blog', 'checkout']);
 const rootAssets = new Set([
   'cart.js', 'snipcart-custom.js', 'snipcart-close-fix.js',
@@ -90,7 +91,7 @@ function buildStatic(sourceDirectory = path.resolve(__dirname, '..'), options = 
       const original = fs.readFileSync(path.join(source, relative));
       const html = original.toString('utf8');
       const projected = mode === 'quote_only' ? projectHtml(relative, html, source) : html;
-      const transformed = addTagManager(projected);
+      const transformed = addMetaTracking(addTagManager(projected));
       fs.writeFileSync(target, transformed === html ? original : transformed);
     } else fs.copyFileSync(path.join(source, relative), target);
   }
