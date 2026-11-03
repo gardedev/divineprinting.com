@@ -197,7 +197,8 @@
 .btn-quote-outline {
   display: block;
   border: 2px solid var(--purple);
-  color: var(--purple);
+  background: var(--purple);
+  color: var(--white);
   text-align: center;
   padding: 14px;
   border-radius: 10px;
@@ -206,7 +207,7 @@
   text-decoration: none;
   transition: all .2s;
 }
-.btn-quote-outline:hover { background: var(--purple); color: var(--white); }
+.btn-quote-outline:hover { background: var(--purple-lt); color: var(--white); }
 .pi-trust {
   display: flex;
   flex-wrap: wrap;

@@ -511,8 +511,8 @@ section { padding: 64px 24px; }
 }
 .btn-order {
   display: block;
-  background: var(--purple);
-  color: var(--white);
+  background: var(--purple) !important;
+  color: var(--white) !important;
   text-align: center;
   padding: 10px;
   border-radius: 8px;
@@ -521,7 +521,7 @@ section { padding: 64px 24px; }
   text-decoration: none;
   transition: background .2s;
 }
-.btn-order:hover { background: var(--purple-lt); }
+.btn-order:hover { background: var(--purple-lt) !important; }
 
 /* FEATURES */
 .features-grid {
