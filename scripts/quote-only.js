@@ -39,8 +39,14 @@ function projectHtml(relative, html, sourceDirectory = path.resolve(__dirname, '
   html = html.replace(/<div\b[^>]*id="snipcart"[^>]*>[\s\S]*?<\/div>/gi, '');
   html = html.replace(/<a\b[^>]*href="[^"]*(?:cart\.html|#snipcart)[^"]*"[^>]*>[\s\S]*?<\/a>/gi, '');
   html = html.replace(/<script\b(?![^>]*\bsrc=)[^>]*>([\s\S]*?)<\/script>/gi, (tag, source) => /async function submitQuote\(|(?:window\.)?DivineCart\b|Snipcart|snipcart\.(?:ready|checkout)|function updateCartBadge|class\*="cart"/i.test(source) ? '' : tag);
-  html = html.replace(/<button\b[^>]*(?:class="[^"]*add-to-cart-btn|data-add-standard-product|id="configuredAddButton")[^>]*>[\s\S]*?<\/button>/gi, '<a href="#quote" class="btn-quote">Get Quote</a>');
-  html = html.replace(/<a\b([^>]*class="[^"]*btn-quote[^"]*"[^>]*)>[\s\S]*?<\/a>/g, '<a$1>Get Quote</a>');
+  const isQuoteAction = attributes => /\bhref="#quote"/.test(attributes) && attributes.match(/\bclass="([^"]*)"/)?.[1].split(/\s+/).includes('btn-quote');
+  const hasQuoteAction = [...html.matchAll(/<a\b([^>]*)>/g)].some(([, attributes]) => isQuoteAction(attributes));
+  const hasConfiguredAction = /<button\b[^>]*\bid="configuredAddButton"/.test(html);
+  html = html.replace(/<button\b[^>]*(?:class="[^"]*add-to-cart-btn|data-add-standard-product|id="configuredAddButton")[^>]*>[\s\S]*?<\/button>/gi, tag => {
+    if (hasQuoteAction || (hasConfiguredAction && !/\bid="configuredAddButton"/.test(tag))) return '';
+    return '<a href="#quote" class="btn-quote">Get Quote</a>';
+  });
+  html = html.replace(/<a\b([^>]*)>[\s\S]*?<\/a>/g, (tag, attributes) => isQuoteAction(attributes) ? '<a' + attributes + '>Get Quote</a>' : tag);
   if (relative === 'index.html') html = replaceElement(html, /<section\b[^>]*id="products"/, 'section', unified(html));
   if (relative === 'custom-quote-products.html') {
     const cards = extractCards(fs.readFileSync(path.join(sourceDirectory, 'index.html'), 'utf8'));

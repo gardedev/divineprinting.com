@@ -19,6 +19,25 @@ test('all37 product outputs contain quote workflows and exclude executable purch
     expect(html).toContain('Get Quote'); expect(html).toContain('/js/product-quote.js'); expect(html).not.toMatch(/onsubmit="submitQuote|onclick="addToCart|src="[^\"]*(?:cart-api|cart-page|standard-product-cart|snipcart)\.js/);
   }
 });
+test('each product has one primary quote action and distinct navigation keeps its label', () => {
+  for (const slug of Object.keys(products)) {
+    const html = fs.readFileSync(path.join(root, 'dist/products', slug + '.html'), 'utf8');
+    const actions = [...html.matchAll(/<a\b([^>]*)>([\s\S]*?)<\/a>/g)];
+    const primary = actions.filter(([, attributes]) => /\bhref="#quote"/.test(attributes) && attributes.match(/\bclass="([^"]*)"/)?.[1].split(/\s+/).includes('btn-quote'));
+    expect(primary).toHaveLength(1);
+    expect(primary[0][2]).toBe('Get Quote');
+    for (const [, attributes, label] of actions.filter(([, attributes]) => /\bclass="btn-quote-outline"/.test(attributes))) {
+      expect(attributes).not.toContain('href="#quote"');
+      const source = fs.readFileSync(path.join(root, 'products', slug + '.html'), 'utf8');
+      expect(source).toContain('<a' + attributes + '>' + label + '</a>');
+      expect(label).not.toBe('Get Quote');
+    }
+  }
+  const shirt = fs.readFileSync(path.join(root, 'dist/products/church-t-shirt.html'), 'utf8');
+  expect(shirt).toMatch(/<a href="#designer" class="btn-quote">[\s\S]*?Design Your Shirt<\/a>/);
+  expect(shirt.indexOf('<a href="#quote" class="btn-quote">Get Quote</a>')).toBeGreaterThan(shirt.indexOf('id="customerInstructions"'));
+  expect(shirt).not.toContain('id="quickAddToCartBtn"');
+});
 test('public artifact excludes cart execution assets and direct checkout routes are safe', () => {
   for (const name of deniedAssets) expect(files).not.toContain(name);
   for (const name of ['cart.html','checkout/success.html','checkout/cancel.html']) {
