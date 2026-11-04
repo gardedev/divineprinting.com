@@ -57,6 +57,12 @@ function projectHtml(relative, html, sourceDirectory = path.resolve(__dirname, '
   const slug = relative.match(/^products\/([^/]+)\.html$/)?.[1];
   if (slug) {
     const product = products[slug]; if (!product) throw new Error('Unknown product in quote-only mode: ' + slug);
+    // Remove only the legacy product-detail back button from published product HTML.
+    html = html.replace(/<a\b([^>]*)>([\s\S]*?)<\/a>/g, (tag, attributes, label) => {
+      const classes = attributes.match(/(?:^|\s)class="([^"]*)"/)?.[1].split(/\s+/) || [];
+      const text = label.replace(/<[^>]*>/g, '').trim().replace(/^(?:&larr;|&#8592;|&#x2190;|←)\s*/i, '');
+      return /(?:^|\s)href="\.\.\/index\.html#products"(?:\s|$)/.test(attributes) && classes.includes('btn-quote-outline') && text === 'Back to All Products' ? '' : tag;
+    });
     if (product.newForm) {
       html = html.replace('</body>', newForm(product, slug) + '</body>');
       if (!html.includes('id="quoteForm"')) throw new Error('Failed to create quote form');

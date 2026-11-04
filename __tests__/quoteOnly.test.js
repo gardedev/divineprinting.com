@@ -1,7 +1,7 @@
 'use strict';
 const fs = require('node:fs'), path = require('node:path');
 const { buildStatic } = require('../scripts/build-static');
-const { products, deniedAssets } = require('../scripts/quote-only');
+const { projectHtml, products, deniedAssets } = require('../scripts/quote-only');
 const { storefrontMode, assertBuildMode } = require('../scripts/storefront-policy');
 const root = path.resolve(__dirname, '..');
 let files;
@@ -37,6 +37,42 @@ test('each product has one primary quote action and distinct navigation keeps it
   expect(shirt).toMatch(/<a href="#designer" class="btn-quote">[\s\S]*?Design Your Shirt<\/a>/);
   expect(shirt.indexOf('<a href="#quote" class="btn-quote">Get Quote</a>')).toBeGreaterThan(shirt.indexOf('id="customerInstructions"'));
   expect(shirt).not.toContain('id="quickAddToCartBtn"');
+});
+test('all product outputs omit the legacy back button while keeping distinct navigation', () => {
+  let removed = 0;
+  for (const slug of Object.keys(products)) {
+    const source = fs.readFileSync(path.join(root, 'products', slug + '.html'), 'utf8');
+    const html = fs.readFileSync(path.join(root, 'dist/products', slug + '.html'), 'utf8');
+    expect(html).not.toContain('Back to All Products');
+    if (source.includes('Back to All Products')) {
+      removed++;
+      const actions = html.match(/<div class="pi-actions">([\s\S]*?)<\/div>/)?.[1];
+      expect(actions?.match(/<a\b[^>]*class="btn-quote"/g)).toHaveLength(1);
+      expect(actions).toContain('href="#quote"');
+      expect(actions).not.toMatch(/<a\b[^>]*>\s*<\/a>|<div/);
+    }
+    if (source.includes('Custom Quote Products</a>')) expect(html).toContain('Custom Quote Products</a>');
+  }
+  expect(removed).toBe(19);
+});
+test('back button removal is limited to the exact product navigation control', () => {
+  const unwanted = '<a href="../index.html#products" class="extra btn-quote-outline">&larr; Back to All Products</a>';
+  const kept = [
+    '<a href="../index.html#products" class="breadcrumb">Back to All Products</a>',
+    '<a href="../other.html" class="btn-quote-outline">Back to All Products</a>',
+    '<a href="../index.html#products" class="btn-quote-outline-other">Back to All Products</a>',
+    '<a href="../index.html#products" class="btn-quote-outline">Custom Quote Products</a>',
+    '<a href="#designer" class="btn-quote">Design Your Shirt</a>'
+  ];
+  const document = '<html><head></head><body>' + unwanted + kept.join('') + '</body></html>';
+  const product = projectHtml('products/church-vinyl-banner.html', document);
+  expect(product).not.toContain(unwanted);
+  for (const anchor of kept) expect(product).toContain(anchor);
+  expect(projectHtml('about.html', document)).toContain(unwanted);
+  for (const arrow of ['', '← ', '<span>&larr;</span> ']) {
+    const anchor = '<a href="../index.html#products" class="btn-quote-outline">' + arrow + 'Back to All Products</a>';
+    expect(projectHtml('products/church-vinyl-banner.html', '<html><head></head><body>' + anchor + '</body></html>')).not.toContain(anchor);
+  }
 });
 test('public artifact excludes cart execution assets and direct checkout routes are safe', () => {
   for (const name of deniedAssets) expect(files).not.toContain(name);
