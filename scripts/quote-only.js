@@ -16,10 +16,10 @@ function replaceElement(html, start, tag, replacement) {
 }
 function quoteCards(cards) { return cards.map(card => card.replace(/>\s*(?:More Info|Design Yours|Request a Quote|Order Now)\s*<\/a>/g, '>Get Quote</a>')); }
 function unified(html) {
-  const cards = extractCards(html); if (cards.length !== 37) throw new Error('Expected all 37 unique product cards');
+  const cards = extractCards(html); if (cards.length !== Object.keys(products).length) throw new Error('Expected one card per registered quote product');
   const slugs = cards.map(card => card.match(/href="\/?products\/([^"#]+)\.html/)[1]);
-  if (new Set(slugs).size !== 37) throw new Error('Duplicate product card');
-  const categories = [['all','All Products'],['banners','Banners &amp; Flags'],['events','Event Displays'],['signs','Signs'],['stickers','Stickers &amp; Magnets'],['print','Print &amp; Paper'],['apparel','Apparel and Vestments']];
+  if (new Set(slugs).size !== slugs.length || slugs.some(slug => !Object.hasOwn(products, slug))) throw new Error('Product cards must match the quote registry exactly');
+  const categories = [['all','All Products'],['banners','Banners &amp; Flags'],['events','Event Displays'],['signs','Signs'],['stickers','Stickers &amp; Magnets'],['print','Books and Print'],['apparel','Apparel and Vestments']];
   return `<section id="products"><div class="section-inner"><span id="order-instantly"></span><span id="custom-quote-products"></span>${['banners','events','signage','promo','print','apparel'].map(id=>`<span id="${id}" data-category-anchor></span>`).join('')}<section class="product-collection" data-product-collection><div class="section-header"><h2 tabindex="-1">Shop Church Printing, Apparel &amp; Accessories</h2><p>Explore our church printing, apparel and accessories. Select a product to request a personalized quote.</p><div class="divider"></div></div><div class="cat-tabs" aria-label="Product categories">${categories.map(([key,label])=>`<button type="button" class="cat-tab${key==='all'?' active':''}" data-filter="${key}" aria-pressed="${key==='all'}">${label}</button>`).join('')}</div><div class="product-grid">${quoteCards(cards).map(card=>card.replace(/\s+id="(?:banners|events|signage|promo|print|apparel)"/g,'')).join('\n')}</div><p class="collection-empty" hidden>No products match that category.</p></section></div></section>`;
 }
 function newForm(product, slug) {
@@ -33,6 +33,9 @@ function noCheckout(html) {
 function projectHtml(relative, html, sourceDirectory = path.resolve(__dirname, '..')) {
   if (!/<head\b/i.test(html) || !/<body\b/i.test(html) || relative.startsWith('admin/')) return html;
   if (relative === 'cart.html' || relative.startsWith('checkout/')) html = noCheckout(html);
+  // Keep the existing print route/key while updating its customer-facing category label.
+  html = html.replace(/Print (?:&amp;|&) Paper/g, 'Books and Print');
+  html = html.replace(/(<a\b[^>]*href="[^"]*index\.html#print"[^>]*>)\s*Print\s*(<\/a>)/g, '$1Books and Print$2');
   // Remove executable purchase paths, not merely their visibility.
   html = html.replace(/<script\b[^>]*src="([^"]+)"[^>]*>[\s\S]*?<\/script>/gi, (tag, src) => /(?:^|\/)(?:cart|cart-api|cart-page|standard-product-cart|snipcart[^/]*)\.js(?:[?#]|$)|cdn\.snipcart\.com/i.test(src) ? '' : tag);
   html = html.replace(/<link\b[^>]*href="[^"]*cdn\.snipcart\.com[^"]*"[^>]*>/gi, '');

@@ -18,7 +18,7 @@ function classifyProduct(root,slug,newIds=new Set()){
 function catalog(root,newProducts){
  const newIds=new Set(newProducts.map(p=>p.slug));const cards=extractCards(fs.readFileSync(path.join(root,'index.html'),'utf8'));const seen=new Set();return cards.map(html=>{const href=html.match(/href="\/?products\/([^"#]+)\.html/);if(!href)throw Error('Product card has no product route');const slug=href[1];if(seen.has(slug))throw Error('Duplicate card: '+slug);seen.add(slug);return {slug,html,...classifyProduct(root,slug,newIds)}});
 }
-const categories=[['all','All Products'],['banners','Banners &amp; Flags'],['events','Event Displays'],['signs','Signs'],['stickers','Stickers &amp; Magnets'],['print','Print &amp; Paper'],['apparel','Apparel and Vestments']];
+const categories=[['all','All Products'],['banners','Banners &amp; Flags'],['events','Event Displays'],['signs','Signs'],['stickers','Stickers &amp; Magnets'],['print','Books and Print'],['apparel','Apparel and Vestments']];
 function renderHomeCollections(entries){
  const nav='<nav class="collection-nav" aria-label="Product collections"><a href="#order-instantly">Order Instantly</a><a href="#custom-quote-products">Custom Quote Products</a></nav>';
  const anchors=['banners','events','signage','promo','print','apparel'].map(id=>`<span id="${id}" data-category-anchor></span>`).join('');

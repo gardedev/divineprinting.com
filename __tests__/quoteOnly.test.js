@@ -9,8 +9,8 @@ beforeAll(() => { files = buildStatic(root, { mode: 'quote_only' }); });
 test('quote-only is fail closed and commerce is a trusted explicit deployment choice', () => {
   expect(storefrontMode({})).toBe('quote_only'); expect(storefrontMode({ PUBLIC_STOREFRONT_MODE: 'bad' })).toBe('quote_only'); expect(storefrontMode({ PUBLIC_STOREFRONT_MODE: 'commerce' })).toBe('commerce'); expect(() => assertBuildMode({ PUBLIC_STOREFRONT_MODE: 'bad' })).toThrow();
 });
-test('all37 product outputs contain quote workflows and exclude executable purchase paths', () => {
-  expect(Object.keys(products)).toHaveLength(37);
+test('all44 product outputs contain quote workflows and exclude executable purchase paths', () => {
+  expect(Object.keys(products)).toHaveLength(44);
   expect(Object.values(products).filter(p => p.newForm)).toHaveLength(7);
   for (const slug of Object.keys(products)) {
     const html = fs.readFileSync(path.join(root, 'dist/products', slug + '.html'), 'utf8');
@@ -87,9 +87,9 @@ test('every rendered public page excludes cart navigation and preserves GTM admi
     expect(html.match(/GTM-MZXJHMD5/g) || []).toHaveLength(name.startsWith('admin/') ? 0 : 2);
   }
 });
-test('homepage has one37-card collection and source cart/configurator are preserved', () => {
+test('homepage has one44-card collection and source cart/configurator are preserved', () => {
   const html = fs.readFileSync(path.join(root, 'dist/index.html'), 'utf8');
-  expect(html.match(/class="product-card\b/g)).toHaveLength(37); expect(require('../scripts/storefront-catalog').extractCards(fs.readFileSync(path.join(root, 'dist/custom-quote-products.html'), 'utf8'))).toHaveLength(37); expect(html.match(/data-product-collection/g)).toHaveLength(1); expect(html).not.toContain('Order Instantly');
+  expect(html.match(/class="product-card\b/g)).toHaveLength(44); expect(require('../scripts/storefront-catalog').extractCards(fs.readFileSync(path.join(root, 'dist/custom-quote-products.html'), 'utf8'))).toHaveLength(44); expect(html.match(/data-product-collection/g)).toHaveLength(1); expect(html).not.toContain('Order Instantly');
   expect(require('node:crypto').createHash('sha256').update(fs.readFileSync(path.join(root, 'cart.js'))).digest('hex')).toBe('b36ecc69a737585457e91c317511cf59321d1b2eadee65e89bbf41c50a2bcc1d');
   expect(fs.readFileSync(path.join(root, 'products/tshirt-configurator.js'), 'utf8')).toContain('buildConfiguredJobRequest');
 });

@@ -386,5 +386,138 @@
       "unit",
       "delivery_date"
     ]
+  },
+  "childrens-faith-activity-books": {
+    "name": "Children's Faith Activity Books",
+    "adapter": "form",
+    "newForm": false,
+    "optionFields": [
+      "quantity",
+      "delivery_date",
+      "delivery_destination",
+      "dimensions",
+      "page_count",
+      "binding",
+      "cover_type",
+      "interior_color",
+      "paper",
+      "finishing",
+      "artwork_readiness",
+      "message"
+    ]
+  },
+  "ministry-notebooks": {
+    "name": "Ministry Notebooks",
+    "adapter": "form",
+    "newForm": false,
+    "optionFields": [
+      "quantity",
+      "delivery_date",
+      "delivery_destination",
+      "dimensions",
+      "page_count",
+      "binding",
+      "cover_type",
+      "interior_color",
+      "paper",
+      "finishing",
+      "artwork_readiness",
+      "message"
+    ]
+  },
+  "devotional-journals": {
+    "name": "Devotional Journals",
+    "adapter": "form",
+    "newForm": false,
+    "optionFields": [
+      "quantity",
+      "delivery_date",
+      "delivery_destination",
+      "dimensions",
+      "page_count",
+      "binding",
+      "cover_type",
+      "interior_color",
+      "paper",
+      "finishing",
+      "artwork_readiness",
+      "message"
+    ]
+  },
+  "church-memory-books": {
+    "name": "Church Memory Books",
+    "adapter": "form",
+    "newForm": false,
+    "optionFields": [
+      "quantity",
+      "delivery_date",
+      "delivery_destination",
+      "dimensions",
+      "page_count",
+      "binding",
+      "cover_type",
+      "interior_color",
+      "paper",
+      "finishing",
+      "artwork_readiness",
+      "message"
+    ]
+  },
+  "christian-book-publishing": {
+    "name": "Christian Book Publishing",
+    "adapter": "form",
+    "newForm": false,
+    "optionFields": [
+      "quantity",
+      "delivery_date",
+      "delivery_destination",
+      "dimensions",
+      "page_count",
+      "binding",
+      "cover_type",
+      "interior_color",
+      "paper",
+      "finishing",
+      "artwork_readiness",
+      "message"
+    ]
+  },
+  "ministry-guides-workbooks": {
+    "name": "Ministry Guides & Workbooks",
+    "adapter": "form",
+    "newForm": false,
+    "optionFields": [
+      "quantity",
+      "delivery_date",
+      "delivery_destination",
+      "dimensions",
+      "page_count",
+      "binding",
+      "cover_type",
+      "interior_color",
+      "paper",
+      "finishing",
+      "artwork_readiness",
+      "message"
+    ]
+  },
+  "church-booklets-programs": {
+    "name": "Church Booklets & Programs",
+    "adapter": "form",
+    "newForm": false,
+    "optionFields": [
+      "quantity",
+      "delivery_date",
+      "delivery_destination",
+      "dimensions",
+      "page_count",
+      "binding",
+      "cover_type",
+      "interior_color",
+      "paper",
+      "finishing",
+      "artwork_readiness",
+      "message"
+    ]
   }
 }

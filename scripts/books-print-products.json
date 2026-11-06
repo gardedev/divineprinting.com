@@ -1,0 +1,174 @@
+[
+  {
+    "slug": "childrens-faith-activity-books",
+    "name": "Children's Faith Activity Books",
+    "description": "Print your own coloring pages and activities for Sunday school, Vacation Bible School and Christian education.",
+    "category": "print",
+    "image": "images/childrens-faith-activity-books.jpg",
+    "alt": "Illustrative custom printed children's faith activity books mockup",
+    "requestedFormat": "Activity book",
+    "uses": [
+      "Sunday school activities",
+      "Vacation Bible School",
+      "Children’s ministry lessons"
+    ],
+    "bindingPreferences": [
+      "Need guidance",
+      "Perfect binding (request)",
+      "Saddle stitch (request)",
+      "Other (describe below)"
+    ],
+    "coverPreferences": [
+      "Need guidance",
+      "Paperback / softcover (request)",
+      "Other (describe below)"
+    ]
+  },
+  {
+    "slug": "ministry-notebooks",
+    "name": "Ministry Notebooks",
+    "description": "Create custom hardcover notebook projects for church conferences, leadership meetings, retreats and welcome gifts.",
+    "category": "print",
+    "image": "images/ministry-notebooks.jpg",
+    "alt": "Illustrative custom printed ministry notebooks mockup",
+    "requestedFormat": "Hardcover notebook",
+    "uses": [
+      "Church conferences",
+      "Leadership meetings and retreats",
+      "Ministry welcome gifts"
+    ],
+    "bindingPreferences": [
+      "Need guidance",
+      "Sewn binding (request)",
+      "Other (describe below)"
+    ],
+    "coverPreferences": [
+      "Need guidance",
+      "Hardcover (request)",
+      "Other (describe below)"
+    ]
+  },
+  {
+    "slug": "devotional-journals",
+    "name": "Devotional Journals",
+    "description": "Print your own prayer, reflection and devotional journal layouts as a custom hardcover project.",
+    "category": "print",
+    "image": "images/devotional-journals.jpg",
+    "alt": "Illustrative custom printed devotional journals mockup",
+    "requestedFormat": "Hardcover journal",
+    "uses": [
+      "Prayer journals",
+      "Devotional writing",
+      "Faith-based journal publishing"
+    ],
+    "bindingPreferences": [
+      "Need guidance",
+      "Sewn binding (request)",
+      "Other (describe below)"
+    ],
+    "coverPreferences": [
+      "Need guidance",
+      "Hardcover (request)",
+      "Other (describe below)"
+    ]
+  },
+  {
+    "slug": "church-memory-books",
+    "name": "Church Memory Books",
+    "description": "Bring your church history, photographs and milestone stories together in a custom hardcover book project.",
+    "category": "print",
+    "image": "images/church-memory-books.jpg",
+    "alt": "Illustrative custom printed church memory books mockup",
+    "requestedFormat": "Hardcover commemorative book",
+    "uses": [
+      "Church anniversaries",
+      "Ministry histories",
+      "Photography collections"
+    ],
+    "bindingPreferences": [
+      "Need guidance",
+      "Sewn binding (request)",
+      "Other (describe below)"
+    ],
+    "coverPreferences": [
+      "Need guidance",
+      "Hardcover (request)",
+      "Other (describe below)"
+    ]
+  },
+  {
+    "slug": "christian-book-publishing",
+    "name": "Christian Book Publishing",
+    "description": "Request paperback printing for your original Christian manuscript, testimony, devotional or inspirational book.",
+    "category": "print",
+    "image": "images/christian-book-publishing.jpg",
+    "alt": "Illustrative custom printed christian book publishing mockup",
+    "requestedFormat": "Paperback book",
+    "uses": [
+      "Independent Christian authors",
+      "Testimonies and devotionals",
+      "Inspirational manuscripts"
+    ],
+    "bindingPreferences": [
+      "Need guidance",
+      "Perfect binding (request)",
+      "Saddle stitch (request)",
+      "Other (describe below)"
+    ],
+    "coverPreferences": [
+      "Need guidance",
+      "Paperback / softcover (request)",
+      "Other (describe below)"
+    ]
+  },
+  {
+    "slug": "ministry-guides-workbooks",
+    "name": "Ministry Guides & Workbooks",
+    "description": "Print your own paperback Bible study materials, discipleship lessons and ministry training workbooks.",
+    "category": "print",
+    "image": "images/ministry-guides-workbooks.jpg",
+    "alt": "Illustrative custom printed ministry guides & workbooks mockup",
+    "requestedFormat": "Paperback guide or workbook",
+    "uses": [
+      "Bible study workbooks",
+      "Discipleship guides",
+      "Ministry training manuals"
+    ],
+    "bindingPreferences": [
+      "Need guidance",
+      "Perfect binding (request)",
+      "Saddle stitch (request)",
+      "Other (describe below)"
+    ],
+    "coverPreferences": [
+      "Need guidance",
+      "Paperback / softcover (request)",
+      "Other (describe below)"
+    ]
+  },
+  {
+    "slug": "church-booklets-programs",
+    "name": "Church Booklets & Programs",
+    "description": "Request custom color printing for church service programs, event booklets and ministry publications.",
+    "category": "print",
+    "image": "images/church-booklets-programs.jpg",
+    "alt": "Illustrative custom printed church booklets & programs mockup",
+    "requestedFormat": "Booklet or program",
+    "uses": [
+      "Sunday service programs",
+      "Church conferences",
+      "Anniversary publications"
+    ],
+    "bindingPreferences": [
+      "Need guidance",
+      "Perfect binding (request)",
+      "Saddle stitch (request)",
+      "Other (describe below)"
+    ],
+    "coverPreferences": [
+      "Need guidance",
+      "Paperback / softcover (request)",
+      "Other (describe below)"
+    ]
+  }
+]
