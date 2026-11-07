@@ -8,20 +8,56 @@
     "alt": "Illustrative custom printed children's faith activity books mockup",
     "requestedFormat": "Activity book",
     "uses": [
-      "Sunday school activities",
+      "Sunday school",
       "Vacation Bible School",
-      "Children’s ministry lessons"
+      "Children’s ministry events",
+      "Christian education",
+      "Church activity programs"
     ],
-    "bindingPreferences": [
-      "Need guidance",
-      "Perfect binding (request)",
-      "Saddle stitch (request)",
-      "Other (describe below)"
+    "features": [
+      "Your own coloring pages and activity layouts",
+      "Cover artwork matched to your children’s ministry",
+      "Lessons organized around your chosen theme",
+      "A take-home companion for church activities",
+      "Size and print preferences reviewed with your quote"
     ],
-    "coverPreferences": [
-      "Need guidance",
-      "Paperback / softcover (request)",
-      "Other (describe below)"
+    "about": [
+      "Bring your children’s ministry lessons together in a printed activity book. Coloring pages, puzzles and simple exercises can give children something to work through during a lesson and revisit at home.",
+      "You supply the activities, illustrations and cover artwork. Include your church name, program theme and the order of the pages so the book reflects the material your team teaches. This printing service does not include prewritten lessons or activity content.",
+      "Tell us your quantity, preferred book size, page count and requested date. Use Project Details for paper, binding or finishing preferences; we review the specifications and availability before confirming a quote."
+    ],
+    "detailImage": "images/childrens-faith-activity-books-detail.jpg",
+    "scripture": {
+      "text": "Train up a child in the way he should go: and when he is old, he will not depart from it.",
+      "reference": "Proverbs 22:6",
+      "translation": "KJV",
+      "excerpt": false
+    },
+    "specifications": [
+      [
+        "Book Type",
+        "Activity book project"
+      ],
+      [
+        "Cover & Binding",
+        "Preferences reviewed with your quote"
+      ],
+      [
+        "Interior Printing",
+        "Your supplied content and layouts"
+      ],
+      [
+        "Paper & Finishing",
+        "Options upon confirmation"
+      ],
+      [
+        "Sizes",
+        "Specify your preferred dimensions"
+      ],
+      [
+        "Customization",
+        "Your cover artwork and branding"
+      ]
     ]
   },
   {
@@ -33,19 +69,56 @@
     "alt": "Illustrative custom printed ministry notebooks mockup",
     "requestedFormat": "Hardcover notebook",
     "uses": [
-      "Church conferences",
-      "Leadership meetings and retreats",
-      "Ministry welcome gifts"
+      "Leadership conferences",
+      "Church retreats",
+      "Ministry meetings",
+      "Volunteer welcome gifts",
+      "Training events"
     ],
-    "bindingPreferences": [
-      "Need guidance",
-      "Sewn binding (request)",
-      "Other (describe below)"
+    "features": [
+      "A cover designed around your ministry identity",
+      "Your choice of supplied note-page layouts",
+      "Space for event notes, plans and follow-up",
+      "A coordinated notebook brief for your team",
+      "Cover and binding requests reviewed before confirmation"
     ],
-    "coverPreferences": [
-      "Need guidance",
-      "Hardcover (request)",
-      "Other (describe below)"
+    "about": [
+      "A ministry notebook gives attendees a place to collect ideas, meeting notes and next steps. Plan a notebook for a single conference or a consistent design your team can use throughout the year.",
+      "Provide your cover artwork and interior page layouts, whether that means ruled notes, meeting prompts or your own planning pages. Your church name, event title and ministry branding can form part of the design you submit.",
+      "Share the quantity, size, page count and delivery date you have in mind. Describe any hardcover, paper or binding preferences in Project Details. We review the complete brief and confirm the practical options with your quote."
+    ],
+    "detailImage": "images/ministry-notebooks-detail.jpg",
+    "scripture": {
+      "text": "Write the vision, and make it plain upon tables",
+      "reference": "Habakkuk 2:2",
+      "translation": "KJV",
+      "excerpt": true
+    },
+    "specifications": [
+      [
+        "Book Type",
+        "Hardcover notebook project"
+      ],
+      [
+        "Cover & Binding",
+        "Preferences reviewed with your quote"
+      ],
+      [
+        "Interior Printing",
+        "Your supplied content and layouts"
+      ],
+      [
+        "Paper & Finishing",
+        "Options upon confirmation"
+      ],
+      [
+        "Sizes",
+        "Specify your preferred dimensions"
+      ],
+      [
+        "Customization",
+        "Your cover artwork and branding"
+      ]
     ]
   },
   {
@@ -58,18 +131,55 @@
     "requestedFormat": "Hardcover journal",
     "uses": [
       "Prayer journals",
-      "Devotional writing",
-      "Faith-based journal publishing"
+      "Personal reflection",
+      "Women’s ministry",
+      "Men’s ministry",
+      "Spiritual retreats"
     ],
-    "bindingPreferences": [
-      "Need guidance",
-      "Sewn binding (request)",
-      "Other (describe below)"
+    "features": [
+      "Your own prayer and reflection page layouts",
+      "Cover artwork with your ministry’s identity",
+      "Prompts arranged for your chosen devotional plan",
+      "A writing companion for personal or group use",
+      "Paper and finishing preferences considered during quoting"
     ],
-    "coverPreferences": [
-      "Need guidance",
-      "Hardcover (request)",
-      "Other (describe below)"
+    "about": [
+      "A devotional journal provides a place for prayer notes, reflections and responses to a study. Churches can plan one around a retreat, a ministry group or a sequence of readings prepared by their own team.",
+      "Supply the cover artwork and the interior content you want printed. That may include your own prompts, dated entries or open writing space. DivinePrinting does not supply a prewritten devotional or manuscript as part of this service.",
+      "Send your quantity, preferred dimensions, page count and requested delivery date. Add paper, cover and finishing preferences in Project Details so we can review the project and confirm the available options in your quote."
+    ],
+    "detailImage": "images/devotional-journals-detail.jpg",
+    "scripture": {
+      "text": "Thy word is a lamp unto my feet, and a light unto my path.",
+      "reference": "Psalm 119:105",
+      "translation": "KJV",
+      "excerpt": false
+    },
+    "specifications": [
+      [
+        "Book Type",
+        "Hardcover journal project"
+      ],
+      [
+        "Cover & Binding",
+        "Preferences reviewed with your quote"
+      ],
+      [
+        "Interior Printing",
+        "Your supplied content and layouts"
+      ],
+      [
+        "Paper & Finishing",
+        "Options upon confirmation"
+      ],
+      [
+        "Sizes",
+        "Specify your preferred dimensions"
+      ],
+      [
+        "Customization",
+        "Your cover artwork and branding"
+      ]
     ]
   },
   {
@@ -82,18 +192,55 @@
     "requestedFormat": "Hardcover commemorative book",
     "uses": [
       "Church anniversaries",
-      "Ministry histories",
-      "Photography collections"
+      "Ministry milestones",
+      "Commemorative gifts",
+      "Historical photo collections",
+      "Fundraising keepsakes"
     ],
-    "bindingPreferences": [
-      "Need guidance",
-      "Sewn binding (request)",
-      "Other (describe below)"
+    "features": [
+      "Your church photographs and stories in one volume",
+      "A cover created for your anniversary or milestone",
+      "Page layouts arranged around your church history",
+      "A commemorative project for members and families",
+      "Book format and finish reviewed for your particular brief"
     ],
-    "coverPreferences": [
-      "Need guidance",
-      "Hardcover (request)",
-      "Other (describe below)"
+    "about": [
+      "A church memory book brings photographs, testimonies and important dates into a single record. It can mark an anniversary, recognize a ministry milestone or help a congregation share its history with the next generation.",
+      "You provide the photographs, written material and page layouts, along with the cover artwork. Organize the book by year, ministry or event, and include the names and captions your team has approved for publication.",
+      "Let us know the quantity, book size, page count and requested date. Describe any cover, paper or binding preferences in Project Details. We review the materials and project specifications before confirming the printing quote."
+    ],
+    "detailImage": "images/church-memory-books-detail.jpg",
+    "scripture": {
+      "text": "One generation shall praise thy works to another, and shall declare thy mighty acts.",
+      "reference": "Psalm 145:4",
+      "translation": "KJV",
+      "excerpt": false
+    },
+    "specifications": [
+      [
+        "Book Type",
+        "Hardcover commemorative book project"
+      ],
+      [
+        "Cover & Binding",
+        "Preferences reviewed with your quote"
+      ],
+      [
+        "Interior Printing",
+        "Your supplied content and layouts"
+      ],
+      [
+        "Paper & Finishing",
+        "Options upon confirmation"
+      ],
+      [
+        "Sizes",
+        "Specify your preferred dimensions"
+      ],
+      [
+        "Customization",
+        "Your cover artwork and branding"
+      ]
     ]
   },
   {
@@ -105,20 +252,56 @@
     "alt": "Illustrative custom printed christian book publishing mockup",
     "requestedFormat": "Paperback book",
     "uses": [
-      "Independent Christian authors",
-      "Testimonies and devotionals",
-      "Inspirational manuscripts"
+      "Christian authors",
+      "Customer-written devotionals",
+      "Personal testimonies",
+      "Inspirational writing",
+      "Ministry publications"
     ],
-    "bindingPreferences": [
-      "Need guidance",
-      "Perfect binding (request)",
-      "Saddle stitch (request)",
-      "Other (describe below)"
+    "features": [
+      "Printing for your original Christian manuscript",
+      "Your cover artwork and author branding",
+      "Your supplied interior layout and chapter order",
+      "A book project for your intended readership",
+      "Paperback and finishing requests reviewed with the quote"
     ],
-    "coverPreferences": [
-      "Need guidance",
-      "Paperback / softcover (request)",
-      "Other (describe below)"
+    "about": [
+      "Turn an original Christian manuscript into a custom book-printing project. Authors and ministries can request printing for testimonies, inspirational writing or devotional content they have prepared for their own readers.",
+      "You supply the manuscript, print layouts and cover artwork. The service is for printing your own content and does not include a prewritten book. Describe the current stage of your files and any preparation questions in Project Details for review.",
+      "Provide the quantity, preferred book size, page count and requested delivery date. We review your paperback, paper and finishing preferences with the project brief and confirm the available printing options in your quote."
+    ],
+    "detailImage": "images/christian-book-publishing-detail.jpg",
+    "scripture": {
+      "text": "The Lord gave the word: great was the company of those that published it.",
+      "reference": "Psalm 68:11",
+      "translation": "KJV",
+      "excerpt": false
+    },
+    "specifications": [
+      [
+        "Book Type",
+        "Paperback book project"
+      ],
+      [
+        "Cover & Binding",
+        "Preferences reviewed with your quote"
+      ],
+      [
+        "Interior Printing",
+        "Your supplied content and layouts"
+      ],
+      [
+        "Paper & Finishing",
+        "Options upon confirmation"
+      ],
+      [
+        "Sizes",
+        "Specify your preferred dimensions"
+      ],
+      [
+        "Customization",
+        "Your cover artwork and branding"
+      ]
     ]
   },
   {
@@ -130,20 +313,56 @@
     "alt": "Illustrative custom printed ministry guides & workbooks mockup",
     "requestedFormat": "Paperback guide or workbook",
     "uses": [
-      "Bible study workbooks",
-      "Discipleship guides",
-      "Ministry training manuals"
+      "Bible study programs",
+      "Discipleship training",
+      "Leadership development",
+      "Volunteer training",
+      "Church education"
     ],
-    "bindingPreferences": [
-      "Need guidance",
-      "Perfect binding (request)",
-      "Saddle stitch (request)",
-      "Other (describe below)"
+    "features": [
+      "Your lessons and exercises in a planned sequence",
+      "Space for answers, notes and group discussion",
+      "Cover artwork aligned with the training program",
+      "Participant materials based on your own curriculum",
+      "Format preferences reviewed for the way the guide will be used"
     ],
-    "coverPreferences": [
-      "Need guidance",
-      "Paperback / softcover (request)",
-      "Other (describe below)"
+    "about": [
+      "A ministry guide or workbook keeps lessons, exercises and reference material together for participants. Use it for a Bible study series, a discipleship course or a training program your church has developed.",
+      "Provide your curriculum, cover design and interior layouts. Include the writing space, discussion questions and section order your program needs. The customer supplies the teaching material; this service does not include a ready-made course.",
+      "Tell us the quantity, preferred dimensions, page count and requested date. Add binding, paper and finishing preferences in Project Details so we can review how the workbook will be used and confirm the specifications with your quote."
+    ],
+    "detailImage": "images/ministry-guides-workbooks-detail.jpg",
+    "scripture": {
+      "text": "Study to shew thyself approved unto God",
+      "reference": "2 Timothy 2:15",
+      "translation": "KJV",
+      "excerpt": true
+    },
+    "specifications": [
+      [
+        "Book Type",
+        "Paperback guide or workbook project"
+      ],
+      [
+        "Cover & Binding",
+        "Preferences reviewed with your quote"
+      ],
+      [
+        "Interior Printing",
+        "Your supplied content and layouts"
+      ],
+      [
+        "Paper & Finishing",
+        "Options upon confirmation"
+      ],
+      [
+        "Sizes",
+        "Specify your preferred dimensions"
+      ],
+      [
+        "Customization",
+        "Your cover artwork and branding"
+      ]
     ]
   },
   {
@@ -155,20 +374,56 @@
     "alt": "Illustrative custom printed church booklets & programs mockup",
     "requestedFormat": "Booklet or program",
     "uses": [
-      "Sunday service programs",
-      "Church conferences",
-      "Anniversary publications"
+      "Sunday programs",
+      "Church anniversaries",
+      "Conferences",
+      "Special services",
+      "Ministry information materials"
     ],
-    "bindingPreferences": [
-      "Need guidance",
-      "Perfect binding (request)",
-      "Saddle stitch (request)",
-      "Other (describe below)"
+    "features": [
+      "Your order of service and event information",
+      "Cover artwork prepared for the occasion",
+      "A coordinated layout for text and photographs",
+      "A compact publication for guests and members",
+      "Page format and print preferences reviewed before confirmation"
     ],
-    "coverPreferences": [
-      "Need guidance",
-      "Paperback / softcover (request)",
-      "Other (describe below)"
+    "about": [
+      "Church booklets and programs put the details of a service or event into readers’ hands. They can present an order of worship, introduce speakers or share useful information about your ministry.",
+      "Supply your cover artwork, wording, photographs and page layouts. Your team controls the service order, acknowledgments and any information included for guests. We print the content you provide rather than supplying a prewritten program.",
+      "Share the quantity, preferred size, page count and requested delivery date. Use Project Details to describe color, paper, binding or finishing preferences. We review the brief and confirm the available options before quoting the project."
+    ],
+    "detailImage": "images/church-booklets-programs-detail.jpg",
+    "scripture": {
+      "text": "Let all things be done decently and in order.",
+      "reference": "1 Corinthians 14:40",
+      "translation": "KJV",
+      "excerpt": false
+    },
+    "specifications": [
+      [
+        "Book Type",
+        "Booklet or program project"
+      ],
+      [
+        "Cover & Binding",
+        "Preferences reviewed with your quote"
+      ],
+      [
+        "Interior Printing",
+        "Your supplied content and layouts"
+      ],
+      [
+        "Paper & Finishing",
+        "Options upon confirmation"
+      ],
+      [
+        "Sizes",
+        "Specify your preferred dimensions"
+      ],
+      [
+        "Customization",
+        "Your cover artwork and branding"
+      ]
     ]
   }
 ]

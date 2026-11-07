@@ -30,8 +30,15 @@ function noCheckout(html) {
   head = head.replace(/<style\b[^>]*>[\s\S]*?<\/style>/gi, '').replace(/<title>[\s\S]*?<\/title>/i, '<title>Request a Quote | Divine Printing</title>');
   return `<!doctype html><html lang="en">${head}<body><main style="max-width:48rem;margin:4rem auto;padding:1rem"><h1>Request a personalized quote</h1><p>Online checkout is temporarily unavailable. No order or payment is created here.</p><a href="/index.html#products">Browse products and get a quote</a><p><a href="/account/orders.html">View existing orders</a></p></main></body></html>`;
 }
+// Keep the historical source, but publish no active product or quote workflow at this retired route.
+function retiredProduct(html) {
+  const header = html.match(/<header\b[^>]*>[\s\S]*?<\/header>/)?.[0] || '';
+  const footer = html.match(/<footer>[\s\S]*?<\/footer>/)?.[0] || '';
+  return `<!doctype html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,follow"><title>Product No Longer Listed | Divine Printing</title><link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet"><link rel="stylesheet" href="/styles.css?v=3"><link rel="stylesheet" href="/product.css"></head><body>${header}<main style="max-width:860px;margin:48px auto;padding:0 24px"><h1>This product is no longer listed</h1><p>Standard Flyers 8.5x11 has been removed from our public catalog.</p><p><a href="/index.html#print">Browse Books and Print</a></p></main>${footer}</body></html>`;
+}
 function projectHtml(relative, html, sourceDirectory = path.resolve(__dirname, '..')) {
   if (!/<head\b/i.test(html) || !/<body\b/i.test(html) || relative.startsWith('admin/')) return html;
+  if (relative === 'products/church-flyers-standard.html') return projectHtml('retired-product.html', retiredProduct(html), sourceDirectory);
   if (relative === 'cart.html' || relative.startsWith('checkout/')) html = noCheckout(html);
   // Keep the existing print route/key while updating its customer-facing category label.
   html = html.replace(/Print (?:&amp;|&) Paper/g, 'Books and Print');
