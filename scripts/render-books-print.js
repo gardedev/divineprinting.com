@@ -26,8 +26,8 @@ function field(f, product) {
 }
 function imageAvailable(root,p) { return fs.existsSync(path.join(root,p.image)); }
 function card(root,p) {
- const image=imageAvailable(root,p)?`<div class="product-img"><a href="products/${esc(p.slug)}.html"><img loading="lazy" src="${esc(p.image)}" alt="${esc(p.alt)}" width="900" height="490" style="object-fit:contain"/></a></div>`:'';
- return `<div class="product-card" data-cat="print" data-book-product="${esc(p.slug)}">${image}<div class="product-body"><h3>${esc(p.name)}</h3><p>${esc(p.description)}</p><a class="btn-order" href="products/${esc(p.slug)}.html">Request a Quote</a></div></div>`;
+ const image=fs.existsSync(path.join(root,p.detailImage))?`<div class="product-img"><a href="products/${esc(p.slug)}.html"><img loading="lazy" src="${esc(p.detailImage)}" alt="${esc(p.alt)}" width="900" height="675" style="transform:none"/></a></div>`:'';
+ return `<div class="product-card" data-cat="print" data-book-product="${esc(p.slug)}">${image}<div class="product-body"><h3>${esc(p.name)}</h3><p>${esc(p.description)}</p><div class="product-meta">${p.cardBadges.map(badge=>`<span class="meta-tag">${esc(badge)}</span>`).join('')}</div><a class="btn-order" href="products/${esc(p.slug)}.html">Request a Quote</a></div></div>`;
 }
 function renderProduct(root,p) {
  const stage=fs.readFileSync(path.join(root,'products/stage-backdrop-banner.html'),'utf8');

@@ -58,6 +58,11 @@
         "Customization",
         "Your cover artwork and branding"
       ]
+    ],
+    "cardBadges": [
+      "Custom Pages",
+      "Your Artwork",
+      "Activity Books"
     ]
   },
   {
@@ -119,6 +124,11 @@
         "Customization",
         "Your cover artwork and branding"
       ]
+    ],
+    "cardBadges": [
+      "Custom Covers",
+      "Note Layouts",
+      "Ministry Notes"
     ]
   },
   {
@@ -180,6 +190,11 @@
         "Customization",
         "Your cover artwork and branding"
       ]
+    ],
+    "cardBadges": [
+      "Your Content",
+      "Custom Interiors",
+      "Journal Printing"
     ]
   },
   {
@@ -241,6 +256,11 @@
         "Customization",
         "Your cover artwork and branding"
       ]
+    ],
+    "cardBadges": [
+      "Custom Covers",
+      "Your Photos",
+      "Church Keepsakes"
     ]
   },
   {
@@ -302,6 +322,11 @@
         "Customization",
         "Your cover artwork and branding"
       ]
+    ],
+    "cardBadges": [
+      "Your Manuscript",
+      "Custom Covers",
+      "Book Printing"
     ]
   },
   {
@@ -363,6 +388,11 @@
         "Customization",
         "Your cover artwork and branding"
       ]
+    ],
+    "cardBadges": [
+      "Your Lessons",
+      "Custom Layouts",
+      "Workbook Printing"
     ]
   },
   {
@@ -424,6 +454,11 @@
         "Customization",
         "Your cover artwork and branding"
       ]
+    ],
+    "cardBadges": [
+      "Your Content",
+      "Custom Layouts",
+      "Church Programs"
     ]
   }
 ]

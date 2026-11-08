@@ -22,7 +22,7 @@ test('seven optimized product images load from publishable assets with alt text 
   const b=fs.readFileSync(path.join(root,p.image));expect(b.readUInt16BE(0)).toBe(0xffd8);let offset=2,dimensions;
   while(offset<b.length){if(b[offset]!==0xff){offset++;continue;}const marker=b[offset+1];if(marker===0xc0||marker===0xc2){dimensions=[b.readUInt16BE(offset+7),b.readUInt16BE(offset+5)];break;}offset+=2+b.readUInt16BE(offset+2);}
   expect(dimensions).toEqual([900,490]);expect(b.length).toBeLessThan(200000);expect(fs.readFileSync(path.join(root,'dist',p.image))).toEqual(b);
-  const page=read('products/'+p.slug+'.html');expect(page).toContain('src="../'+p.detailImage+'"');expect(page).toContain('alt="'+p.alt.replace(/&/g,'&amp;').replace(/'/g,'&#39;')+'"');expect(page).toContain('Illustrative custom-printing mockup.');expect(page).not.toContain('grid-template-columns:minmax(0,1fr)');expect(renderer.card(root,p)).toContain('style="object-fit:contain"');
+  const page=read('products/'+p.slug+'.html');expect(page).toContain('src="../'+p.detailImage+'"');expect(page).toContain('alt="'+p.alt.replace(/&/g,'&amp;').replace(/'/g,'&#39;')+'"');expect(page).toContain('Illustrative custom-printing mockup.');expect(page).not.toContain('grid-template-columns:minmax(0,1fr)');const card=renderer.card(root,p);expect(card).toContain('src="'+p.detailImage+'"');expect(card).toContain('width="900" height="675"');expect(card).not.toContain('object-fit:contain');expect(card).toContain('style="transform:none"');expect(card.match(/class="meta-tag"/g)).toHaveLength(3);expect(p.cardBadges).toHaveLength(3);for(const badge of p.cardBadges)expect(card).toContain('<span class="meta-tag">'+badge+'</span>');
  }
  const fixture=fs.mkdtempSync(path.join(os.tmpdir(),'divine-book-image-absence-'));
  try{fs.mkdirSync(path.join(fixture,'products'));fs.copyFileSync(path.join(root,'products/stage-backdrop-banner.html'),path.join(fixture,'products/stage-backdrop-banner.html'));const p=renderer.products[0],html=renderer.renderProduct(fixture,p);expect(html).not.toContain('src="../'+p.image+'"');expect(html).toContain('grid-template-columns:minmax(0,1fr)');expect(renderer.card(fixture,p)).not.toContain('<img');}finally{fs.rmSync(fixture,{recursive:true,force:true});}
@@ -58,4 +58,15 @@ test('book detail renderer uses established product sections and concise respons
   expect(page).toContain('src="../'+p.detailImage+'"');expect(page).not.toContain('object-fit:contain');
   const jpg=fs.readFileSync(path.join(root,p.detailImage));expect(jpg.readUInt16BE(0)).toBe(0xffd8);expect(jpg.length).toBeLessThan(220000);expect(fs.readFileSync(path.join(root,'dist',p.detailImage))).toEqual(jpg);
  }
+});
+
+test('flyer card and hero share the new original image while preserving the historical asset',()=>{
+ const card=extractCards(read('index.html')).find(h=>h.includes('products/church-flyer-bulletin.html'));
+ const page=read('products/church-flyer-bulletin.html'),asset='images/church-flyer-bulletin-premium.jpg';
+ expect(card).toContain('src="/'+asset+'"');expect(page).toContain('src="../'+asset+'"');
+ expect(card).toContain('width="900" height="675"');expect(page).toContain('width="900" height="675"');
+ const original=fs.readFileSync(path.join(root,'images/flyer.jpg')),replacement=fs.readFileSync(path.join(root,asset));
+ expect(original.equals(replacement)).toBe(false);expect(replacement.readUInt16BE(0)).toBe(0xffd8);
+ expect(fs.readFileSync(path.join(root,'dist',asset))).toEqual(replacement);
+ expect(fs.readFileSync(path.join(root,'dist/images/flyer.jpg'))).toEqual(original);
 });
